@@ -1,6 +1,4 @@
-/* =========================
-   Estilos generales para el módulo de login
-   ========================= */
+/* login */
 /* Estilos para la línea divisoria en formularios */
 .divider:after,
 .divider:before {
@@ -35,9 +33,7 @@
     }
 }
 
-/* =========================
-   Login Moderno - Paleta Azul MarketWorld y Gris Cálido
-   ========================= */
+/* Login Moderno - Paleta Azul MarketWorld y Gris Cálido */
 
 :root {
     --primary: #0d6ef0;
@@ -67,9 +63,7 @@ body {
     min-height: 100vh;
 }
 
-/* =========================
-   PANEL IZQUIERDO BLANCO CON LOGO
-   ========================= */
+/* PANEL IZQUIERDO BLANCO CON LOGO */
 .left-panel-white {
     background: #ffffff; /* FONDO BLANCO */
     border-right: 1px solid #e9ecef;
@@ -136,9 +130,7 @@ body {
     color: var(--primary); /* ICONOS AZULES */
 }
 
-/* =========================
-   PANEL DERECHO AZUL CON FORMULARIO
-   ========================= */
+/* PANEL DERECHO AZUL CON FORMULARIO */
 .right-panel-blue {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); /* FONDO AZUL */
     padding: 40px;
@@ -265,9 +257,7 @@ body {
     background: #f8f9fa;
 }
 
-/* =========================
-   Divider
-   ========================= */
+/* Divider */
 .divider-white {
     position: relative;
     text-align: center;
@@ -293,9 +283,7 @@ body {
     font-weight: 600;
 }
 
-/* =========================
-   Social login
-   ========================= */
+/* Social login */
 .social-login {
     display: flex;
     gap: 15px;
@@ -326,9 +314,7 @@ body {
 .btn-microsoft:hover { color: #00A4EF; }
 .btn-apple:hover { color: #000; }
 
-/* =========================
-   Register link
-   ========================= */
+/* Register link */
 .register-text-white {
     color: rgba(255, 255, 255, 0.9);
 }
@@ -343,9 +329,7 @@ body {
     text-decoration: underline;
 }
 
-/* =========================
-   Footer con términos y privacidad
-   ========================= */
+/* Footer con términos y privacidad */
 .footer-text-white {
     color: rgba(255, 255, 255, 0.9);
     font-size: 0.9rem;
@@ -363,9 +347,7 @@ body {
     text-decoration: underline;
 }
 
-/* =========================
-   Responsive
-   ========================= */
+/* Responsive */
 @media (max-width: 991.98px) {
     .right-panel-blue {
         padding: 30px 20px;

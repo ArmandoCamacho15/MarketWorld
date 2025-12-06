@@ -1,15 +1,11 @@
-/**
- * Script para el módulo de Inicio
- * Funcionalidades: búsqueda global, accesos rápidos, notificaciones
- */
 
 (function() {
     'use strict';
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('✅ Módulo Inicio cargado correctamente');
+        console.log(' Módulo Inicio cargado correctamente');
         
-        // Inicializar funcionalidades
+        // Inicializar
         initSearch();
         initQuickAccess();
         initNotifications();
@@ -44,14 +40,14 @@
     function performSearch(query) {
         console.log(`🔍 Buscando: "${query}"`);
         
-        // Simulación de búsqueda
+        // búsqueda
         const results = [
             { type: 'cliente', name: 'Juan Pérez', url: 'crm.html?id=1' },
             { type: 'producto', name: 'Laptop HP ProBook', url: 'inventario.html?sku=ELEC-1001' },
             { type: 'factura', name: 'FAC-2025-00128', url: 'facturacion.html?id=128' }
         ];
 
-        // Aquí iría la lógica AJAX real
+        
         showSearchResults(results);
     }
 
@@ -70,7 +66,7 @@
                 const targetUrl = card.getAttribute('href');
                 console.log(`🚀 Navegando a: ${targetUrl}`);
                 
-                // Animación de clic
+                // clic
                 card.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     card.style.transform = '';
@@ -78,7 +74,7 @@
                 }, 150);
             });
 
-            // Efecto hover mejorado
+            // Efecto hover
             card.addEventListener('mouseenter', () => {
                 card.style.boxShadow = '0 15px 30px rgba(13, 110, 240, 0.2)';
             });
@@ -89,14 +85,14 @@
         });
     }
 
-    // Notificaciones interactivas
+    // Notificaciones
     function initNotifications() {
         const bellButton = document.querySelector('[aria-label="Ver notificaciones"]');
         
         if (bellButton) {
             bellButton.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('🔔 Abriendo notificaciones');
+                console.log(' Abriendo notificaciones');
                 showNotificationPanel();
             });
         }
@@ -165,7 +161,7 @@
         taskItems.forEach(task => {
             task.addEventListener('click', () => {
                 task.style.background = '#e8f5e9';
-                console.log('✅ Tarea marcada como completada');
+                console.log(' Tarea marcada como completada');
                 
                 setTimeout(() => {
                     task.style.opacity = '0';

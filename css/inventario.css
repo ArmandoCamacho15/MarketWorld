@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de Inventario
-   ========================= */
+/* Inventario */
 
-/* Variables globales para colores y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Color principal del tema */
     --secondary: #0a58ca;    /* Color secundario */
@@ -15,14 +13,14 @@
     --danger: #e74c3c;       /* Color para errores */
 }
 
-/* Estilos generales del cuerpo de la página */
+/* Body */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
     color: var(--dark-text);   /* Color de texto principal */
 }
 
-/* Contenedor principal de la aplicación usando flexbox */
+/* Contenedor principal */
 .app-container {
     display: flex;
     min-height: 100vh; /* Ocupa toda la altura de la ventana */
@@ -351,9 +349,7 @@ body {
     font-size: 14px;
 }
 
-/* =========================
-   UNIFICACIÓN PANTALLA COMPLETA
-   ========================= */
+/* UNIFICACIÓN PANTALLA COMPLETA */
 html, body {
     height: 100%;
     margin: 0;
@@ -438,9 +434,7 @@ html, body {
     }
 }
 
-/* =========================
-   NUEVOS ESTILOS PROFESIONALES
-   ========================= */
+/* NUEVOS ESTILOS PROFESIONALES */
 
 /* Dashboard KPIs mejorados */
 .dashboard-kpis .kpi-card {

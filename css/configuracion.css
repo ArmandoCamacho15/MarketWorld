@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de Configuración
-   ========================= */
+/* Configuración */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -29,9 +27,7 @@ body {
     min-height: 100vh;
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -88,9 +84,7 @@ body {
     }
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .main-content {
     flex: 1;
     padding: 20px;
@@ -121,9 +115,7 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Navegación de pestañas
-   ========================= */
+/* Navegación de pestañas */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -136,9 +128,7 @@ body {
     border-bottom: 3px solid var(--primary);
 }
 
-/* =========================
-   Barra de búsqueda
-   ========================= */
+/* Barra de búsqueda */
 .search-bar {
     width: 400px;
     position: relative;
@@ -169,9 +159,7 @@ body {
     object-fit: cover;
 }
 
-/* =========================
-   Estilos para Configuración
-   ========================= */
+/* Estilos para Configuración */
 /* Tarjeta de configuración general */
 .config-card {
     border: 1px solid #e9ecef;
@@ -283,9 +271,7 @@ body {
     margin-top: 20px;
 }
 
-/* =========================
-   Estilos para Gestión de Usuarios
-   ========================= */
+/* Estilos para Gestión de Usuarios */
 /* Contenedor principal de gestión de usuarios */
 .user-management {
     background: white;

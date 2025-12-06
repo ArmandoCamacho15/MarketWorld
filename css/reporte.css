@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de reportes
-   ========================= */
+/* reportes */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
             --primary: #0d6ef0;
             --secondary: #0a58ca;
@@ -321,9 +319,7 @@
             margin-right: 10px;
         }
         
-/* =========================
-   Panel de control de reportes
-   ========================= */
+/* Panel de control de reportes */
 .report-control-panel {
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     border-radius: 15px;
@@ -331,9 +327,7 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
-/* =========================
-   KPIs Avanzados
-   ========================= */
+/* KPIs Avanzados */
 .kpi-card-advanced {
     background: white;
     border-radius: 15px;
@@ -399,9 +393,7 @@
     margin-top: 10px;
 }
 
-/* =========================
-   Gráficos empresariales
-   ========================= */
+/* Gráficos empresariales */
 .chart-card {
     background: white;
     border-radius: 15px;
@@ -430,9 +422,7 @@
     border-top: 1px solid #e9ecef;
 }
 
-/* =========================
-   Tabla interactiva
-   ========================= */
+/* Tabla interactiva */
 .table-controls {
     background: #f8f9fa;
     border-radius: 10px;
@@ -454,9 +444,7 @@
     opacity: 0.5;
 }
 
-/* =========================
-   Análisis predictivo
-   ========================= */
+/* Análisis predictivo */
 .insight-card {
     background: white;
     border-radius: 15px;
@@ -476,9 +464,7 @@
     border-top: 1px solid #e9ecef;
 }
 
-/* =========================
-   Constructor de reportes
-   ========================= */
+/* Constructor de reportes */
 .report-builder {
     min-height: 500px;
 }
@@ -542,17 +528,13 @@
     opacity: 1;
 }
 
-/* =========================
-   Exportación profesional
-   ========================= */
+/* Exportación profesional */
 .export-buttons {
     display: flex;
     gap: 10px;
 }
 
-/* =========================
-   Responsive
-   ========================= */
+/* Responsive */
 @media print {
     .sidebar, .top-bar, .export-buttons, .nav-tabs {
         display: none !important;

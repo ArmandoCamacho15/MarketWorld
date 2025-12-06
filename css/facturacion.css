@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de Facturación
-   ========================= */
+/* Facturación */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -15,9 +13,7 @@
     --gold: #ffd700;         /* Dorado para clientes frecuentes */
 }
 
-/* =========================
-   Estilos base para el body y contenedor principal
-   ========================= */
+/* Estilos base para el body y contenedor principal */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,9 +24,7 @@ body {
     min-height: 100vh;
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px;
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -90,9 +84,7 @@ body {
     }
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .main-content {
     flex: 1;
     padding: 20px;
@@ -123,9 +115,7 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Navegación de pestañas
-   ========================= */
+/* Navegación de pestañas */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -138,9 +128,7 @@ body {
     border-bottom: 3px solid var(--primary);
 }
 
-/* =========================
-   Tabla de facturas
-   ========================= */
+/* Tabla de facturas */
 .invoice-table th {
     background-color: #f8f9fa;
     color: var(--primary);
@@ -150,9 +138,7 @@ body {
     background-color: #f0f6ff;
 }
 
-/* =========================
-   Estados de factura
-   ========================= */
+/* Estados de factura */
 .status-paid {
     background-color: #e8f7f0; /* Verde claro para pagadas */
     color: var(--success);
@@ -166,9 +152,7 @@ body {
     color: var(--danger);
 }
 
-/* =========================
-   Etiquetas y badges
-   ========================= */
+/* Etiquetas y badges */
 .product-badge {
     background-color: #e9ecef;
     border-radius: 20px;
@@ -191,9 +175,7 @@ body {
     font-size: 0.85em;
 }
 
-/* =========================
-   Barra de búsqueda
-   ========================= */
+/* Barra de búsqueda */
 .search-bar {
     width: 400px;
     position: relative;
@@ -211,9 +193,7 @@ body {
     color: #7f8c8d;
 }
 
-/* =========================
-   Información de usuario en la barra superior
-   ========================= */
+/* Información de usuario en la barra superior */
 .user-info {
     display: flex;
     align-items: center;
@@ -226,9 +206,7 @@ body {
     object-fit: cover;
 }
 
-/* =========================
-   POS y Métodos de pago
-   ========================= */
+/* POS y Métodos de pago */
 .pos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -254,9 +232,7 @@ body {
     margin-bottom: 8px;
 }
 
-/* =========================
-   Cliente frecuente y validaciones DIAN
-   ========================= */
+/* Cliente frecuente y validaciones DIAN */
 .frequent-customer {
     position: relative;
 }
@@ -284,9 +260,7 @@ body {
     border-left: 4px solid var(--warning);
 }
 
-/* =========================
-   Código QR para facturación electrónica
-   ========================= */
+/* Código QR para facturación electrónica */
 .qr-container {
     max-width: 200px;
     margin: 0 auto;
@@ -296,9 +270,7 @@ body {
     text-align: center;
 }
 
-/* =========================
-   Autocompletado de productos
-   ========================= */
+/* Autocompletado de productos */
 .suggestions-container {
     position: absolute;
     top: 100%;
@@ -376,9 +348,7 @@ body {
     border-radius: 3px;
 }
 
-/* =========================
-   Métodos de pago
-   ========================= */
+/* Métodos de pago */
 .payment-methods {
     display: flex;
     gap: 10px;
@@ -417,9 +387,7 @@ body {
     color: var(--dark-text);
 }
 
-/* =========================
-   Productos destacados
-   ========================= */
+/* Productos destacados */
 .producto-card {
     transition: all 0.3s ease;
     border: 2px solid #e9ecef;
@@ -445,9 +413,7 @@ body {
     overflow-y: auto;
 }
 
-/* =========================
-   Selector de modo
-   ========================= */
+/* Selector de modo */
 .mode-selector {
     background: #f8f9fa;
     border-radius: 12px;
@@ -472,9 +438,7 @@ body {
     opacity: 0.9;
 }
 
-/* =========================
-   Tarjetas modernas
-   ========================= */
+/* Tarjetas modernas */
 .search-card,
 .featured-card,
 .client-card,
@@ -496,9 +460,7 @@ body {
     background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
 }
 
-/* =========================
-   Tabla moderna del carrito
-   ========================= */
+/* Tabla moderna del carrito */
 .modern-table {
     font-size: 0.95rem;
 }
@@ -517,9 +479,7 @@ body {
     padding: 15px;
 }
 
-/* =========================
-   Resumen de totales mejorado
-   ========================= */
+/* Resumen de totales mejorado */
 .summary-item {
     padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
@@ -536,9 +496,7 @@ body {
     margin-top: 10px;
 }
 
-/* =========================
-   Botones de acción mejorados
-   ========================= */
+/* Botones de acción mejorados */
 .btn-lg {
     padding: 14px 20px;
     font-size: 1.1rem;
@@ -557,9 +515,7 @@ body {
     box-shadow: 0 10px 25px rgba(46, 204, 113, 0.4);
 }
 
-/* =========================
-   Animación de entrada
-   ========================= */
+/* Animación de entrada */
 @keyframes fadeInUp {
     from {
         opacity: 0;

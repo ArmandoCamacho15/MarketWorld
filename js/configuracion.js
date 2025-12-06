@@ -1,13 +1,9 @@
-/**
- * Script para el módulo Configuración
- * Funcionalidades: empresa, impuestos, sistema, backup, usuarios
- */
 
 (function() {
     'use strict';
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('⚙️ Módulo Configuración cargado');
+        console.log('️ Módulo Configuración cargado');
         
         initCompanySettings();
         initTaxSettings();
@@ -124,7 +120,7 @@
         
         alert('⏳ Generando backup de la base de datos...\n\nEsto puede tardar unos minutos.');
         
-        // Simulación de descarga
+        // descarga
         setTimeout(() => {
             alert('✅ Backup descargado exitosamente\n\nArchivo: marketworld_backup_20250620.sql\nTamaño: 45.2 MB');
         }, 2000);
@@ -187,7 +183,7 @@
     }
 
     function applyUserFilters() {
-        console.log('🔍 Aplicando filtros de usuarios');
+        console.log(' Aplicando filtros de usuarios');
         alert('Filtros aplicados correctamente');
     }
 
@@ -211,21 +207,13 @@
     }
 
     function exportAuditLog() {
-        console.log('📊 Exportando registro de auditoría');
+        console.log(' Exportando registro de auditoría');
         alert('✅ Registro de auditoría exportado\n\nArchivo: audit_log_20250620.xlsx');
     }
 
 })();
 
-/**
- * ===========================
- * CONFIGURACION.JS - CRUD USUARIOS
- * ===========================
- */
 
-/**
- * CONFIGURACION.JS - Configuración del sistema
- */
 
 let usuarios = [
     {
@@ -241,7 +229,7 @@ let usuarios = [
 let nextUserId = 2;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de configuración iniciado');
+    console.log(' Sistema de configuración iniciado');
     
     const btnGuardarEmpresa = document.querySelector('#empresa .btn-primary');
     
@@ -272,7 +260,7 @@ function agregarUsuario() {
     };
     
     usuarios.push(nuevoUsuario);
-    console.log('✅ Usuario agregado:', nuevoUsuario);
+    console.log(' Usuario agregado:', nuevoUsuario);
 }
 
 function editarUsuario(id) {

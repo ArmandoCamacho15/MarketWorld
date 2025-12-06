@@ -1,10 +1,6 @@
-/* =========================
-Estilos generales para el módulo de Inicio
-   ========================= */
+/* Inicio */
 
-/* ==================
-   Skip Link Accesible
-   ================== */
+/* Skip Link Accesible */
 .skip-link {
     position: absolute;
     top: -40px;
@@ -23,7 +19,7 @@ Estilos generales para el módulo de Inicio
     outline-offset: 2px;
 }
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Color principal del tema */
     --secondary: #0a58ca;    /* Color secundario */
@@ -36,14 +32,14 @@ Estilos generales para el módulo de Inicio
     --gold: #ffd700;         /* Color dorado */
 }
 
-/* Estilos generales del cuerpo de la página */
+/* Body */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
     color: var(--dark-text);   /* Color de texto principal */
 }
 
-/* Contenedor principal de la aplicación usando flexbox */
+/* Contenedor principal */
 .app-container {
     display: flex;
     min-height: 100vh; /* Ocupa toda la altura de la ventana */
@@ -378,9 +374,7 @@ body {
     color: #6c757d;
 }
 
-/* ==================
-   Wrapper responsivo
-   ================== */
+/* Wrapper responsivo */
 .main-content-wrapper {
     flex: 1;
     display: flex;
@@ -388,9 +382,7 @@ body {
     min-height: 100vh;
 }
 
-/* ==================
-   Botón toggle sidebar mobile
-   ================== */
+/* Botón toggle sidebar mobile */
 .sidebar-toggle {
     position: absolute;
     top: 15px;
@@ -425,9 +417,7 @@ body {
     }
 }
 
-/* ==================
-   Focus visible mejorado
-   ================== */
+/* Focus visible mejorado */
 a:focus, button:focus, input:focus, select:focus, textarea:focus {
     outline: 2px solid var(--primary);
     outline-offset: 2px;

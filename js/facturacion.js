@@ -1,8 +1,3 @@
-/**
- * ===========================
- * FACTURACION.JS - VERSIÓN COMPLETA CON AUTOCOMPLETADO
- * ===========================
- */
 
 // Carrito de productos
 let carrito = [];
@@ -34,7 +29,7 @@ const productosDB = [
 ];
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de facturación iniciado');
+    console.log(' Sistema de facturación iniciado');
     
     // ===========================
     // CAMBIO ENTRE MODO RÁPIDO Y COMPLETO
@@ -76,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnBuscarProducto) {
         btnBuscarProducto.addEventListener('click', function() {
-            console.log('🔍 Botón buscar clickeado');
+            console.log(' Botón buscar clickeado');
             buscarYAgregarProducto();
         });
     }
@@ -126,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inputCantidadProducto.value = 1;
         inputBuscarProducto.focus();
         
-        console.log('✅ Producto agregado:', producto.nombre);
+        console.log(' Producto agregado:', producto.nombre);
     }
     
     // ===========================
@@ -488,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inputBuscar.addEventListener('input', function() {
             const termino = this.value.trim().toLowerCase();
             
-            console.log('🔍 Buscando:', termino);
+            console.log(' Buscando:', termino);
             
             // Si hay menos de 3 caracteres, ocultar sugerencias
             if (termino.length < 3) {
@@ -581,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderizarCarrito();
     calcularTotales();
     
-    console.log('✅ Sistema de facturación listo. Productos disponibles:', productosDB.length);
+    console.log(' Sistema de facturación listo. Productos disponibles:', productosDB.length);
 });
 
 // ===========================

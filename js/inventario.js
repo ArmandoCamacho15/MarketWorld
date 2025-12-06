@@ -1,7 +1,3 @@
-/**
- * Script para el módulo Inventario PROFESIONAL
- * Incluye: gráficos, búsqueda avanzada, código de barras, exportación
- */
 
 (function() {
     'use strict';
@@ -9,7 +5,7 @@
     // ===========================
     // VARIABLES GLOBALES
     // ===========================
-    // Simulación de base de datos de productos
+    // base de datos de productos
     let productos = [
         {
             id: 1,
@@ -48,7 +44,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log('Módulo Inventario Profesional cargado');
         
-        // Inicializar funcionalidades
+        // Inicializar
         initSearchAndFilters();
         initCharts();
         initBarcodeScanner();
@@ -67,7 +63,7 @@
                 const query = e.target.value.trim();
                 if (query.length > 2) {
                     console.log('Buscando producto:', query);
-                    // Aquí iría la lógica AJAX de búsqueda
+                    
                 }
             }, 300));
         }
@@ -83,7 +79,7 @@
         const price = document.getElementById('filterPrice').value;
         
         console.log('Aplicando filtros:', { category, stock, price });
-        // Aquí iría la lógica de filtrado
+        
     }
 
     // Inicializar gráficos con Chart.js
@@ -203,7 +199,7 @@
 
     function searchProductByBarcode(barcode) {
         console.log('Buscando producto con código:', barcode);
-        // Aquí iría la búsqueda AJAX por código de barras
+        
         alert(`Buscando producto con código: ${barcode}`);
     }
 
@@ -240,7 +236,7 @@
         };
 
         console.log('Guardando producto:', formData);
-        // Aquí iría la lógica AJAX para guardar
+        
 
         // Cerrar modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
@@ -334,9 +330,6 @@
     // FUNCIONES AUXILIARES
     // ===========================
 
-    /**
-     * Ver detalle del producto
-     */
     function verDetalle(id) {
         const producto = productos.find(p => p.id === id);
         
@@ -355,9 +348,6 @@ Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock
         `);
     }
 
-    /**
-     * Editar producto
-     */
     function editarProducto(id) {
         const producto = productos.find(p => p.id === id);
         
@@ -387,9 +377,6 @@ Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock
         }
     }
 
-    /**
-     * Eliminar producto con confirmación
-     */
     function eliminarProducto(id) {
         const producto = productos.find(p => p.id === id);
         
@@ -410,9 +397,6 @@ Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock
         }
     }
 
-    /**
-     * Limpiar formulario de producto
-     */
     function limpiarFormulario() {
         const form = document.getElementById('productForm');
         if (form) {
@@ -422,9 +406,6 @@ Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock
         }
     }
 
-    /**
-     * Actualizar contadores de productos
-     */
     function actualizarContadores() {
         const totalProductos = productos.length;
         const stockBajo = productos.filter(p => p.stock <= p.minStock).length;
@@ -440,9 +421,6 @@ Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock
         if (kpiValue) kpiValue.textContent = `$${valorTotal.toLocaleString('es-CO')}`;
     }
 
-    /**
-     * Mostrar notificación temporal
-     */
     function mostrarNotificacion(mensaje, tipo = 'info') {
         // Crear elemento de notificación
         const notification = document.createElement('div');

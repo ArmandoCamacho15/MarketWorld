@@ -1,7 +1,3 @@
-/**
- * Script para el módulo Nuevo Usuario (Registro)
- * Funcionalidades: validación de formulario, verificación de contraseña, términos
- */
 
 (function() {
     'use strict';
@@ -63,16 +59,16 @@
         
         console.log('📤 Registrando usuario:', { firstName, lastName, email });
         
-        // Simulación de registro
+        // registro
         registerUser({ firstName, lastName, email, password });
     }
 
     function registerUser(userData) {
         console.log('🌐 Creando usuario...');
         
-        // Simulación de llamada API
+        // llamada API
         setTimeout(() => {
-            console.log('✅ Usuario registrado exitosamente');
+            console.log(' Usuario registrado exitosamente');
             
             // Guardar datos de sesión
             localStorage.setItem('marketworld_user', JSON.stringify({
@@ -276,14 +272,9 @@
         setTimeout(() => alertDiv.remove(), 3000);
     }
 
-    /**
-     * ===========================
-     * NUEVO_USUARIO.JS - TODOS LOS BOTONES FUNCIONALES
-     * ===========================
-     */
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ Registro iniciado');
+        console.log(' Registro iniciado');
         
         const togglePassword = document.getElementById('togglePassword');
         const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');

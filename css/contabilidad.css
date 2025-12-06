@@ -1,6 +1,4 @@
-/* =========================
-   Estilos generales para el módulo de Contabilidad
-   ========================= */
+/* Contabilidad */
 
 /* Variables globales para colores y tipos de cuenta */
 :root {
@@ -35,9 +33,7 @@ body {
     min-height: 100vh;
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -77,9 +73,7 @@ body {
     text-align: center;
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .main-content {
     flex: 1;
     padding: 20px;
@@ -110,9 +104,7 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Navegación de pestañas
-   ========================= */
+/* Navegación de pestañas */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -125,9 +117,7 @@ body {
     border-bottom: 3px solid var(--accounting);
 }
 
-/* =========================
-   Estilos específicos para Contabilidad
-   ========================= */
+/* Estilos específicos para Contabilidad */
 
 /* Tarjeta de cuenta contable */
 .account-card {

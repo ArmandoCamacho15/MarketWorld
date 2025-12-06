@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de CRM
-   ========================= */
+/* CRM */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -32,9 +30,7 @@ body {
     min-height: 100vh;
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -74,9 +70,7 @@ body {
     text-align: center;
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .main-content {
     flex: 1;
     padding: 20px;
@@ -107,9 +101,7 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Navegación de pestañas
-   ========================= */
+/* Navegación de pestañas */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -122,9 +114,7 @@ body {
     border-bottom: 3px solid var(--crm);
 }
 
-/* =========================
-   Estilos específicos para CRM
-   ========================= */
+/* Estilos específicos para CRM */
 
 /* Tarjeta de cliente */
 .client-card {

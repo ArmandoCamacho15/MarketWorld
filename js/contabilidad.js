@@ -1,7 +1,3 @@
-/**
- * Script para el módulo Contabilidad
- * Funcionalidades: plan contable, asientos, libros, estados financieros
- */
 
 (function() {
     'use strict';
@@ -121,7 +117,7 @@
     }
 
     function applyLedgerFilters() {
-        console.log('🔍 Aplicando filtros en libros contables');
+        console.log(' Aplicando filtros en libros contables');
         
         const startDate = document.querySelector('input[type="date"]')?.value;
         const endDate = document.querySelectorAll('input[type="date"]')[1]?.value;
@@ -166,7 +162,7 @@
         if (confirm('¿Deseas presentar la declaración a la DIAN?')) {
             console.log('📤 Enviando declaración a la DIAN...');
             
-            // Simulación de envío
+            // envío
             setTimeout(() => {
                 alert('✅ Declaración presentada exitosamente\n\nNúmero de radicado: DIAN-2025-12345');
             }, 1500);
@@ -228,14 +224,9 @@
             });
         }
 
-        console.log('📊 Gráficos contables inicializados');
+        console.log(' Gráficos contables inicializados');
     }
 
-    /**
-     * ===========================
-     * CONTABILIDAD.JS - CRUD ASIENTOS CONTABLES (CORREGIDO)
-     * ===========================
-     */
 
     // Base de datos simulada
     let asientosContables = [
@@ -257,7 +248,7 @@
     let nextAsientoId = 129;
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ Sistema contable iniciado');
+        console.log(' Sistema contable iniciado');
         
         cargarAsientosContables();
         
@@ -277,7 +268,7 @@
         const btnFiltrarDiario = document.querySelector('#diario .btn-primary');
         if (btnFiltrarDiario) {
             btnFiltrarDiario.addEventListener('click', function() {
-                console.log('🔍 Filtrando libro diario');
+                console.log(' Filtrando libro diario');
                 mostrarNotificacion('Filtros aplicados al libro diario', 'info');
             });
         }
@@ -288,7 +279,7 @@
         const btnFiltrarMayor = document.querySelector('#mayor .btn-primary');
         if (btnFiltrarMayor) {
             btnFiltrarMayor.addEventListener('click', function() {
-                console.log('🔍 Filtrando libro mayor');
+                console.log(' Filtrando libro mayor');
                 mostrarNotificacion('Filtros aplicados al libro mayor', 'info');
             });
         }
@@ -331,7 +322,7 @@
     });
 
     function cargarAsientosContables() {
-        console.log('✅ Asientos contables cargados:', asientosContables.length);
+        console.log(' Asientos contables cargados:', asientosContables.length);
     }
 
     function agregarAsiento(datosAsiento) {
@@ -376,7 +367,7 @@
                     }
                 }
             });
-            console.log('📊 Gráfico Balance inicializado');
+            console.log(' Gráfico Balance inicializado');
         }
         
         // Gráfico Estado de Resultados
@@ -422,7 +413,7 @@
                     }
                 }
             });
-            console.log('📊 Gráfico Estado de Resultados inicializado');
+            console.log(' Gráfico Estado de Resultados inicializado');
         }
     }
 

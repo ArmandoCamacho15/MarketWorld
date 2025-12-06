@@ -1,7 +1,3 @@
-/**
- * Script para el módulo CRM
- * Funcionalidades: gestión clientes, oportunidades, segmentación, campañas
- */
 
 (function() {
     'use strict';
@@ -10,7 +6,7 @@
     let selectedOpportunity = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('📊 Módulo CRM cargado');
+        console.log(' Módulo CRM cargado');
         
         initClientCards();
         initClientFilters();
@@ -20,7 +16,7 @@
         initClientSearch();
     });
 
-    // Tarjetas de clientes interactivas
+    // Tarjetas de clientes
     function initClientCards() {
         const clientCards = document.querySelectorAll('.client-card');
         
@@ -146,7 +142,7 @@
         
         console.log(`🔍 Filtrando clientes:`, { tipo, ciudad, segmento });
         
-        // Simulación de filtrado
+        // filtrado
         alert(`Filtros aplicados:\n- Tipo: ${tipo}\n- Ciudad: ${ciudad}\n- Segmento: ${segmento}`);
     }
 
@@ -277,7 +273,7 @@
 
     function searchClients(query) {
         console.log(`🔍 Buscando clientes: "${query}"`);
-        // Aquí iría la búsqueda AJAX
+        
     }
 
     // Utilidad: debounce
@@ -295,15 +291,7 @@
 
 })();
 
-/**
- * ===========================
- * CRM.JS - CRUD COMPLETO DE CLIENTES
- * ===========================
- */
 
-/**
- * CRM.JS - Gestión de clientes
- */
 
 let clientes = [
     {
@@ -322,7 +310,7 @@ let clientes = [
 let nextClientId = 2;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema CRM iniciado');
+    console.log(' Sistema CRM iniciado');
     
     const btnNuevoCliente = document.querySelector('.btn-primary');
     
@@ -342,7 +330,7 @@ function agregarCliente(datosCliente) {
     };
     
     clientes.push(nuevoCliente);
-    console.log('✅ Cliente agregado:', nuevoCliente);
+    console.log(' Cliente agregado:', nuevoCliente);
 }
 
 function editarCliente(id) {

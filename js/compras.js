@@ -1,13 +1,10 @@
-/**
- * COMPRAS.JS - Gestión de compras
- */
 
 let ordenesCompra = [];
 let proveedores = [];
 let nextOrdenId = 128;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de compras iniciado');
+    console.log(' Sistema de compras iniciado');
     
     const btnRegistrarCompra = document.getElementById('btnRegistrarCompra');
     
@@ -22,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnFiltroHistorial) {
         btnFiltroHistorial.addEventListener('click', function() {
-            console.log('🔍 Filtrar historial');
+            console.log(' Filtrar historial');
         });
     }
 });
@@ -37,7 +34,7 @@ function registrarCompra() {
     };
     
     ordenesCompra.push(nuevaOrden);
-    console.log('✅ Orden registrada:', nuevaOrden);
+    console.log(' Orden registrada:', nuevaOrden);
 }
 
 function verOrden(id) {

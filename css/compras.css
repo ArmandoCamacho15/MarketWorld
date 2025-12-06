@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de Compras
-   ========================= */
+/* Compras */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -23,9 +21,7 @@ body {
     color: var(--dark-text);
 }
 
-/* =========================
-   UNIFICACIÓN PANTALLA COMPLETA
-   ========================= */
+/* UNIFICACIÓN PANTALLA COMPLETA */
 html, body {
     height: 100%;
     margin: 0;
@@ -109,9 +105,7 @@ html, body {
     }
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -151,9 +145,7 @@ html, body {
     text-align: center;
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .top-bar {
     background: white;
     border-radius: 10px;
@@ -179,9 +171,7 @@ html, body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Navegación de pestañas
-   ========================= */
+/* Navegación de pestañas */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -194,9 +184,7 @@ html, body {
     border-bottom: 3px solid var(--primary);
 }
 
-/* =========================
-   Estilos específicos para Compras
-   ========================= */
+/* Estilos específicos para Compras */
 
 /* Tabla de compras */
 .purchase-table th {

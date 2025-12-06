@@ -1,9 +1,6 @@
-/**
- * REPORTE.JS - Sistema de reportes
- */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de reportes iniciado');
+    console.log(' Sistema de reportes iniciado');
     
     inicializarGraficos();
     
@@ -19,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnExportExcel) {
         btnExportExcel.addEventListener('click', function() {
-            console.log('📊 Exportar Excel');
+            console.log(' Exportar Excel');
             alert('Exportando a Excel...');
         });
     }
@@ -48,5 +45,5 @@ function inicializarGraficos() {
         });
     }
     
-    console.log('📊 Gráficos inicializados');
+    console.log(' Gráficos inicializados');
 }

@@ -1,8 +1,6 @@
-/* =========================
-   Estilos generales para el módulo de Dashboard
-   ========================= */
+/* Dashboard */
 
-/* Variables globales para color y tema */
+/* Colores */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -22,9 +20,7 @@ body {
     color: var(--dark-text);
 }
 
-/* =========================
-   UNIFICACIÓN PANTALLA COMPLETA
-   ========================= */
+/* UNIFICACIÓN PANTALLA COMPLETA */
 html, body {
     height: 100%;
     margin: 0;
@@ -66,9 +62,7 @@ html, body {
     z-index: 1060;
 }
 
-/* =========================
-   Barra de navegación lateral
-   ========================= */
+/* Barra de navegación lateral */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: var(--primary);
@@ -110,9 +104,7 @@ html, body {
     text-align: center;
 }
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* Contenido principal */
 .top-bar {
     background: white;
     border-radius: 10px;
@@ -173,9 +165,7 @@ html, body {
     border-bottom: 1px solid #eee;
 }
 
-/* =========================
-   Tarjetas de KPI (Indicadores clave)
-   ========================= */
+/* Tarjetas de KPI (Indicadores clave) */
 .kpi-card {
     border-radius: 10px;
     padding: 20px;
@@ -229,18 +219,14 @@ html, body {
     color: #e74c3c;
 }
 
-/* =========================
-   Gráficos y visualizaciones
-   ========================= */
+/* Gráficos y visualizaciones */
 .chart-container {
     position: relative;
     height: 300px;
     margin-top: 20px;
 }
 
-/* =========================
-   Tablas de transacciones
-   ========================= */
+/* Tablas de transacciones */
 .transaction-table {
     width: 100%;
     border-collapse: separate;
@@ -275,9 +261,7 @@ html, body {
     background-color: var(--danger);
 }
 
-/* =========================
-   Calendario
-   ========================= */
+/* Calendario */
 #calendar {
     background-color: white;
     border-radius: 8px;
@@ -285,9 +269,7 @@ html, body {
     height: 400px;
 }
 
-/* =========================
-   Notificaciones
-   ========================= */
+/* Notificaciones */
 .notification-item {
     padding: 15px 0;
     border-bottom: 1px solid #eee;
@@ -321,9 +303,7 @@ html, body {
     font-size: 14px;
 }
 
-/* =========================
-   Filtros de fecha
-   ========================= */
+/* Filtros de fecha */
 .date-filter {
     background-color: white;
     border-radius: 10px;
@@ -346,9 +326,7 @@ html, body {
     margin-left: 10px;
 }
 
-/* =========================
-   Responsive: ajustes para pantallas pequeñas
-   ========================= */
+/* Responsive: ajustes para pantallas pequeñas */
 @media (max-width: 992px) {
     .sidebar {
         width: 80px;

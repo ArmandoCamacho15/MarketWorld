@@ -1,7 +1,3 @@
-/**
- * Script para el módulo Dashboard
- * Funcionalidades: gráficos, KPIs, calendario, filtros de fecha
- */
 
 (function() {
     'use strict';
@@ -9,9 +5,9 @@
     let salesChart, categoriesChart, incomeExpenseChart;
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('📊 Módulo Dashboard cargado');
+        console.log(' Módulo Dashboard cargado');
         
-        // Inicializar funcionalidades
+        // Inicializar
         initCharts();
         initDateFilters();
         initKPIs();
@@ -83,7 +79,7 @@
             });
         }
 
-        console.log('✅ Gráficos inicializados');
+        console.log(' Gráficos inicializados');
     }
 
     // Filtros de fecha interactivos
@@ -137,7 +133,7 @@
         console.log('🔄 Gráficos actualizados');
     }
 
-    // Animación de KPIs
+    // KPIs
     function animateKPIs() {
         const kpiValues = document.querySelectorAll('.kpi-value');
         

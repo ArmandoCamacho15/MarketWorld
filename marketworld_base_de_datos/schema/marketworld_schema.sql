@@ -1,15 +1,14 @@
--- ===========================
--- BASE DE DATOS MARKETWORLD 
--- ===========================
+-- MarketWorld - Sistema de Gestión de Ventas
+-- SENA - Tecnólogo en Análisis y Desarrollo de Software
+-- Armando Camacho | Dic 2025
 
--- Eliminar base de datos si existe y crear nueva
 DROP DATABASE IF EXISTS marketworld_sena;
 CREATE DATABASE marketworld_sena CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE marketworld_sena;
 
--- ===========================
--- TABLA: usuarios
--- ===========================
+-- Tabla de usuarios
+-- Guarda los datos del personal que usa el sistema
+-- Email único, roles para permisos
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -28,9 +27,9 @@ CREATE TABLE usuarios (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: productos
--- ===========================
+-- Tabla de productos
+-- Todos los artículos que vendemos
+-- SKU es el código único, precio_compra y venta para ver margen
 CREATE TABLE productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sku VARCHAR(50) UNIQUE NOT NULL,
@@ -51,9 +50,9 @@ CREATE TABLE productos (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: clientes
--- ===========================
+-- Tabla de clientes
+-- Los que compran, personas o empresas
+-- Segmento para clasificarlos (nuevo, frecuente, premium, corporativo)
 CREATE TABLE clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(200) NOT NULL,
@@ -75,9 +74,9 @@ CREATE TABLE clientes (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: proveedores
--- ===========================
+-- Tabla de proveedores
+-- De donde compramos los productos
+-- NIT es el número de identificación fiscal
 CREATE TABLE proveedores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(200) NOT NULL,
@@ -96,9 +95,9 @@ CREATE TABLE proveedores (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: facturas
--- ===========================
+-- Tabla de facturas
+-- Documentos de venta que se emiten a los clientes
+-- Guarda cliente, usuario que vendió, fecha, monto total y estado de pago
 CREATE TABLE facturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_factura VARCHAR(50) UNIQUE NOT NULL,
@@ -123,9 +122,9 @@ CREATE TABLE facturas (
     INDEX idx_fecha_emision (fecha_emision)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: detalle_facturas
--- ===========================
+-- Detalle de las facturas
+-- Los productos dentro de cada factura
+-- Guarda cantidad, precio y subtotal de cada item
 CREATE TABLE detalle_facturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     factura_id INT NOT NULL,
@@ -141,9 +140,9 @@ CREATE TABLE detalle_facturas (
     INDEX idx_producto (producto_id)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: ordenes_compra
--- ===========================
+-- Tabla de órdenes de compra
+-- Cuando compramos a proveedores
+-- Tiene estados: Pendiente, Recibido, Pagado, Cancelado
 CREATE TABLE ordenes_compra (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_orden VARCHAR(50) UNIQUE NOT NULL,
@@ -167,9 +166,9 @@ CREATE TABLE ordenes_compra (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: detalle_ordenes_compra
--- ===========================
+-- Detalle de órdenes de compra
+-- Los productos que compramos en cada orden
+-- Similar a detalle de facturas pero para compras
 CREATE TABLE detalle_ordenes_compra (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orden_compra_id INT NOT NULL,
@@ -183,9 +182,9 @@ CREATE TABLE detalle_ordenes_compra (
     INDEX idx_producto (producto_id)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: movimientos_inventario
--- ===========================
+-- Movimientos de inventario
+-- Registro de cambios de stock: entrada, salida o ajuste
+-- Sirve para saber qué pasó con cada producto
 CREATE TABLE movimientos_inventario (
     id INT AUTO_INCREMENT PRIMARY KEY,
     producto_id INT NOT NULL,
@@ -202,9 +201,9 @@ CREATE TABLE movimientos_inventario (
     INDEX idx_fecha (fecha_movimiento)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: asientos_contables
--- ===========================
+-- Tabla de asientos contables
+-- Registros de contabilidad (debe y haber)
+-- Manual o automático según el tipo
 CREATE TABLE asientos_contables (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_asiento VARCHAR(50) UNIQUE NOT NULL,
@@ -220,9 +219,9 @@ CREATE TABLE asientos_contables (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- ===========================
--- TABLA: detalle_asientos
--- ===========================
+-- Detalle de asientos contables
+-- Cada línea de debe y haber de un asiento
+-- Suma de débitos = suma de créditos
 CREATE TABLE detalle_asientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asiento_id INT NOT NULL,
@@ -233,11 +232,100 @@ CREATE TABLE detalle_asientos (
     INDEX idx_asiento (asiento_id)
 ) ENGINE=InnoDB;
 
--- ===========================
--- INSERTAR DATOS DE PRUEBA
--- ===========================
+-- Tabla CRM - interacciones con clientes
+-- Llamadas, emails, reuniones, seguimientos con cada cliente
+-- Para saber qué pasó con cada cliente y cuándo contactarlo de nuevo
+CREATE TABLE interacciones_crm (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    tipo ENUM('Llamada', 'Email', 'Reunión', 'Seguimiento', 'Propuesta', 'Contacto') NOT NULL,
+    descripcion TEXT NOT NULL,
+    resultado TEXT,
+    usuario_id INT NOT NULL,
+    fecha_seguimiento DATE,
+    estado ENUM('Pendiente', 'Completado', 'Cancelado') DEFAULT 'Pendiente',
+    prioridad ENUM('Baja', 'Media', 'Alta') DEFAULT 'Media',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT,
+    INDEX idx_cliente (cliente_id),
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_estado (estado),
+    INDEX idx_fecha (fecha_seguimiento)
+) ENGINE=InnoDB;
 
--- Usuario administrador
+-- Tabla de configuración
+-- Parámetros del sistema (IVA, moneda, descuentos máximos, etc)
+-- Se consultan desde la aplicación para obtener valores
+CREATE TABLE configuracion_sistema (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    clave VARCHAR(100) UNIQUE NOT NULL,
+    valor VARCHAR(500),
+    descripcion TEXT,
+    tipo ENUM('string', 'numero', 'boolean', 'json') DEFAULT 'string',
+    categoria VARCHAR(100),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_clave (clave),
+    INDEX idx_categoria (categoria)
+) ENGINE=InnoDB;
+
+-- Tabla de auditoría
+-- Log de cambios en el sistema
+-- Guarda quién hizo qué, cuándo y en qué tabla
+CREATE TABLE auditoria_sistema (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT,
+    tabla_afectada VARCHAR(100) NOT NULL,
+    tipo_operacion ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    registro_id INT,
+    datos_anteriores JSON,
+    datos_nuevos JSON,
+    ip_address VARCHAR(45),
+    descripcion TEXT,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    INDEX idx_tabla (tabla_afectada),
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_fecha (fecha),
+    INDEX idx_tipo_operacion (tipo_operacion)
+) ENGINE=InnoDB;
+
+-- Tabla de términos de pago
+-- Las diferentes formas de pago: contado, 30 días, 60 días, etc
+-- Se usa en ordenes de compra y facturación
+CREATE TABLE terminos_pago (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    dias_vencimiento INT NOT NULL,
+    descripcion TEXT,
+    estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_nombre (nombre),
+    INDEX idx_estado (estado)
+) ENGINE=InnoDB;
+
+-- Condiciones especiales por proveedor
+-- Descuentos, plazo de entrega, cantidad mínima de compra
+-- Datos específicos de cada proveedor
+CREATE TABLE condiciones_proveedor (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    proveedor_id INT NOT NULL,
+    termino_pago_id INT,
+    descuento_volumen DECIMAL(5, 2) DEFAULT 0.00,
+    plazo_entrega_dias INT,
+    cantidad_minima INT,
+    notas TEXT,
+    estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id) ON DELETE CASCADE,
+    FOREIGN KEY (termino_pago_id) REFERENCES terminos_pago(id) ON DELETE SET NULL,
+    INDEX idx_proveedor (proveedor_id)
+) ENGINE=InnoDB;
+
+-- Datos de prueba para testing
+-- Usuarios de ejemplo para el sistema
 INSERT INTO usuarios (nombre, apellido, email, password, rol, departamento, telefono, estado) VALUES
 ('Juan', 'Pérez', 'admin@marketworld.com', '$2y$10$encrypted', 'Administrador', 'Administración', '(601) 234-5678', 'Activo'),
 ('María', 'Gómez', 'maria.gomez@marketworld.com', '$2y$10$encrypted', 'Vendedor', 'Ventas', '(604) 456-7890', 'Activo'),
@@ -260,8 +348,30 @@ INSERT INTO proveedores (nombre, nit, contacto, email, telefono, ciudad) VALUES
 ('Tecnología Global S.A.', '900123456-1', 'Carlos Mendoza', 'carlos@tecnoglobal.com', '(601) 345-6789', 'Bogotá'),
 ('Distribuidora Alimentos S.A.S.', '800987654-2', 'María Rodríguez', 'maria@distribalimentos.com', '(604) 456-7890', 'Medellín');
 
--- ===========================
--- VERIFICACIÓN FINAL
--- ===========================
-SELECT 'Base de datos MarketWorld creada exitosamente' AS Status;
-SHOW TABLES;
+-- Términos de pago de ejemplo
+INSERT INTO terminos_pago (nombre, dias_vencimiento, descripcion) VALUES
+('Contado', 0, 'Pago inmediato'),
+('15 Días', 15, 'Plazo de 15 días'),
+('30 Días', 30, 'Plazo de 30 días'),
+('60 Días', 60, 'Plazo de 60 días');
+
+-- Condiciones de proveedores
+INSERT INTO condiciones_proveedor (proveedor_id, termino_pago_id, descuento_volumen, plazo_entrega_dias, cantidad_minima) VALUES
+(1, 2, 5.00, 3, 10),
+(2, 3, 2.50, 2, 50);
+
+-- Configuración del sistema
+INSERT INTO configuracion_sistema (clave, valor, descripcion, tipo, categoria) VALUES
+('iva_porcentaje', '19', 'Porcentaje de IVA por defecto', 'numero', 'Impuestos'),
+('moneda', 'COP', 'Moneda del sistema', 'string', 'Moneda'),
+('nombre_empresa', 'MarketWorld', 'Nombre de la empresa', 'string', 'Empresa'),
+('email_empresa', 'contacto@marketworld.com', 'Email principal de la empresa', 'string', 'Empresa'),
+('descuento_maximo', '50', 'Porcentaje máximo de descuento permitido', 'numero', 'Ventas'),
+('stock_critico', '10', 'Nivel de stock crítico para alertas', 'numero', 'Inventario');
+
+-- Interacciones CRM de ejemplo
+INSERT INTO interacciones_crm (cliente_id, tipo, descripcion, resultado, usuario_id, fecha_seguimiento, estado, prioridad) VALUES
+(1, 'Llamada', 'Llamada de seguimiento a cliente premium', 'Cliente interesado en nuevos productos', 1, '2025-12-10', 'Completado', 'Alta'),
+(2, 'Email', 'Envío de propuesta comercial', 'Propuesta enviada exitosamente', 1, '2025-12-15', 'Pendiente', 'Media');
+
+-- Fin de la base de datos

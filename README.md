@@ -126,7 +126,7 @@ Para acceder al sistema usa:
 
 ## 👨‍💻 Autor
 
-**Armando Camacho**
+**Armando Camacho y Jhonatan Zuleta*
 - GitHub: [@ArmandoCamacho15](https://github.com/ArmandoCamacho15)
 - Proyecto: SENA - Análisis y Desarrollo de Software
 - Año: 2025
@@ -150,4 +150,4 @@ Este proyecto está bajo la Licencia MIT - consulta el archivo LICENSE para más
 
 ⭐ **Si te gusta este proyecto, no olvides darle una estrella en GitHub!**
 
-**Desarrollado con ❤️ y ☕ por un estudiante del SENA**
+**Desarrollado con ❤️ y ☕ por estudiantes del SENA**

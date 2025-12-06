@@ -1,13 +1,12 @@
 {
   "name": "MarketWorld Development Environment",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
-  
   "customizations": {
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "ritwickdey.liveserver",
+        "ritwickdey.LiveServer",
         "formulahendry.auto-close-tag",
         "formulahendry.auto-rename-tag",
         "christian-kohler.path-intellisense",
@@ -18,18 +17,15 @@
       ],
       "settings": {
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.fontSize": 14,
         "editor.tabSize": 2,
         "files.autoSave": "afterDelay",
         "files.autoSaveDelay": 1000,
-        "liveServer.settings. donotShowInfoMsg": true
+        "liveServer.settings.donotShowInfoMsg": true
       }
     }
   },
-  
   "forwardPorts": [5500, 3000, 8080],
-  
   "portsAttributes": {
     "5500": {
       "label": "Live Server",
@@ -44,13 +40,10 @@
       "onAutoForward": "silent"
     }
   },
-  
   "postCreateCommand": "npm install -g live-server",
-  
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  
   "remoteUser": "node"
 }

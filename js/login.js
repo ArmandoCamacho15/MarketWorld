@@ -1,10 +1,6 @@
 // login.js
 // Este archivo gestiona la lógica de la página de inicio de sesión, incluyendo validación de campos, almacenamiento del correo si el usuario lo solicita, notificaciones tipo toast y simulación de autenticación y login social.
 
-/**
- * Script para el módulo Login
- * Funcionalidades: validación, autenticación, recuperación de contraseña
- */
 
 (function() {
     'use strict';
@@ -47,12 +43,12 @@
         
         console.log('🔓 Intentando login:', { email });
         
-        // Simulación de autenticación
+        // autenticación
         authenticateUser(email, password);
     }
 
     function authenticateUser(email, password) {
-        // Simulación de llamada API
+        // llamada API
         console.log('🌐 Autenticando usuario...');
         
         // Usuarios de prueba
@@ -66,7 +62,7 @@
         
         setTimeout(() => {
             if (user) {
-                console.log('✅ Login exitoso');
+                console.log(' Login exitoso');
                 
                 // Guardar sesión
                 localStorage.setItem('marketworld_user', JSON.stringify({
@@ -82,7 +78,7 @@
                     window.location.href = 'inicio.html';
                 }, 1500);
             } else {
-                console.log('❌ Credenciales inválidas');
+                console.log(' Credenciales inválidas');
                 showError('Error de autenticación', 'Email o contraseña incorrectos');
             }
         }, 1000);
@@ -215,14 +211,9 @@
         setTimeout(() => alertDiv.remove(), 3000);
     }
 
-    /**
-     * ===========================
-     * LOGIN.JS - TODOS LOS BOTONES FUNCIONALES
-     * ===========================
-     */
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ Login iniciado');
+        console.log(' Login iniciado');
         
         // ===========================
         // 1. BOTÓN TOGGLE PASSWORD
@@ -349,12 +340,9 @@
         }
     });
 
-    /**
-     * LOGIN.JS - Sistema de autenticación
-     */
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ Login iniciado');
+        console.log(' Login iniciado');
         
         const togglePasswordBtn = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('passwordInput');

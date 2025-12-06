@@ -1,7 +1,3 @@
-/**
- * Script para toggle del sidebar en mobile
- * Funcionalidades: menú hamburguesa, cerrar al hacer clic fuera, animaciones
- */
 
 (function() {
     'use strict';
@@ -33,7 +29,7 @@
                 if (menuToggle) {
                     menuToggle.setAttribute('aria-expanded', 'false');
                 }
-                console.log('❌ Sidebar cerrado');
+                console.log(' Sidebar cerrado');
             });
         }
     }
