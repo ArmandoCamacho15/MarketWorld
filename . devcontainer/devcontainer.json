@@ -1,0 +1,56 @@
+{
+  "name": "MarketWorld Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ritwickdey.liveserver",
+        "formulahendry.auto-close-tag",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "pranaygp.vscode-css-peek",
+        "zignd.html-css-class-completion",
+        "ms-vscode.live-server",
+        "ecmel.vscode-html-css"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.fontSize": 14,
+        "editor.tabSize": 2,
+        "files.autoSave": "afterDelay",
+        "files.autoSaveDelay": 1000,
+        "liveServer.settings. donotShowInfoMsg": true
+      }
+    }
+  },
+  
+  "forwardPorts": [5500, 3000, 8080],
+  
+  "portsAttributes": {
+    "5500": {
+      "label": "Live Server",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "Development Server",
+      "onAutoForward": "silent"
+    },
+    "8080": {
+      "label": "Alternative Server",
+      "onAutoForward": "silent"
+    }
+  },
+  
+  "postCreateCommand": "npm install -g live-server",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  
+  "remoteUser": "node"
+}
