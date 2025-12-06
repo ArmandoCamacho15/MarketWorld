@@ -1,7 +1,5 @@
 # 🛒 MarketWorld - Sistema de Gestión Empresarial
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow)
-![Versión](https://img. shields.io/badge/versión-1.0.0-blue)
 
 ## 📖 Descripción
 

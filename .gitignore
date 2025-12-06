@@ -35,7 +35,8 @@ config.local.php
 # Bases de datos locales (no subir bases de datos reales)
 *.sqlite
 *.db
-marketworld_base_de_datos/
+# Permitir archivos SQL
+!marketworld_base_de_datos/
 
 # Archivos generados
 dist/
