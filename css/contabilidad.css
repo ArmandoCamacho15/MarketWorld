@@ -1,0 +1,312 @@
+/* =========================
+   Estilos generales para el módulo de Contabilidad
+   ========================= */
+
+/* Variables globales para colores y tipos de cuenta */
+:root {
+    --primary: #0d6ef0;      /* Azul principal MarketWorld */
+    --secondary: #0a58ca;    /* Azul secundario */
+    --success: #2ecc71;      /* Verde éxito */
+    --warning: #f39c12;      /* Naranja advertencia */
+    --danger: #e74c3c;       /* Rojo error */
+    --info: #3498db;         /* Azul información */
+    --purple: #9b59b6;       /* Morado */
+    --teal: #1abc9c;         /* Verde azulado */
+    --light-bg: #f8f9fa;     /* Fondo claro */
+    --dark-text: #2c3e50;    /* Texto oscuro */
+    --accounting: #3498db;   /* Azul para contabilidad */
+    --asset: #2ecc71;        /* Verde para activos */
+    --liability: #e74c3c;    /* Rojo para pasivos */
+    --equity: #f39c12;       /* Naranja para patrimonio */
+    --income: #9b59b6;       /* Morado para ingresos */
+    --expense: #3498db;      /* Azul para gastos */
+}
+
+/* Estilos base para el body */
+body {
+    background-color: #f5f7fa; /* Fondo general */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--dark-text);
+}
+
+/* Contenedor principal de la aplicación */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =========================
+   Barra de navegación lateral
+   ========================= */
+.sidebar {
+    width: 260px; /* Ancho fijo */
+    background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
+    color: #ecf0f1;
+    padding: 20px 0;
+    min-height: 100vh;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.brand {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1px;
+}
+.nav-item {
+    margin-bottom: 5px;
+}
+.nav-link {
+    color: rgba(255,255,255,0.85);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.nav-link:hover, .nav-link.active {
+    background: rgba(25, 118, 210, 0.25); /* Resalta en azul MarketWorld */
+    color: #fff;
+}
+.nav-link i {
+    margin-right: 10px;
+    width: 24px;
+    text-align: center;
+}
+
+/* =========================
+   Contenido principal
+   ========================= */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.top-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.content-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.section-title {
+    font-weight: 700;
+    color: var(--accounting); /* Azul contabilidad */
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* =========================
+   Navegación de pestañas
+   ========================= */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 600;
+    padding: 12px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    color: var(--accounting);
+    border-bottom: 3px solid var(--accounting);
+}
+
+/* =========================
+   Estilos específicos para Contabilidad
+   ========================= */
+
+/* Tarjeta de cuenta contable */
+.account-card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    transition: transform 0.3s;
+    background: white;
+}
+.account-card:hover {
+    transform: translateY(-5px);
+}
+.account-header {
+    background: linear-gradient(135deg, var(--accounting), #2980b9);
+    color: white;
+    padding: 15px 20px;
+}
+.account-body {
+    padding: 20px;
+}
+
+/* Contenedor para gráficos de contabilidad */
+.chart-container {
+    position: relative;
+    height: 250px;
+    margin: 15px 0;
+}
+
+/* Barra de filtros para contabilidad */
+.filter-bar {
+    background: var(--light-bg);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+/* Tarjeta de KPI (indicadores clave) */
+.kpi-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 10px 0;
+}
+.kpi-title {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.kpi-growth {
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
+/* Tabla de datos contables */
+.data-table {
+    font-size: 0.9rem;
+}
+.data-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Árbol de cuentas contables */
+.account-tree {
+    list-style: none;
+    padding-left: 20px;
+}
+.account-tree li {
+    margin-bottom: 8px;
+}
+.account-code {
+    display: inline-block;
+    width: 60px;
+    font-weight: 600;
+}
+.account-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 10px;
+}
+/* Colores para los diferentes tipos de cuenta */
+.type-asset {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: var(--asset);
+}
+.type-liability {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: var(--liability);
+}
+.type-equity {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--equity);
+}
+.type-income {
+    background-color: rgba(155, 89, 182, 0.15);
+    color: var(--income);
+}
+.type-expense {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: var(--expense);
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    width: 400px;
+    position: relative;
+}
+.search-bar input {
+    padding-left: 45px;
+    border-radius: 50px;
+    background: var(--light-bg);
+    border: none;
+}
+.search-bar i {
+    position: absolute;
+    left: 20px;
+    top: 12px;
+    color: #7f8c8d;
+}
+
+/* Información de usuario en la barra superior */
+.user-info {
+    display: flex;
+    align-items: center;
+}
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+/* Tarjeta de conciliación bancaria */
+.reconciliation-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Asientos contables */
+.journal-entry {
+    border-left: 3px solid var(--accounting);
+    padding-left: 15px;
+    margin-bottom: 20px;
+}
+.debit {
+    color: var(--asset);
+    font-weight: 600;
+}
+.credit {
+    color: var(--liability);
+    font-weight: 600;
+}
+
+/* Etiqueta de impuestos */
+.tax-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    background: #e9ecef;
+}
+
+/* Colores para valores positivos y negativos */
+.positive {
+    color: var(--success);
+}
+.negative {
+    color: var(--danger);
+}

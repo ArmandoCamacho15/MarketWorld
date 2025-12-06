@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Reportes Empresariales Avanzados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Chart.js para gráficos profesionales -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- jsPDF para exportación PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS para exportación Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="../css/reporte.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navegación principal">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+                <button class="sidebar-toggle d-md-none" id="sidebarToggle" aria-label="Cerrar menú" aria-expanded="true">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+            <nav aria-label="Menú principal">
+                <ul class="nav flex-column mt-4">
+                    <li class="nav-item">
+                        <a class="nav-link" href="inicio.html"><i class="bi bi-house-door" aria-hidden="true"></i> <span class="nav-text">Inicio</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2" aria-hidden="true"></i> <span class="nav-text">Dashboard</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam" aria-hidden="true"></i> <span class="nav-text">Inventario</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt" aria-hidden="true"></i> <span class="nav-text">Facturación</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin" aria-hidden="true"></i> <span class="nav-text">Contabilidad</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="compras.html"><i class="bi bi-cart" aria-hidden="true"></i> <span class="nav-text">Compras</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="crm.html"><i class="bi bi-people" aria-hidden="true"></i> <span class="nav-text">CRM</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="reporte.html" aria-current="page"><i class="bi bi-bar-chart" aria-hidden="true"></i> <span class="nav-text">Reportes</span></a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="configuracion.html"><i class="bi bi-gear" aria-hidden="true"></i> <span class="nav-text">Configuración</span></a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div class="main-content">
+            <!-- Top bar -->
+            <header class="top-bar" role="banner">
+                <button class="btn btn-link d-md-none" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">
+                    <i class="bi bi-list fs-3" aria-hidden="true"></i>
+                </button>
+                
+                <div class="search-bar" role="search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label for="searchReport" class="visually-hidden">Buscar reportes</label>
+                    <input id="searchReport" type="search" class="form-control" placeholder="Buscar reportes...">
+                </div>
+                
+                <div class="user-info">
+                    <button class="btn btn-link position-relative me-3" aria-label="Notificaciones">
+                        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">2<span class="visually-hidden"> notificaciones</span></span>
+                    </button>
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar Admin User" width="40" height="40">
+                    <div class="ms-2">
+                        <div class="fw-bold">Admin User</div>
+                        <div class="small text-muted">Analítica y Reportes</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Report control panel -->
+            <div class="report-control-panel mb-4">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Período de Análisis</label>
+                        <select class="form-select" id="periodoAnalisis">
+                            <option value="hoy">Hoy</option>
+                            <option value="semana">Esta Semana</option>
+                            <option value="mes" selected>Este Mes</option>
+                            <option value="trimestre">Este Trimestre</option>
+                            <option value="año">Este Año</option>
+                            <option value="personalizado">Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Comparar con</label>
+                        <select class="form-select" id="compararPeriodo">
+                            <option value="ninguno">Sin comparación</option>
+                            <option value="anterior" selected>Período Anterior</option>
+                            <option value="año_anterior">Año Anterior</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Tipo de Vista</label>
+                        <select class="form-select" id="tipoVista">
+                            <option value="ejecutivo" selected>Vista Ejecutiva</option>
+                            <option value="detallado">Vista Detallada</option>
+                            <option value="comparativo">Comparativo</option>
+                            <option value="tendencias">Análisis Tendencias</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary flex-fill" id="btnActualizarReporte">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                        </button>
+                        <button class="btn btn-outline-secondary" id="btnGuardarDashboard" title="Guardar configuración">
+                            <i class="bi bi-save"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NUEVO: KPIs Ejecutivos con comparación -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="kpi-card-advanced">
+                        <div class="kpi-header">
+                            <i class="bi bi-currency-dollar"></i>
+                            <span class="kpi-title">Ingresos Totales</span>
+                        </div>
+                        <div class="kpi-value" id="kpiIngresos">$125,450,000</div>
+                        <div class="kpi-comparison">
+                            <span class="trend-up"><i class="bi bi-arrow-up"></i> +15.3%</span>
+                            <span class="vs-period">vs período anterior</span>
+                        </div>
+                        <div class="kpi-sparkline">
+                            <canvas id="sparklineIngresos"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card-advanced">
+                        <div class="kpi-header">
+                            <i class="bi bi-graph-up"></i>
+                            <span class="kpi-title">Margen Bruto</span>
+                        </div>
+                        <div class="kpi-value" id="kpiMargen">42.5%</div>
+                        <div class="kpi-comparison">
+                            <span class="trend-up"><i class="bi bi-arrow-up"></i> +2.8%</span>
+                            <span class="vs-period">vs período anterior</span>
+                        </div>
+                        <div class="kpi-sparkline">
+                            <canvas id="sparklineMargen"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card-advanced">
+                        <div class="kpi-header">
+                            <i class="bi bi-people"></i>
+                            <span class="kpi-title">Clientes Activos</span>
+                        </div>
+                        <div class="kpi-value" id="kpiClientes">1,245</div>
+                        <div class="kpi-comparison">
+                            <span class="trend-up"><i class="bi bi-arrow-up"></i> +8.2%</span>
+                            <span class="vs-period">vs período anterior</span>
+                        </div>
+                        <div class="kpi-sparkline">
+                            <canvas id="sparklineClientes"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card-advanced">
+                        <div class="kpi-header">
+                            <i class="bi bi-cart"></i>
+                            <span class="kpi-title">Ticket Promedio</span>
+                        </div>
+                        <div class="kpi-value" id="kpiTicket">$325,800</div>
+                        <div class="kpi-comparison">
+                            <span class="trend-down"><i class="bi bi-arrow-down"></i> -3.1%</span>
+                            <span class="vs-period">vs período anterior</span>
+                        </div>
+                        <div class="kpi-sparkline">
+                            <canvas id="sparklineTicket"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación por pestañas -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#ventas"><i class="bi bi-graph-up me-2"></i>Ventas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#inventario"><i class="bi bi-box-seam me-2"></i>Inventario</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#financiero"><i class="bi bi-cash-coin me-2"></i>Financiero</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#clientes"><i class="bi bi-people me-2"></i>Clientes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#predictivo"><i class="bi bi-stars me-2"></i>Análisis Predictivo</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#personalizado"><i class="bi bi-gear me-2"></i>Personalizado</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Pestaña: Ventas -->
+                <div class="tab-pane fade show active" id="ventas">
+                    <div class="content-container">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="section-title mb-0">Análisis de Ventas</h4>
+                            <div class="export-buttons">
+                                <button class="btn btn-outline-danger" id="btnExportarPDF">
+                                    <i class="bi bi-file-pdf me-2"></i> PDF
+                                </button>
+                                <button class="btn btn-outline-success" id="btnExportarExcel">
+                                    <i class="bi bi-file-excel me-2"></i> Excel
+                                </button>
+                                <button class="btn btn-outline-secondary" id="btnImprimirReporte">
+                                    <i class="bi bi-printer me-2"></i> Imprimir
+                                </button>
+                                <button class="btn btn-outline-primary" id="btnProgramarReporte">
+                                    <i class="bi bi-calendar-event me-2"></i> Programar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- NUEVO: Gráfico principal con drill-down -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="chart-card">
+                                    <div class="chart-header">
+                                        <h5>Evolución de Ventas</h5>
+                                        <div class="chart-controls">
+                                            <button class="btn btn-sm btn-outline-primary active" data-chart-type="line">
+                                                <i class="bi bi-graph-up"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" data-chart-type="bar">
+                                                <i class="bi bi-bar-chart"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" data-chart-type="area">
+                                                <i class="bi bi-area-chart"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <canvas id="ventasChart" height="350"></canvas>
+                                    <div class="chart-info mt-3">
+                                        <i class="bi bi-info-circle"></i>
+                                        Haz clic en cualquier punto para ver detalles
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-card">
+                                    <h5>Ventas por Canal</h5>
+                                    <canvas id="ventasCanalChart" height="350"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NUEVO: Tabla interactiva con filtros avanzados -->
+                        <div class="mt-4">
+                            <div class="table-controls mb-3">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" id="buscarVenta" placeholder="Buscar...">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select class="form-select" id="filtroEstado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="completado">Completado</option>
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="cancelado">Cancelado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select class="form-select" id="filtroPago">
+                                            <option value="">Métodos de pago</option>
+                                            <option value="efectivo">Efectivo</option>
+                                            <option value="tarjeta">Tarjeta</option>
+                                            <option value="transferencia">Transferencia</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rango:</span>
+                                            <input type="number" class="form-control" placeholder="Min" id="montoMin">
+                                            <input type="number" class="form-control" placeholder="Max" id="montoMax">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-primary w-100" id="btnFiltrarVentas">
+                                            <i class="bi bi-funnel"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table data-table table-hover" id="tablaVentas">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable" data-sort="fecha">Fecha <i class="bi bi-chevron-expand"></i></th>
+                                            <th class="sortable" data-sort="factura">Factura <i class="bi bi-chevron-expand"></i></th>
+                                            <th class="sortable" data-sort="cliente">Cliente <i class="bi bi-chevron-expand"></i></th>
+                                            <th class="sortable" data-sort="productos">Productos <i class="bi bi-chevron-expand"></i></th>
+                                            <th class="sortable" data-sort="total">Total <i class="bi bi-chevron-expand"></i></th>
+                                            <th>Estado</th>
+                                            <th>Método Pago</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Datos dinámicos -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <nav class="mt-3">
+                                <ul class="pagination justify-content-center" id="paginacionVentas">
+                                    <!-- Paginación dinámica -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Inventario -->
+                <div class="tab-pane fade" id="inventario">
+                    <div class="content-container">
+                        <h4 class="section-title">Análisis de Inventario</h4>
+                        <p class="text-muted">Movimientos de stock, rotación y valoración de inventario</p>
+
+                        <!-- NUEVO: Gráfico de inventario -->
+                        <div class="chart-card mb-4">
+                            <div class="chart-header">
+                                <h5>Estado de Inventario</h5>
+                            </div>
+                            <canvas id="inventarioChart" height="350"></canvas>
+                        </div>
+
+                        <!-- NUEVO: Tabla de inventario -->
+                        <div class="table-responsive">
+                            <table class="table data-table table-hover" id="tablaInventario">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="producto">Producto <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="categoria">Categoría <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="stock">Stock Actual <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="stock_minimo">Stock Mínimo <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="valoracion">Valoración <i class="bi bi-chevron-expand"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Datos dinámicos -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Financiero -->
+                <div class="tab-pane fade" id="financiero">
+                    <div class="content-container">
+                        <h4 class="section-title">Análisis Financiero</h4>
+                        <p class="text-muted">Estados financieros, flujo de caja y rentabilidad</p>
+
+                        <!-- NUEVO: Gráfico financiero -->
+                        <div class="chart-card mb-4">
+                            <div class="chart-header">
+                                <h5>Resumen Financiero</h5>
+                            </div>
+                            <canvas id="financieroChart" height="350"></canvas>
+                        </div>
+
+                        <!-- NUEVO: Tabla financiera -->
+                        <div class="table-responsive">
+                            <table class="table data-table table-hover" id="tablaFinanciero">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="fecha">Fecha <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="tipo">Tipo <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="monto">Monto <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="categoria">Categoría <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="metodo_pago">Método de Pago <i class="bi bi-chevron-expand"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Datos dinámicos -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Clientes -->
+                <div class="tab-pane fade" id="clientes">
+                    <div class="content-container">
+                        <h4 class="section-title">Análisis de Clientes</h4>
+                        <p class="text-muted">Segmentación, comportamiento y valor del cliente</p>
+
+                        <!-- NUEVO: Gráfico de clientes -->
+                        <div class="chart-card mb-4">
+                            <div class="chart-header">
+                                <h5>Segmentación de Clientes</h5>
+                            </div>
+                            <canvas id="clientesChart" height="350"></canvas>
+                        </div>
+
+                        <!-- NUEVO: Tabla de clientes -->
+                        <div class="table-responsive">
+                            <table class="table data-table table-hover" id="tablaClientes">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="nombre">Nombre <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="email">Email <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="telefono">Teléfono <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="fecha_registro">Fecha de Registro <i class="bi bi-chevron-expand"></i></th>
+                                        <th class="sortable" data-sort="estado">Estado <i class="bi bi-chevron-expand"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Datos dinámicos -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NUEVA Pestaña: Análisis Predictivo -->
+                <div class="tab-pane fade" id="predictivo">
+                    <div class="content-container">
+                        <h4 class="section-title">Análisis Predictivo con IA</h4>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Machine Learning Activado:</strong> Los siguientes pronósticos se generan usando algoritmos de regresión lineal y análisis de series temporales.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="chart-card">
+                                    <h5>Proyección de Ventas (Próximos 6 Meses)</h5>
+                                    <canvas id="prediccionVentasChart" height="300"></canvas>
+                                    <div class="prediction-accuracy mt-3">
+                                        <span class="badge bg-success">Precisión: 92.5%</span>
+                                        <span class="text-muted ms-2">Basado en 24 meses de histórico</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="chart-card">
+                                    <h5>Predicción de Demanda por Producto</h5>
+                                    <canvas id="demandaProductosChart" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="insight-card">
+                                    <i class="bi bi-graph-up-arrow insight-icon text-success"></i>
+                                    <h6>Oportunidad Detectada</h6>
+                                    <p>La categoría "Electrónica" muestra un crecimiento del 25% en las últimas 4 semanas. <strong>Recomendación:</strong> Aumentar inventario en 15%.</p>
+                                    <button class="btn btn-sm btn-outline-success">Ver detalles</button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="insight-card">
+                                    <i class="bi bi-exclamation-triangle insight-icon text-warning"></i>
+                                    <h6>Alerta de Riesgo</h6>
+                                    <p>Se proyecta una caída del 12% en "Alimentos" para el próximo mes. <strong>Acción sugerida:</strong> Campaña promocional.</p>
+                                    <button class="btn btn-sm btn-outline-warning">Tomar acción</button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="insight-card">
+                                    <i class="bi bi-calendar-check insight-icon text-primary"></i>
+                                    <h6>Estacionalidad</h6>
+                                    <p>Próximo pico de ventas proyectado para Diciembre (+40% histórico). <strong>Preparación:</strong> Aumentar stock 30 días antes.</p>
+                                    <button class="btn btn-sm btn-outline-primary">Programar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NUEVA Pestaña: Reportes Personalizados -->
+                <div class="tab-pane fade" id="personalizado">
+                    <div class="content-container">
+                        <h4 class="section-title">Constructor de Reportes Personalizados</h4>
+
+                        <div class="report-builder">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0">Dimensiones</h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="dimension-list">
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-calendar"></i> Fecha
+                                                </div>
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-person"></i> Cliente
+                                                </div>
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-box"></i> Producto
+                                                </div>
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-tag"></i> Categoría
+                                                </div>
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-geo-alt"></i> Ciudad
+                                                </div>
+                                                <div class="dimension-item" draggable="true">
+                                                    <i class="bi bi-credit-card"></i> Método Pago
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card mt-3">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0">Métricas</h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="metric-list">
+                                                <div class="metric-item" draggable="true">
+                                                    <i class="bi bi-currency-dollar"></i> Ventas Totales
+                                                </div>
+                                                <div class="metric-item" draggable="true">
+                                                    <i class="bi bi-hash"></i> Cantidad
+                                                </div>
+                                                <div class="metric-item" draggable="true">
+                                                    <i class="bi bi-calculator"></i> Promedio
+                                                </div>
+                                                <div class="metric-item" draggable="true">
+                                                    <i class="bi bi-percent"></i> Margen
+                                                </div>
+                                                <div class="metric-item" draggable="true">
+                                                    <i class="bi bi-graph-up"></i> Crecimiento %
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-9">
+                                    <div class="drop-zone" id="dropZoneReporte">
+                                        <div class="drop-zone-placeholder">
+                                            <i class="bi bi-plus-circle fs-1"></i>
+                                            <p>Arrastra dimensiones y métricas aquí para construir tu reporte</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 text-end">
+                                        <button class="btn btn-outline-secondary" id="btnLimpiarReporte">
+                                            <i class="bi bi-x-circle"></i> Limpiar
+                                        </button>
+                                        <button class="btn btn-primary" id="btnGenerarReportePersonalizado">
+                                            <i class="bi bi-play-fill"></i> Generar Reporte
+                                        </button>
+                                        <button class="btn btn-success" id="btnGuardarPlantilla">
+                                            <i class="bi bi-save"></i> Guardar Plantilla
+                                        </button>
+                                    </div>
+
+                                    <div id="resultadoReportePersonalizado" class="mt-4"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="mt-4 py-3 text-center text-muted small" role="contentinfo">
+                <p class="mb-0">© 2025 MarketWorld. Todos los derechos reservados.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Sidebar toggle -->
+    <script defer src="../js/sidebar-toggle.js"></script>
+    <!-- Script específico -->
+    <script defer src="../js/reporte.js"></script>
+</body>
+</html>

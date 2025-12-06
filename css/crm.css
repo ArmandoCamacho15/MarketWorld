@@ -1,0 +1,347 @@
+/* =========================
+   Estilos generales para el módulo de CRM
+   ========================= */
+
+/* Variables globales para color y tema */
+:root {
+    --primary: #0d6ef0;      /* Azul principal MarketWorld */
+    --secondary: #0a58ca;    /* Azul secundario */
+    --success: #0d6ef0;      /* Azul para éxito en CRM */
+    --warning: #f39c12;      /* Naranja advertencia */
+    --danger: #e74c3c;       /* Rojo error */
+    --info: #3498db;         /* Azul información */
+    --purple: #9b59b6;       /* Morado */
+    --teal: #1abc9c;         /* Verde azulado */
+    --light-bg: #f8f9fa;     /* Fondo claro */
+    --dark-text: #2c3e50;    /* Texto oscuro */
+    --crm: #0d6ef0;          /* Azul para CRM */
+    --client: #9b59b6;       /* Morado para clientes */
+    --opportunity: #3498db;  /* Azul para oportunidades */
+}
+
+/* Estilos base para el body */
+body {
+    background-color: #f5f7fa; /* Fondo general */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--dark-text);
+}
+
+/* Contenedor principal de la aplicación */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =========================
+   Barra de navegación lateral
+   ========================= */
+.sidebar {
+    width: 260px; /* Ancho fijo */
+    background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
+    color: #ecf0f1;
+    padding: 20px 0;
+    min-height: 100vh;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.brand {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1px;
+}
+.nav-item {
+    margin-bottom: 5px;
+}
+.nav-link {
+    color: rgba(255,255,255,0.85);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.nav-link:hover, .nav-link.active {
+    background: rgba(25, 118, 210, 0.25); /* Resalta en azul MarketWorld */
+    color: #fff;
+}
+.nav-link i {
+    margin-right: 10px;
+    width: 24px;
+    text-align: center;
+}
+
+/* =========================
+   Contenido principal
+   ========================= */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.top-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.content-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.section-title {
+    font-weight: 700;
+    color: var(--crm); /* Azul para títulos de sección */
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* =========================
+   Navegación de pestañas
+   ========================= */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 600;
+    padding: 12px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    color: var(--crm); /* Azul para pestaña activa */
+    border-bottom: 3px solid var(--crm);
+}
+
+/* =========================
+   Estilos específicos para CRM
+   ========================= */
+
+/* Tarjeta de cliente */
+.client-card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    transition: transform 0.3s;
+    background: white;
+    border-left: 4px solid var(--client);
+}
+.client-card:hover {
+    transform: translateY(-5px);
+}
+.client-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+.client-body {
+    padding: 20px;
+}
+
+/* Barra de filtros para clientes */
+.filter-bar {
+    background: var(--light-bg);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+/* Tarjeta de KPI (indicadores clave) */
+.kpi-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 10px 0;
+}
+.kpi-title {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Tabla de datos de clientes */
+.data-table {
+    font-size: 0.9rem;
+}
+.data-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Etiquetas de segmento de cliente */
+.segment-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    background: #e9ecef;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+/* Estados de oportunidad */
+.status-open {
+    background-color: #e8f7ff;
+    color: var(--primary);
+}
+.status-in-progress {
+    background-color: #fef7e6;
+    color: #e67700;
+}
+.status-closed {
+    background-color: #f0f6ff;
+    color: var(--primary);
+}
+
+/* Pasos del embudo de ventas */
+.funnel-step {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.funnel-lead {
+    background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+    color: #333;
+}
+.funnel-contact {
+    background: linear-gradient(135deg, #bbdefb, #90caf9);
+    color: #333;
+}
+.funnel-proposal {
+    background: linear-gradient(135deg, #ffecb3, #ffd54f);
+    color: #333;
+}
+.funnel-negotiation {
+    background: linear-gradient(135deg, #ffccbc, #ffab91);
+    color: #333;
+}
+.funnel-closed {
+    background: linear-gradient(135deg, #c8e6c9, #81c784);
+    color: #333;
+}
+
+/* Línea de tiempo de actividades */
+.activity-timeline {
+    list-style: none;
+    padding: 0;
+    position: relative;
+}
+.activity-timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    width: 2px;
+    background: #e0e0e0;
+}
+.activity-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 25px;
+}
+.activity-icon {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    z-index: 2;
+}
+.activity-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    width: 400px;
+    position: relative;
+}
+.search-bar input {
+    padding-left: 45px;
+    border-radius: 50px;
+    background: var(--light-bg);
+    border: none;
+}
+.search-bar i {
+    position: absolute;
+    left: 20px;
+    top: 12px;
+    color: #7f8c8d;
+}
+
+/* Información de usuario en la barra superior */
+.user-info {
+    display: flex;
+    align-items: center;
+}
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+/* Etiquetas de cliente */
+.client-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-right: 5px;
+}
+.badge-premium {
+    background: linear-gradient(45deg, #ffd700, #ffcc00);
+    color: #000;
+}
+.badge-frequent {
+    background: linear-gradient(45deg, #9b59b6, #8e44ad);
+    color: white;
+}
+.badge-new {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: white;
+}
+
+/* Botones de interacción en tarjetas de cliente */
+.interaction-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Barra de progreso personalizada */
+.progress-bar-custom {
+    height: 10px;
+    border-radius: 5px;
+}

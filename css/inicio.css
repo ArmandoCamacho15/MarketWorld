@@ -1,0 +1,434 @@
+/* =========================
+Estilos generales para el módulo de Inicio
+   ========================= */
+
+/* ==================
+   Skip Link Accesible
+   ================== */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 0 0 4px 0;
+    z-index: 10000;
+    font-weight: 600;
+}
+.skip-link:focus {
+    top: 0;
+    outline: 3px solid var(--warning);
+    outline-offset: 2px;
+}
+
+/* Variables globales para color y tema */
+:root {
+    --primary: #0d6ef0;      /* Color principal del tema */
+    --secondary: #0a58ca;    /* Color secundario */
+    --success: #2ecc71;      /* Color para mensajes de éxito */
+    --warning: #f39c12;      /* Color para advertencias */
+    --danger: #e74c3c;       /* Color para errores */
+    --info: #3498db;         /* Color para información */
+    --light-bg: #f8f9fa;     /* Fondo claro */
+    --dark-text: #2c3e50;    /* Texto oscuro */
+    --gold: #ffd700;         /* Color dorado */
+}
+
+/* Estilos generales del cuerpo de la página */
+body {
+    background-color: #f5f7fa; /* Fondo general */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
+    color: var(--dark-text);   /* Color de texto principal */
+}
+
+/* Contenedor principal de la aplicación usando flexbox */
+.app-container {
+    display: flex;
+    min-height: 100vh; /* Ocupa toda la altura de la ventana */
+}
+
+/* Barra lateral de navegación */
+.sidebar {
+    width: 260px; /* Ancho fijo */
+    background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%); /* Degradado vertical */
+    color: #ecf0f1; /* Color de texto */
+    padding: 20px 0;
+    min-height: 100vh;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.1); /* Sombra lateral */
+    transition: all 0.3s; /* Transición suave para cambios */
+}
+
+/* Encabezado de la barra lateral */
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Línea divisoria */
+}
+
+/* Marca o logo en la barra lateral */
+.brand {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1px;
+}
+
+/* Elementos de navegación */
+.nav-item {
+    margin-bottom: 5px;
+}
+
+/* Enlaces de navegación */
+.nav-link {
+    color: rgba(255,255,255,0.85);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+/* Efecto hover y activo en los enlaces de navegación */
+.nav-link:hover, .nav-link.active {
+    background: rgba(25, 118, 210, 0.25);
+    color: #fff;
+}
+
+/* Iconos en los enlaces de navegación */
+.nav-link i {
+    margin-right: 10px;
+    width: 24px;
+    text-align: center;
+}
+
+/* Contenido principal */
+.main-content {
+    flex: 1; /* Ocupa el espacio restante */
+    padding: 20px;
+    overflow-y: auto; /* Permite scroll vertical */
+}
+
+/* Barra superior del contenido principal */
+.top-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Contenedor de contenido */
+.content-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Título de sección */
+.section-title {
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Grid para tarjetas de acceso rápido */
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+/* Tarjeta de acceso rápido */
+.quick-access-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 25px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+}
+
+/* Efecto hover en tarjeta de acceso rápido */
+.quick-access-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    border-color: var(--primary);
+    background: #f0f6ff;
+}
+
+/* Icono en tarjeta de acceso rápido */
+.quick-access-card i {
+    font-size: 36px;
+    margin-bottom: 15px;
+    color: var(--primary);
+}
+
+/* Título en tarjeta de acceso rápido */
+.quick-access-card .title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Descripción en tarjeta de acceso rápido */
+.quick-access-card .desc {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+/* Alertas y tareas */
+
+/* Estilo de alerta */
+.alert-item {
+    padding: 15px;
+    border-left: 4px solid var(--danger); /* Borde izquierdo rojo */
+    margin-bottom: 15px;
+    background: #fef2f2; /* Fondo suave */
+    border-radius: 0 8px 8px 0;
+}
+
+/* Alerta de advertencia */
+.alert-item.warning {
+    border-left-color: var(--warning);
+    background: #fff9eb;
+}
+
+/* Alerta informativa */
+.alert-item.info {
+    border-left-color: var(--info);
+    background: #e6f0fe;
+}
+
+/* Título de alerta */
+.alert-item .alert-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Descripción de alerta */
+.alert-item .alert-desc {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+/* Elemento de tarea */
+.task-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* El último elemento de tarea no tiene borde inferior */
+.task-item:last-child {
+    border-bottom: none;
+}
+
+/* Icono en tarea */
+.task-item i {
+    margin-top: 3px;
+    margin-right: 12px;
+    color: var(--primary);
+}
+
+/* Contenido de la tarea */
+.task-item .task-content {
+    flex: 1;
+}
+
+/* Título de la tarea */
+.task-item .task-title {
+    font-weight: 500;
+    margin-bottom: 3px;
+}
+
+/* Hora de la tarea */
+.task-item .task-time {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* Menú destacado */
+
+/* Grid para menú destacado */
+.featured-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 25px;
+}
+
+/* Elemento de menú */
+.menu-item {
+    text-align: center;
+    padding: 15px 10px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+/* Efecto hover en menú */
+.menu-item:hover {
+    background: #e6f0fe;
+    transform: translateY(-3px);
+}
+
+/* Icono en menú */
+.menu-item i {
+    font-size: 24px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+/* Título en menú */
+.menu-item .menu-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    width: 400px;
+    position: relative;
+}
+
+/* Input de búsqueda */
+.search-bar input {
+    padding-left: 45px;
+    border-radius: 50px;
+    background: var(--light-bg);
+    border: none;
+}
+
+/* Icono de búsqueda */
+.search-bar i {
+    position: absolute;
+    left: 20px;
+    top: 12px;
+    color: #7f8c8d;
+}
+
+/* Información de usuario */
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+/* Imagen de usuario */
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+/* Tarjeta de bienvenida */
+.welcome-card {
+    background: linear-gradient(135deg, var(--primary), #0b5ed7);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(13, 110, 240, 0.15);
+}
+
+/* Grid de estadísticas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Tarjeta de estadística */
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+/* Valor de estadística */
+.stat-card .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 10px 0;
+}
+
+/* Título de estadística */
+.stat-card .stat-title {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+/* ==================
+   Wrapper responsivo
+   ================== */
+.main-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ==================
+   Botón toggle sidebar mobile
+   ================== */
+.sidebar-toggle {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    padding: 5px;
+    cursor: pointer;
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        z-index: 1050;
+        transition: left 0.3s ease;
+    }
+    .sidebar.active {
+        left: 0;
+    }
+    .sidebar-toggle {
+        display: block;
+    }
+    .main-content-wrapper {
+        width: 100%;
+    }
+    .search-bar {
+        width: 180px;
+    }
+}
+
+/* ==================
+   Focus visible mejorado
+   ================== */
+a:focus, button:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}

@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - CRM Gestión de Clientes</title>
+    <!-- Bootstrap CSS para estilos base y componentes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons para iconografía -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Hoja de estilos para el módulo CRM -->
+    <link rel="stylesheet" href="../css/crm.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra de navegación lateral con acceso a los módulos principales -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
+                <li class="nav-item">
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link active" href="crm.html" aria-current="page"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal del módulo CRM -->
+        <div class="main-content">
+            <!-- Barra superior con buscador y datos de usuario -->
+            <div class="top-bar">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" placeholder="Buscar clientes, oportunidades...">
+                </div>
+                <div class="user-info">
+                    <!-- Notificaciones y mensajes -->
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+                    </div>
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-envelope fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">8</span>
+                    </div>
+                    <!-- Información del usuario actual -->
+                    <img src="https://ui-avatars.com/api/?name=Ejecutivo+CRM&background=0d6ef0&color=fff" alt="User">
+                    <div>
+                        <div class="fw-bold">Ejecutivo CRM</div>
+                        <div class="small text-muted">Gestión de Clientes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjetas de indicadores clave (KPIs) del CRM -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-people fs-4 text-primary"></i>
+                        <div class="kpi-value">245</div>
+                        <div class="kpi-title">Clientes Activos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-graph-up fs-4 text-success"></i>
+                        <div class="kpi-value">42</div>
+                        <div class="kpi-title">Oportunidades</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-currency-dollar fs-4 text-warning"></i>
+                        <div class="kpi-value">$1.2M</div>
+                        <div class="kpi-title">Ventas Potenciales</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-check-circle fs-4 text-info"></i>
+                        <div class="kpi-value">78%</div>
+                        <div class="kpi-title">Tasa de Cierre</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación por pestañas para acceder a las diferentes funcionalidades del CRM -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#clientes">Clientes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#oportunidades">Oportunidades</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#segmentos">Segmentos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#campanas">Campañas</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Pestaña: Clientes -->
+                <div class="tab-pane fade show active" id="clientes">
+                    <!-- Encabezado y botón para agregar nuevo cliente -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="section-title mb-0">Gestión de Clientes</h4>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Nuevo Cliente
+                        </button>
+                    </div>
+                    
+                    <!-- Filtros para búsqueda de clientes por tipo, ciudad y segmento -->
+                    <div class="filter-bar mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Tipo de Cliente</label>
+                                <select class="form-select">
+                                    <option>Todos</option>
+                                    <option>Persona Natural</option>
+                                    <option>Empresa</option>
+                                    <option>Gobierno</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Ciudad</label>
+                                <select class="form-select">
+                                    <option>Todas</option>
+                                    <option>Bogotá</option>
+                                    <option>Medellín</option>
+                                    <option>Cali</option>
+                                    <option>Barranquilla</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Segmento</label>
+                                <select class="form-select">
+                                    <option>Todos</option>
+                                    <option>Premium</option>
+                                    <option>Frecuente</option>
+                                    <option>Nuevo</option>
+                                    <option>Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-primary w-100">
+                                    <i class="bi bi-funnel me-2"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tarjetas con información resumida de clientes -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="client-card">
+                                <div class="client-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Juan Pérez</h5>
+                                        <span class="client-badge badge-premium">Premium</span>
+                                    </div>
+                                    <div class="text-muted small">CC 123456789</div>
+                                </div>
+                                <div class="client-body">
+                                    <div class="mb-3">
+                                        <div><i class="bi bi-envelope me-2"></i> juan.perez@correo.com</div>
+                                        <div><i class="bi bi-telephone me-2"></i> (601) 345 6789</div>
+                                        <div><i class="bi bi-geo-alt me-2"></i> Bogotá, Colombia</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Compras Totales:</span>
+                                            <span class="fw-bold">$12,450,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Última Compra:</span>
+                                            <span>20/06/2025</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Límite Crédito:</span>
+                                            <span class="fw-bold text-success">$5,000,000</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i> Ver Detalle
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-pencil me-1"></i> Editar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="client-card">
+                                <div class="client-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">María Gómez</h5>
+                                        <span class="client-badge badge-frequent">Frecuente</span>
+                                    </div>
+                                    <div class="text-muted small">CC 987654321</div>
+                                </div>
+                                <div class="client-body">
+                                    <div class="mb-3">
+                                        <div><i class="bi bi-envelope me-2"></i> maria.gomez@correo.com</div>
+                                        <div><i class="bi bi-telephone me-2"></i> (604) 456 7890</div>
+                                        <div><i class="bi bi-geo-alt me-2"></i> Medellín, Colombia</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Compras Totales:</span>
+                                            <span class="fw-bold">$8,750,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Última Compra:</span>
+                                            <span>18/06/2025</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Límite Crédito:</span>
+                                            <span class="fw-bold text-success">$3,000,000</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i> Ver Detalle
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-pencil me-1"></i> Editar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="client-card">
+                                <div class="client-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Empresa XYZ</h5>
+                                        <span class="client-badge badge-new">Nuevo</span>
+                                    </div>
+                                    <div class="text-muted small">NIT 900123456-1</div>
+                                </div>
+                                <div class="client-body">
+                                    <div class="mb-3">
+                                        <div><i class="bi bi-envelope me-2"></i> contacto@empresa.xyz</div>
+                                        <div><i class="bi bi-telephone me-2"></i> (601) 789 0123</div>
+                                        <div><i class="bi bi-geo-alt me-2"></i> Cali, Colombia</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Compras Totales:</span>
+                                            <span class="fw-bold">$3,250,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Última Compra:</span>
+                                            <span>15/06/2025</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Límite Crédito:</span>
+                                            <span class="fw-bold text-success">$8,000,000</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i> Ver Detalle
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-pencil me-1"></i> Editar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ficha completa del cliente seleccionado -->
+                    <div class="content-container mt-4">
+                        <h4 class="section-title">Ficha Completa del Cliente</h4>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Formulario con datos personales y de contacto -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nombre Completo / Razón Social</label>
+                                            <input type="text" class="form-control" value="Juan Pérez">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Documento</label>
+                                            <select class="form-select">
+                                                <option>Cédula de Ciudadanía</option>
+                                                <option>Tarjeta de Identidad</option>
+                                                <option>Pasaporte</option>
+                                                <option>NIT</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Número de Documento</label>
+                                            <input type="text" class="form-control" value="123456789">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" value="juan.perez@correo.com">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Teléfono</label>
+                                            <input type="text" class="form-control" value="(601) 345 6789">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Dirección</label>
+                                            <input type="text" class="form-control" value="Calle 123 #45-67, Bogotá">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Historial de compras del cliente -->
+                                <div class="mb-4">
+                                    <h5>Historial de Compras</h5>
+                                    <div class="table-responsive">
+                                        <table class="table data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Factura</th>
+                                                    <th>Monto</th>
+                                                    <th>Estado</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>20/06/2025</td>
+                                                    <td>FAC-2025-00128</td>
+                                                    <td>$1,513,480</td>
+                                                    <td><span class="badge bg-success">Pagada</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>15/05/2025</td>
+                                                    <td>FAC-2025-00105</td>
+                                                    <td>$2,450,500</td>
+                                                    <td><span class="badge bg-success">Pagada</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>10/04/2025</td>
+                                                    <td>FAC-2025-00089</td>
+                                                    <td>$3,750,250</td>
+                                                    <td><span class="badge bg-success">Pagada</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <!-- Información adicional y notas del cliente -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Información Adicional</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Cliente</label>
+                                            <select class="form-select">
+                                                <option>Persona Natural</option>
+                                                <option>Empresa</option>
+                                                <option>Gobierno</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Límite de Crédito</label>
+                                            <input type="text" class="form-control" value="$5,000,000">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Segmento</label>
+                                            <select class="form-select">
+                                                <option selected>Premium</option>
+                                                <option>Frecuente</option>
+                                                <option>Nuevo</option>
+                                                <option>Inactivo</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Asignado a</label>
+                                            <select class="form-select">
+                                                <option selected>Ejecutivo CRM</option>
+                                                <option>Carlos Mendoza</option>
+                                                <option>Ana Rodríguez</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Notas y Comentarios</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <textarea class="form-control" rows="4" placeholder="Agregar notas sobre el cliente...">Cliente preferencial con más de 5 años de relación comercial. Siempre puntual con sus pagos. Prefiere contacto por WhatsApp.</textarea>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="bi bi-save me-1"></i> Guardar Notas
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Oportunidades -->
+                <div class="tab-pane fade" id="oportunidades">
+                    <!-- Encabezado y botones para agregar oportunidad y ver embudo de ventas -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="section-title mb-0">Gestión de Oportunidades</h4>
+                        <div>
+                            <button class="btn btn-outline-primary me-2">
+                                <i class="bi bi-funnel me-2"></i> Embudo de Ventas
+                            </button>
+                            <button class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i> Nueva Oportunidad
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Indicadores de embudo de ventas por etapa -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="funnel-step funnel-lead">
+                                <div class="kpi-value">125</div>
+                                <div class="kpi-title">Leads</div>
+                                <div class="small">15% conversión</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="funnel-step funnel-contact">
+                                <div class="kpi-value">75</div>
+                                <div class="kpi-title">Contactados</div>
+                                <div class="small">35% conversión</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="funnel-step funnel-proposal">
+                                <div class="kpi-value">42</div>
+                                <div class="kpi-title">Propuestas</div>
+                                <div class="small">60% conversión</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="funnel-step funnel-negotiation">
+                                <div class="kpi-value">25</div>
+                                <div class="kpi-title">Negociación</div>
+                                <div class="small">80% conversión</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla de oportunidades comerciales -->
+                    <div class="content-container">
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Oportunidad</th>
+                                        <th>Cliente</th>
+                                        <th>Valor Estimado</th>
+                                        <th>Etapa</th>
+                                        <th>Probabilidad</th>
+                                        <th>Estado</th>
+                                        <th>Vencimiento</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Implementación ERP</td>
+                                        <td>Empresa XYZ</td>
+                                        <td>$25,000,000</td>
+                                        <td>Negociación</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 80%;" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">80%</div>
+                                        </td>
+                                        <td><span class="badge status-in-progress">En proceso</span></td>
+                                        <td>30/06/2025</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Suministro Mensual</td>
+                                        <td>Distribuidora ABC</td>
+                                        <td>$8,500,000</td>
+                                        <td>Propuesta</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">60%</div>
+                                        </td>
+                                        <td><span class="badge status-in-progress">En proceso</span></td>
+                                        <td>25/06/2025</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Renovación Equipos</td>
+                                        <td>Juan Pérez</td>
+                                        <td>$12,000,000</td>
+                                        <td>Contacto</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: 35%;" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">35%</div>
+                                        </td>
+                                        <td><span class="badge status-open">Abierto</span></td>
+                                        <td>10/07/2025</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Seguimiento detallado de la oportunidad seleccionada -->
+                    <div class="content-container mt-4">
+                        <h4 class="section-title">Seguimiento de Oportunidad</h4>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Detalle y actividades de la oportunidad -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Implementación ERP - Empresa XYZ</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-4">
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <div class="text-muted small">Valor Estimado</div>
+                                                    <div class="fw-bold">$25,000,000</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <div class="text-muted small">Etapa Actual</div>
+                                                    <div class="fw-bold">Negociación</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <div class="text-muted small">Fecha Cierre Esperada</div>
+                                                    <div class="fw-bold">30/06/2025</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <h6>Descripción</h6>
+                                            <p>Implementación completa del sistema ERP MarketWorld para la empresa XYZ, incluyendo capacitación y soporte durante 6 meses.</p>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <h6>Actividades</h6>
+                                            <ul class="activity-timeline">
+                                                <li class="activity-item">
+                                                    <div class="activity-icon">
+                                                        <i class="bi bi-telephone"></i>
+                                                    </div>
+                                                    <div class="activity-content">
+                                                        <div class="fw-bold">Llamada de seguimiento</div>
+                                                        <div class="text-muted small">20/06/2025 10:30 AM</div>
+                                                        <div>Se discutieron los puntos finales del contrato. Cliente mostró interés en el servicio de soporte extendido.</div>
+                                                        <div class="mt-2">
+                                                            <span class="badge bg-light text-dark">Duración: 25 min</span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="activity-item">
+                                                    <div class="activity-icon">
+                                                        <i class="bi bi-chat-dots"></i>
+                                                    </div>
+                                                    <div class="activity-content">
+                                                        <div class="fw-bold">Reunión virtual</div>
+                                                        <div class="text-muted small">18/06/2025 2:00 PM</div>
+                                                        <div>Presentación de la propuesta final al comité de compras. Se resolvieron dudas sobre la implementación.</div>
+                                                        <div class="mt-2">
+                                                            <span class="badge bg-light text-dark">Duración: 1h 15min</span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="activity-item">
+                                                    <div class="activity-icon">
+                                                        <i class="bi bi-envelope"></i>
+                                                    </div>
+                                                    <div class="activity-content">
+                                                        <div class="fw-bold">Email con propuesta</div>
+                                                        <div class="text-muted small">15/06/2025 9:15 AM</div>
+                                                        <div>Se envió propuesta formal con todos los detalles y costos. Adjunto documento PDF con especificaciones técnicas.</div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div>
+                                            <h6>Agendar Nueva Actividad</h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Tipo de Actividad</label>
+                                                        <select class="form-select">
+                                                            <option>Llamada</option>
+                                                            <option>Reunión</option>
+                                                            <option>Email</option>
+                                                            <option>Visita</option>
+                                                            <option>Tarea</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Fecha y Hora</label>
+                                                        <input type="datetime-local" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Descripción</label>
+                                                <textarea class="form-control" rows="2" placeholder="Detalles de la actividad..."></textarea>
+                                            </div>
+                                            <button class="btn btn-primary">
+                                                <i class="bi bi-calendar-plus me-2"></i> Agendar Actividad
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <!-- Información adicional y recordatorios automáticos -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Información de la Oportunidad</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Estado</label>
+                                            <select class="form-select">
+                                                <option selected>En proceso</option>
+                                                <option>Abierto</option>
+                                                <option>Cerrado - Ganado</option>
+                                                <option>Cerrado - Perdido</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Probabilidad de Cierre</label>
+                                            <input type="range" class="form-range" min="0" max="100" value="80">
+                                            <div class="text-center fw-bold">80%</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Valor Estimado</label>
+                                            <input type="text" class="form-control" value="$25,000,000">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Fecha Cierre Esperada</label>
+                                            <input type="date" class="form-control" value="2025-06-30">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Asignado a</label>
+                                            <select class="form-select">
+                                                <option selected>Ejecutivo CRM</option>
+                                                <option>Carlos Mendoza</option>
+                                                <option>Ana Rodríguez</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button class="btn btn-success">
+                                                <i class="bi bi-save me-2"></i> Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Recordatorios Automáticos</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="whatsappReminder" checked>
+                                            <label class="form-check-label" for="whatsappReminder">
+                                                Enviar recordatorio por WhatsApp
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="emailReminder" checked>
+                                            <label class="form-check-label" for="emailReminder">
+                                                Enviar recordatorio por Email
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Mensaje Personalizado</label>
+                                            <textarea class="form-control" rows="3">Estimado cliente, le recordamos nuestra reunión programada para mañana a las 10:00 AM. Estamos ansiosos por discutir los detalles finales de su proyecto.</textarea>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button class="btn btn-primary">
+                                                <i class="bi bi-bell me-2"></i> Programar Recordatorios
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Segmentos -->
+                <div class="tab-pane fade" id="segmentos">
+                    <!-- Encabezado y botón para agregar nuevo segmento -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="section-title mb-0">Segmentación de Clientes</h4>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Nuevo Segmento
+                        </button>
+                    </div>
+                    
+                    <!-- Tarjetas con información de segmentos existentes -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Clientes Premium</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <span class="segment-tag">Compras > $10M</span>
+                                        <span class="segment-tag">Antigüedad > 2 años</span>
+                                        <span class="segment-tag">Frecuencia > 5 compras/año</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="kpi-value">42</div>
+                                            <div class="kpi-title">Clientes</div>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Ver Lista
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Clientes Frecuentes</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <span class="segment-tag">Frecuencia > 3 compras/año</span>
+                                        <span class="segment-tag">Compras > $2M</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="kpi-value">85</div>
+                                            <div class="kpi-title">Clientes</div>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Ver Lista
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Clientes Inactivos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <span class="segment-tag">Última compra > 6 meses</span>
+                                        <span class="segment-tag">Compras históricas > $1M</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="kpi-value">36</div>
+                                            <div class="kpi-title">Clientes</div>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Ver Lista
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario para crear nuevo segmento -->
+                    <div class="content-container">
+                        <h4 class="section-title">Crear Nuevo Segmento</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre del Segmento</label>
+                                    <input type="text" class="form-control" placeholder="Ej: Clientes Corporativos">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Criterios de Segmentación</label>
+                                    <div class="border p-3 rounded">
+                                        <div class="row mb-3">
+                                            <div class="col-md-5">
+                                                <select class="form-select">
+                                                    <option>Valor de Compras</option>
+                                                    <option>Frecuencia de Compras</option>
+                                                    <option>Antigüedad</option>
+                                                    <option>Ubicación</option>
+                                                    <option>Tipo de Cliente</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <select class="form-select">
+                                                    <option>mayor que</option>
+                                                    <option>menor que</option>
+                                                    <option>igual a</option>
+                                                    <option>diferente de</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control" placeholder="Valor">
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus me-1"></i> Agregar Criterio
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción</label>
+                                    <textarea class="form-control" rows="4" placeholder="Descripción del segmento..."></textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">Clientes que cumplen: 0</div>
+                                        <div class="small text-muted">Previsualización</div>
+                                    </div>
+                                    <button class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i> Guardar Segmento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Campañas -->
+                <div class="tab-pane fade" id="campanas">
+                    <!-- Encabezado y botón para agregar nueva campaña -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="section-title mb-0">Gestión de Campañas</h4>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Nueva Campaña
+                        </button>
+                    </div>
+                    
+                    <!-- Tabla con campañas activas y finalizadas -->
+                    <div class="content-container">
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Campaña</th>
+                                        <th>Canal</th>
+                                        <th>Segmento</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Inicio</th>
+                                        <th>Fecha Fin</th>
+                                        <th>Contactados</th>
+                                        <th>Tasa Respuesta</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Oferta Verano 2025</td>
+                                        <td><span class="badge bg-success">Email</span></td>
+                                        <td>Clientes Frecuentes</td>
+                                        <td><span class="badge bg-success">Activa</span></td>
+                                        <td>01/06/2025</td>
+                                        <td>30/06/2025</td>
+                                        <td>85/120</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 32%;" aria-valuenow="32" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">32%</div>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Relanzamiento ERP</td>
+                                        <td><span class="badge bg-info">WhatsApp</span></td>
+                                        <td>Clientes Corporativos</td>
+                                        <td><span class="badge bg-warning">Pendiente</span></td>
+                                        <td>01/07/2025</td>
+                                        <td>31/07/2025</td>
+                                        <td>0/75</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">0%</div>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Descuento Aniversario</td>
+                                        <td><span class="badge bg-success">Email</span> <span class="badge bg-info">WhatsApp</span></td>
+                                        <td>Todos los clientes</td>
+                                        <td><span class="badge bg-secondary">Finalizada</span></td>
+                                        <td>01/05/2025</td>
+                                        <td>31/05/2025</td>
+                                        <td>210/245</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 28%;" aria-valuenow="28" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="small text-center">28%</div>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario para crear nueva campaña -->
+                    <div class="content-container mt-4">
+                        <h4 class="section-title">Crear Nueva Campaña</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre de la Campaña</label>
+                                    <input type="text" class="form-control" placeholder="Ej: Oferta de Verano 2025">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Canal de Comunicación</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="emailChannel" checked>
+                                            <label class="form-check-label" for="emailChannel">Email</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="whatsappChannel">
+                                            <label class="form-check-label" for="whatsappChannel">WhatsApp</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="smsChannel">
+                                            <label class="form-check-label" for="smsChannel">SMS</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Segmento Objetivo</label>
+                                    <select class="form-select">
+                                        <option>Clientes Premium</option>
+                                        <option>Clientes Frecuentes</option>
+                                        <option>Clientes Inactivos</option>
+                                        <option>Todos los clientes</option>
+                                        <option>Segmento personalizado...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Fechas</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="date" class="form-control" placeholder="Fecha Inicio">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="date" class="form-control" placeholder="Fecha Fin">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Asunto/Mensaje Principal</label>
+                                    <input type="text" class="form-control" placeholder="Ej: ¡Ofertas Especiales de Verano!">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Contenido del Mensaje</label>
+                                    <textarea class="form-control" rows="6" placeholder="Escriba el contenido de su campaña..."></textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="fw-bold">Clientes a contactar: 85</div>
+                                        <div class="small text-muted">Según el segmento seleccionado</div>
+                                    </div>
+                                    <button class="btn btn-primary">
+                                        <i class="bi bi-send me-2"></i> Programar Campaña
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+
+    <!-- Script JS para el módulo de CRM -->
+    <script defer src="../js/crm.js"></script>
+</body>
+</html>

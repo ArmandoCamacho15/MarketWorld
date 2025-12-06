@@ -1,0 +1,637 @@
+/* =========================
+   Estilos generales para el módulo de Inventario
+   ========================= */
+
+/* Variables globales para colores y tema */
+:root {
+    --primary: #0d6ef0;      /* Color principal del tema */
+    --secondary: #0a58ca;    /* Color secundario */
+    --accent: #0d6ef0;       /* Color de acento, usado en detalles */
+    --light-bg: #f8f9fa;     /* Fondo claro */
+    --dark-text: #2c3e50;    /* Texto oscuro */
+    --light-text: #ecf0f1;   /* Texto claro */
+    --success: #2ecc71;      /* Color para éxito */
+    --warning: #f39c12;      /* Color para advertencias */
+    --danger: #e74c3c;       /* Color para errores */
+}
+
+/* Estilos generales del cuerpo de la página */
+body {
+    background-color: #f5f7fa; /* Fondo general */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
+    color: var(--dark-text);   /* Color de texto principal */
+}
+
+/* Contenedor principal de la aplicación usando flexbox */
+.app-container {
+    display: flex;
+    min-height: 100vh; /* Ocupa toda la altura de la ventana */
+}
+
+/* Barra lateral de navegación */
+.sidebar {
+    width: 260px; /* Ancho fijo */
+    background: var(--primary); /* Color de fondo */
+    color: var(--light-text);   /* Color de texto */
+    padding: 20px 0;
+    transition: all 0.3s;       /* Transición suave para cambios */
+    box-shadow: 3px 0 10px rgba(0,0,0,0.1); /* Sombra lateral */
+    z-index: 1000;              /* Prioridad de apilamiento */
+}
+
+/* Encabezado de la barra lateral */
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Línea divisoria */
+}
+
+/* Marca o logo en la barra lateral */
+.brand {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+}
+
+/* Color de acento en la marca */
+.brand span {
+    color: var(--accent);
+}
+
+/* Elementos de navegación */
+.nav-item {
+    margin-bottom: 5px;
+}
+
+/* Enlaces de navegación */
+.nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+/* Efecto hover y activo en los enlaces de navegación */
+.nav-link:hover, .nav-link.active {
+    background: rgba(255,255,255,0.15);
+    color: white;
+}
+
+/* Iconos en los enlaces de navegación */
+.nav-link i {
+    margin-right: 10px;
+    width: 24px;
+    text-align: center;
+}
+
+/* Contenido principal */
+.main-content {
+    flex: 1; /* Ocupa el espacio restante */
+    padding: 20px;
+    overflow-y: auto; /* Permite scroll vertical */
+}
+
+/* Barra superior del contenido principal */
+.top-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    width: 400px;
+    position: relative;
+}
+
+/* Input de búsqueda */
+.search-bar input {
+    padding-left: 45px;
+    border-radius: 50px;
+    background: var(--light-bg);
+    border: none;
+}
+
+/* Icono de búsqueda */
+.search-bar i {
+    position: absolute;
+    left: 20px;
+    top: 12px;
+    color: #7f8c8d;
+}
+
+/* Información de usuario */
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+/* Imagen de usuario */
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+/* Contenedor de contenido */
+.content-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Título de sección */
+.section-title {
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Tabla de productos */
+.product-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* Encabezado de la tabla de productos */
+.product-table th {
+    background-color: #f8f9fa;
+    color: #0d6ef0;
+    font-weight: 600;
+    padding: 12px 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* Celdas de la tabla de productos */
+.product-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+/* El último renglón de la tabla no tiene borde inferior */
+.product-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Efecto hover en filas de la tabla */
+.product-table tr:hover td {
+    background-color: #f0f6ff;
+}
+
+/* Indicador de poco stock */
+.stock-low {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* Indicador de stock suficiente */
+.stock-ok {
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* Imagen de producto en la tabla */
+.product-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+    object-fit: cover;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0d6ef0;
+}
+
+/* Botón primario y variantes */
+.btn-primary, .bg-primary, .badge.bg-primary {
+    background-color: #0d6ef0 !important;
+    border-color: #0d6ef0 !important;
+}
+
+/* Botón primario con borde */
+.btn-outline-primary {
+    color: #0d6ef0 !important;
+    border-color: #0d6ef0 !important;
+}
+
+/* Efecto hover y focus en botón primario con borde */
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+    background: #0d6ef0 !important;
+    color: #fff !important;
+}
+
+/* Contenedor de formularios */
+.form-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Tarjeta de formulario */
+.form-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+}
+
+/* Encabezado de formulario */
+.form-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+/* Grupo de formulario */
+.form-group {
+    margin-bottom: 20px;
+}
+
+/* Etiqueta de formulario */
+.form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+/* Indicador de campo requerido */
+.required:after {
+    content: " *";
+    color: var(--danger);
+}
+
+/* Árbol de categorías */
+.category-tree {
+    list-style: none;
+    padding-left: 0;
+}
+
+/* Elemento de categoría */
+.category-tree li {
+    padding: 10px 15px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background: white;
+    cursor: move;
+    position: relative;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+/* Efecto hover en categoría */
+.category-tree li:hover {
+    box-shadow: 0 3px 8px rgba(13,110,240,0.08);
+    transform: translateY(-2px);
+}
+
+/* Icono en categoría */
+.category-tree li i {
+    margin-right: 10px;
+    color: var(--primary);
+}
+
+/* Subcategorías */
+.category-tree .children {
+    padding-left: 35px;
+    margin-top: 8px;
+}
+
+/* Acciones de categoría */
+.category-actions {
+    margin-left: auto;
+}
+
+/* Elemento de movimiento de inventario */
+.movement-item {
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+}
+
+/* Icono de movimiento */
+.movement-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+    background: rgba(13,110,240,0.1);
+    color: var(--primary);
+}
+
+/* Título de movimiento */
+.movement-content h5 {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* Descripción de movimiento */
+.movement-content p {
+    margin-bottom: 0;
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+/* =========================
+   UNIFICACIÓN PANTALLA COMPLETA
+   ========================= */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.main-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    padding: 5px;
+    cursor: pointer;
+    display: none;
+    z-index: 1060;
+}
+
+/* Skip link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 0 0 4px 0;
+    z-index: 10000;
+    font-weight: 600;
+}
+.skip-link:focus {
+    top: 0;
+    outline: 3px solid var(--warning);
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        z-index: 1050;
+        transition: left 0.3s ease;
+    }
+    .sidebar.active {
+        left: 0;
+    }
+    .sidebar-toggle {
+        display: block;
+    }
+    .main-content-wrapper {
+        width: 100%;
+        margin-left: 0;
+    }
+    .search-bar {
+        width: 180px;
+    }
+}
+
+/* =========================
+   NUEVOS ESTILOS PROFESIONALES
+   ========================= */
+
+/* Dashboard KPIs mejorados */
+.dashboard-kpis .kpi-card {
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.dashboard-kpis .kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.kpi-total {
+    background: linear-gradient(135deg, #0d6ef0, #0a58ca);
+    color: white;
+}
+
+.kpi-value-amount {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+}
+
+.kpi-alert {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.kpi-movement {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+}
+
+.kpi-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.kpi-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.kpi-trend {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.kpi-trend.positive {
+    color: rgba(255,255,255,0.95);
+}
+
+.kpi-trend.negative {
+    color: rgba(255,255,255,0.8);
+}
+
+/* Filtros avanzados */
+.advanced-filters {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+/* Indicador de stock visual */
+.stock-indicator {
+    text-align: center;
+}
+
+.stock-indicator .stock-ok {
+    color: #2ecc71;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.stock-indicator .stock-low {
+    color: #e74c3c;
+    font-size: 1.2rem;
+    font-weight: 700;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Tarjeta de gráfico */
+.chart-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.chart-card h5 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Top productos */
+.top-products-list {
+    list-style: none;
+    padding: 0;
+}
+
+.top-products-list li {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.top-products-list li:last-child {
+    border-bottom: none;
+}
+
+.product-rank {
+    width: 30px;
+    height: 30px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-right: 15px;
+}
+
+.top-products-list .product-info {
+    flex: 1;
+}
+
+.top-products-list .product-value {
+    font-weight: 700;
+    color: var(--success);
+}
+
+.low-rotation .product-rank {
+    background: var(--danger);
+}
+
+/* Mejoras visuales en tabla */
+.product-table .product-img {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.product-table .product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Badge de categoría */
+.product-table .badge {
+    padding: 5px 10px;
+    font-weight: 500;
+}
+
+/* Botones de acción agrupados */
+.btn-group .btn-sm {
+    padding: 4px 8px;
+}
+
+/* Modal mejorado */
+#productModal .modal-content {
+    border-radius: 15px;
+}
+
+#productModal .modal-header {
+    background: linear-gradient(135deg, var(--primary), #0a58ca);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+#productModal .btn-close {
+    filter: brightness(0) invert(1);
+}

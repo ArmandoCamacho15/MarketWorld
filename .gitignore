@@ -1,0 +1,42 @@
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+*. tmp
+
+# Carpetas de dependencias
+node_modules/
+vendor/
+
+# Archivos temporales y logs
+*.log
+*.cache
+*.temp
+. temp/
+
+# Configuración personal
+.env
+.env.local
+config.local.js
+config.local.php
+
+# Editores de código
+.vscode/
+. idea/
+*. sublime-project
+*.sublime-workspace
+
+# Respaldos
+*. bak
+*~
+*.swp
+*.swo
+
+# Bases de datos locales (no subir bases de datos reales)
+*.sqlite
+*.db
+marketworld_base_de_datos/
+
+# Archivos generados
+dist/
+build/

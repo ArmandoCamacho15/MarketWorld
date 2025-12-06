@@ -1,0 +1,576 @@
+/* =========================
+   Estilos generales para el módulo de Facturación
+   ========================= */
+
+/* Variables globales para color y tema */
+:root {
+    --primary: #0d6ef0;      /* Azul principal MarketWorld */
+    --secondary: #0a58ca;    /* Azul secundario */
+    --light-bg: #f8f9fa;     /* Fondo claro */
+    --dark-text: #2c3e50;    /* Texto oscuro */
+    --success: #2ecc71;      /* Verde éxito */
+    --warning: #f39c12;      /* Naranja advertencia */
+    --danger: #e74c3c;       /* Rojo error */
+    --info: #3498db;         /* Azul información */
+    --gold: #ffd700;         /* Dorado para clientes frecuentes */
+}
+
+/* =========================
+   Estilos base para el body y contenedor principal
+   ========================= */
+body {
+    background-color: #f5f7fa; /* Fondo general */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--dark-text);
+}
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =========================
+   Barra de navegación lateral
+   ========================= */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
+    color: #ecf0f1;
+    padding: 20px 0;
+    min-height: 100vh;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.brand {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1px;
+}
+.brand span {
+    color: var(--gold); /* Resalta el nombre con dorado */
+}
+.nav-item {
+    margin-bottom: 5px;
+}
+.nav-link {
+    color: rgba(255,255,255,0.85);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.nav-link:hover, .nav-link.active {
+    background: rgba(25, 118, 210, 0.25); /* Resalta en azul MarketWorld */
+    color: #fff;
+}
+.nav-link i {
+    margin-right: 10px;
+    width: 24px;
+    text-align: center;
+}
+/* Responsive: barra lateral compacta en pantallas pequeñas */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 80px;
+    }
+    .sidebar .brand span, .sidebar .nav-text {
+        display: none;
+    }
+    .sidebar .nav-link {
+        text-align: center;
+        padding: 15px 5px;
+    }
+    .sidebar .nav-link i {
+        margin-right: 0;
+        font-size: 20px;
+    }
+}
+
+/* =========================
+   Contenido principal
+   ========================= */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.top-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.content-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.section-title {
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+/* =========================
+   Navegación de pestañas
+   ========================= */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 600;
+    padding: 12px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+}
+
+/* =========================
+   Tabla de facturas
+   ========================= */
+.invoice-table th {
+    background-color: #f8f9fa;
+    color: var(--primary);
+    font-weight: 600;
+}
+.invoice-table tr:hover td {
+    background-color: #f0f6ff;
+}
+
+/* =========================
+   Estados de factura
+   ========================= */
+.status-paid {
+    background-color: #e8f7f0; /* Verde claro para pagadas */
+    color: var(--success);
+}
+.status-pending {
+    background-color: #fef7e6; /* Amarillo claro para pendientes */
+    color: #e67700;
+}
+.status-annulled {
+    background-color: #fdecea; /* Rojo claro para anuladas */
+    color: var(--danger);
+}
+
+/* =========================
+   Etiquetas y badges
+   ========================= */
+.product-badge {
+    background-color: #e9ecef;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.85em;
+}
+.frequent-tag {
+    background: linear-gradient(45deg, var(--gold), #ffcc00);
+    color: #000;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.discount-badge {
+    background-color: #e8f5e9;
+    color: var(--success);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.85em;
+}
+
+/* =========================
+   Barra de búsqueda
+   ========================= */
+.search-bar {
+    width: 400px;
+    position: relative;
+}
+.search-bar input {
+    padding-left: 45px;
+    border-radius: 50px;
+    background: var(--light-bg);
+    border: none;
+}
+.search-bar i {
+    position: absolute;
+    left: 20px;
+    top: 12px;
+    color: #7f8c8d;
+}
+
+/* =========================
+   Información de usuario en la barra superior
+   ========================= */
+.user-info {
+    display: flex;
+    align-items: center;
+}
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+/* =========================
+   POS y Métodos de pago
+   ========================= */
+.pos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.pos-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 15px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.pos-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: var(--primary);
+}
+.pos-item i {
+    font-size: 24px;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+/* =========================
+   Cliente frecuente y validaciones DIAN
+   ========================= */
+.frequent-customer {
+    position: relative;
+}
+.frequent-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--gold);
+    color: #000;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.dian-validation {
+    border-left: 4px solid var(--success);
+    padding-left: 15px;
+}
+.dian-pending {
+    border-left: 4px solid var(--warning);
+}
+
+/* =========================
+   Código QR para facturación electrónica
+   ========================= */
+.qr-container {
+    max-width: 200px;
+    margin: 0 auto;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* =========================
+   Autocompletado de productos
+   ========================= */
+.suggestions-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.suggestion-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+    background: #f0f6ff;
+    border-left: 3px solid var(--primary);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-name {
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 3px;
+}
+
+.suggestion-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.suggestion-sku {
+    color: #6c757d;
+}
+
+.suggestion-price {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.suggestion-stock {
+    color: var(--success);
+    font-size: 0.8rem;
+}
+
+.suggestion-stock.low {
+    color: var(--danger);
+}
+
+.no-suggestions {
+    padding: 15px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Resaltar texto coincidente */
+.highlight {
+    background-color: #fff3cd;
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* =========================
+   Métodos de pago
+   ========================= */
+.payment-methods {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.payment-method {
+    flex: 1;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.payment-method.active {
+    border-color: var(--primary);
+    background-color: #f0f6ff;
+}
+
+.payment-method:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.payment-method i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+.payment-method .small {
+    font-size: 0.85rem;
+    color: var(--dark-text);
+}
+
+/* =========================
+   Productos destacados
+   ========================= */
+.producto-card {
+    transition: all 0.3s ease;
+    border: 2px solid #e9ecef;
+    cursor: pointer;
+}
+
+.producto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(13, 110, 240, 0.2);
+    border-color: var(--primary);
+}
+
+.producto-card .card-body {
+    padding: 12px;
+}
+
+.producto-card:active {
+    transform: translateY(-2px);
+}
+
+#productosDisponibles {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* =========================
+   Selector de modo
+   ========================= */
+.mode-selector {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.mode-selector .btn {
+    border-radius: 10px;
+    padding: 15px 20px;
+    transition: all 0.3s;
+}
+
+.mode-selector .btn-check:checked + .btn {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(13, 110, 240, 0.3);
+}
+
+.mode-selector .btn small {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* =========================
+   Tarjetas modernas
+   ========================= */
+.search-card,
+.featured-card,
+.client-card,
+.invoice-details-card,
+.cart-card,
+.client-quick-card,
+.payment-card,
+.summary-card {
+    border: none;
+    transition: all 0.3s;
+}
+
+.search-card:hover,
+.cart-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+}
+
+/* =========================
+   Tabla moderna del carrito
+   ========================= */
+.modern-table {
+    font-size: 0.95rem;
+}
+
+.modern-table thead th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.modern-table tbody td {
+    vertical-align: middle;
+    padding: 15px;
+}
+
+/* =========================
+   Resumen de totales mejorado
+   ========================= */
+.summary-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-item:last-of-type {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.total-amount {
+    padding: 15px 10px;
+    background: linear-gradient(135deg, #f0f6ff, #e3f2fd);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* =========================
+   Botones de acción mejorados
+   ========================= */
+.btn-lg {
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: none;
+    transition: all 0.3s;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(46, 204, 113, 0.4);
+}
+
+/* =========================
+   Animación de entrada
+   ========================= */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.4s ease-out;
+}

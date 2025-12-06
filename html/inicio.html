@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Inicio | Sistema de Gestión Empresarial</title>
+    <meta name="description" content="Sistema de gestión empresarial MarketWorld - Acceso rápido a módulos de ventas, inventario, CRM y más">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Hoja de estilos personalizada -->
+    <link rel="stylesheet" href="../css/inicio.css">
+</head>
+<body>
+    <!-- Skip link para accesibilidad -->
+    <a href="#mainContent" class="skip-link">Saltar al contenido principal</a>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navegación principal">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+                <button class="sidebar-toggle d-md-none" id="sidebarToggle" aria-label="Cerrar menú de navegación" aria-expanded="true" aria-controls="sidebar">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+            <nav aria-label="Menú principal">
+                <ul class="nav flex-column mt-4">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="inicio.html" aria-current="page">
+                            <i class="bi bi-house-door" aria-hidden="true"></i>
+                            <span class="nav-text">Inicio</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="inventario.html">
+                            <i class="bi bi-box-seam" aria-hidden="true"></i>
+                            <span class="nav-text">Inventario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="facturacion.html">
+                            <i class="bi bi-receipt" aria-hidden="true"></i>
+                            <span class="nav-text">Facturación</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contabilidad.html">
+                            <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                            <span class="nav-text">Contabilidad</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="compras.html">
+                            <i class="bi bi-cart" aria-hidden="true"></i>
+                            <span class="nav-text">Compras</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="crm.html">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            <span class="nav-text">CRM</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="reporte.html">
+                            <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                            <span class="nav-text">Reportes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="configuracion.html">
+                            <i class="bi bi-gear" aria-hidden="true"></i>
+                            <span class="nav-text">Configuración</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div class="main-content-wrapper">
+            <header class="top-bar" role="banner">
+                <button class="btn btn-link d-md-none" id="menuToggle" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="sidebar">
+                    <i class="bi bi-list fs-3" aria-hidden="true"></i>
+                </button>
+                
+                <div class="search-bar" role="search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label for="globalSearch" class="visually-hidden">Buscar en el sistema</label>
+                    <input id="globalSearch" type="search" class="form-control" placeholder="Buscar módulos, funciones..." aria-label="Buscar en el sistema">
+                </div>
+                
+                <div class="user-info">
+                    <button class="btn btn-link position-relative me-3" aria-label="Ver notificaciones">
+                        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3<span class="visually-hidden"> notificaciones sin leer</span></span>
+                    </button>
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar de Admin User" width="40" height="40">
+                    <div class="ms-2">
+                        <div class="fw-bold">Admin User</div>
+                        <div class="small text-muted">Administrador</div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="mainContent" class="main-content" role="main">
+                <!-- Tarjeta de bienvenida -->
+                <section class="welcome-card" aria-labelledby="welcomeTitle">
+                    <h1 id="welcomeTitle" class="h3 mb-3">¡Bienvenido a MarketWorld!</h1>
+                    <p class="mb-4">Sistema integral de gestión empresarial. Accede rápidamente a los módulos desde aquí.</p>
+                    
+                    <div class="stats-grid">
+                        <article class="stat-card">
+                            <i class="bi bi-graph-up-arrow fs-3 text-primary" aria-hidden="true"></i>
+                            <div class="stat-value">+24%</div>
+                            <div class="stat-title">Crecimiento Mensual</div>
+                        </article>
+                        <article class="stat-card">
+                            <i class="bi bi-people fs-3 text-success" aria-hidden="true"></i>
+                            <div class="stat-value">1,245</div>
+                            <div class="stat-title">Clientes Activos</div>
+                        </article>
+                        <article class="stat-card">
+                            <i class="bi bi-box-seam fs-3 text-warning" aria-hidden="true"></i>
+                            <div class="stat-value">3,890</div>
+                            <div class="stat-title">Productos en Stock</div>
+                        </article>
+                        <article class="stat-card">
+                            <i class="bi bi-currency-dollar fs-3 text-info" aria-hidden="true"></i>
+                            <div class="stat-value">$125K</div>
+                            <div class="stat-title">Ventas del Mes</div>
+                        </article>
+                    </div>
+                </section>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- Acceso rápido a módulos -->
+                        <section class="content-container" aria-labelledby="quickAccessTitle">
+                            <h2 id="quickAccessTitle" class="section-title">Acceso Rápido</h2>
+                            <div class="quick-access-grid">
+                                <a href="dashboard.html" class="quick-access-card" aria-label="Ir al Dashboard">
+                                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                                    <div class="title">Dashboard</div>
+                                    <div class="desc">Visualiza métricas y KPIs</div>
+                                </a>
+                                <a href="inventario.html" class="quick-access-card" aria-label="Ir a Inventario">
+                                    <i class="bi bi-box-seam" aria-hidden="true"></i>
+                                    <div class="title">Inventario</div>
+                                    <div class="desc">Gestiona productos y stock</div>
+                                </a>
+                                <a href="facturacion.html" class="quick-access-card" aria-label="Ir a Facturación">
+                                    <i class="bi bi-receipt" aria-hidden="true"></i>
+                                    <div class="title">Facturación</div>
+                                    <div class="desc">Crea y gestiona facturas</div>
+                                </a>
+                                <a href="crm.html" class="quick-access-card" aria-label="Ir a CRM">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    <div class="title">CRM</div>
+                                    <div class="desc">Gestiona relaciones con clientes</div>
+                                </a>
+                                <a href="contabilidad.html" class="quick-access-card" aria-label="Ir a Contabilidad">
+                                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                                    <div class="title">Contabilidad</div>
+                                    <div class="desc">Estados financieros e impuestos</div>
+                                </a>
+                                <a href="compras.html" class="quick-access-card" aria-label="Ir a Compras">
+                                    <i class="bi bi-cart" aria-hidden="true"></i>
+                                    <div class="title">Compras</div>
+                                    <div class="desc">Gestiona proveedores y órdenes</div>
+                                </a>
+                                <a href="reporte.html" class="quick-access-card" aria-label="Ir a Reportes">
+                                    <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                                    <div class="title">Reportes</div>
+                                    <div class="desc">Genera informes detallados</div>
+                                </a>
+                                <a href="configuracion.html" class="quick-access-card" aria-label="Ir a Configuración">
+                                    <i class="bi bi-gear" aria-hidden="true"></i>
+                                    <div class="title">Configuración</div>
+                                    <div class="desc">Ajustes del sistema</div>
+                                </a>
+                            </div>
+                        </section>
+                    </div>
+
+                    <aside class="col-lg-4">
+                        <!-- Alertas -->
+                        <section class="content-container" aria-labelledby="alertsTitle">
+                            <h2 id="alertsTitle" class="section-title">Alertas</h2>
+                            <div class="alert-item warning" role="alert">
+                                <div class="alert-title">
+                                    <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+                                    Stock bajo
+                                </div>
+                                <div class="alert-desc">5 productos requieren reabastecimiento</div>
+                            </div>
+                            <div class="alert-item info" role="status">
+                                <div class="alert-title">
+                                    <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
+                                    Facturas pendientes
+                                </div>
+                                <div class="alert-desc">3 facturas vencen esta semana</div>
+                            </div>
+                        </section>
+
+                        <!-- Tareas pendientes -->
+                        <section class="content-container" aria-labelledby="tasksTitle">
+                            <h2 id="tasksTitle" class="section-title">Tareas Pendientes</h2>
+                            <div class="task-item">
+                                <i class="bi bi-circle" aria-hidden="true"></i>
+                                <div class="task-content">
+                                    <div class="task-title">Revisar orden de compra #OC-125</div>
+                                    <div class="task-time">Vence hoy a las 15:00</div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <i class="bi bi-circle" aria-hidden="true"></i>
+                                <div class="task-content">
+                                    <div class="task-title">Seguimiento cliente ABC Corp</div>
+                                    <div class="task-time">Mañana 10:00</div>
+                                </div>
+                            </div>
+                        </section>
+                    </aside>
+                </div>
+            </main>
+
+            <footer class="mt-4 py-3 text-center text-muted small" role="contentinfo">
+                <p class="mb-0">© 2025 MarketWorld. Todos los derechos reservados.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Sidebar toggle -->
+    <script defer src="../js/sidebar-toggle.js"></script>
+    <!-- Script específico -->
+    <script defer src="../js/inicio.js"></script>
+</body>
+</html>

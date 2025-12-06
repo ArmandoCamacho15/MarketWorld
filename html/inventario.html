@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Inventario | Gestión de Productos</title>
+    <meta name="description" content="Gestiona tu inventario de productos, categorías y movimientos de stock en MarketWorld">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="../css/inventario.css">
+</head>
+<body>
+    <!-- Skip link -->
+    <a href="#mainContent" class="skip-link">Saltar al contenido principal</a>
+
+    <div class="app-container">
+        <!-- Sidebar (sin cambios) -->
+        <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navegación principal">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+                <button class="sidebar-toggle d-md-none" id="sidebarToggle" aria-label="Cerrar menú" aria-expanded="true">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+            <nav aria-label="Menú principal">
+                <ul class="nav flex-column mt-4">
+                    <li class="nav-item">
+                        <a class="nav-link" href="inicio.html"><i class="bi bi-house-door" aria-hidden="true"></i> <span class="nav-text">Inicio</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2" aria-hidden="true"></i> <span class="nav-text">Dashboard</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="inventario.html" aria-current="page"><i class="bi bi-box-seam" aria-hidden="true"></i> <span class="nav-text">Inventario</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt" aria-hidden="true"></i> <span class="nav-text">Facturación</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin" aria-hidden="true"></i> <span class="nav-text">Contabilidad</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="compras.html"><i class="bi bi-cart" aria-hidden="true"></i> <span class="nav-text">Compras</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="crm.html"><i class="bi bi-people" aria-hidden="true"></i> <span class="nav-text">CRM</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart" aria-hidden="true"></i> <span class="nav-text">Reportes</span></a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="configuracion.html"><i class="bi bi-gear" aria-hidden="true"></i> <span class="nav-text">Configuración</span></a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div class="main-content-wrapper">
+            <header class="top-bar" role="banner">
+                <button class="btn btn-link d-md-none" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">
+                    <i class="bi bi-list fs-3" aria-hidden="true"></i>
+                </button>
+                
+                <div class="search-bar" role="search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label for="searchProduct" class="visually-hidden">Buscar productos</label>
+                    <input id="searchProduct" type="search" class="form-control" placeholder="Buscar por SKU, nombre, categoría...">
+                </div>
+                
+                <div class="user-info">
+                    <button class="btn btn-link position-relative me-3" aria-label="Notificaciones">
+                        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5<span class="visually-hidden"> notificaciones</span></span>
+                    </button>
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar Admin User" width="40" height="40">
+                    <div class="ms-2">
+                        <div class="fw-bold">Admin User</div>
+                        <div class="small text-muted">Gestión de Inventario</div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="mainContent" class="main-content" role="main">
+                <!-- NUEVO: Dashboard de KPIs Visuales -->
+                <section class="dashboard-kpis mb-4" aria-label="Indicadores clave de inventario">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="kpi-card kpi-total">
+                                <div class="kpi-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
+                                <div class="kpi-value">3,890</div>
+                                <div class="kpi-label">Productos Totales</div>
+                                <div class="kpi-trend positive"><i class="bi bi-arrow-up"></i> +125 este mes</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-card kpi-value-amount">
+                                <div class="kpi-icon"><i class="bi bi-currency-dollar" aria-hidden="true"></i></div>
+                                <div class="kpi-value">$485,250</div>
+                                <div class="kpi-label">Valor Total Inventario</div>
+                                <div class="kpi-trend positive"><i class="bi bi-arrow-up"></i> +8.5%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-card kpi-alert">
+                                <div class="kpi-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></div>
+                                <div class="kpi-value">12</div>
+                                <div class="kpi-label">Productos Stock Bajo</div>
+                                <div class="kpi-trend negative"><i class="bi bi-arrow-down"></i> Requiere atención</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-card kpi-movement">
+                                <div class="kpi-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+                                <div class="kpi-value">245</div>
+                                <div class="kpi-label">Movimientos Hoy</div>
+                                <div class="kpi-trend">128 entradas / 117 salidas</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pestañas -->
+                <nav aria-label="Pestañas de inventario">
+                    <ul class="nav nav-tabs mb-4">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#productos" role="tab">
+                                <i class="bi bi-grid" aria-hidden="true"></i> Productos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#categorias" role="tab">
+                                <i class="bi bi-folder" aria-hidden="true"></i> Categorías
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#movimientos" role="tab">
+                                <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Movimientos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#ajustes" role="tab">
+                                <i class="bi bi-sliders" aria-hidden="true"></i> Ajustes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#reportes" role="tab">
+                                <i class="bi bi-graph-up" aria-hidden="true"></i> Reportes
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="tab-content">
+                    <!-- Pestaña Productos MEJORADA -->
+                    <section class="tab-pane fade show active" id="productos" role="tabpanel">
+                        <div class="content-container">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2 class="section-title mb-0">Gestión de Productos</h2>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-success" aria-label="Importar desde Excel">
+                                        <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Importar Excel
+                                    </button>
+                                    <button class="btn btn-outline-secondary" aria-label="Exportar a Excel">
+                                        <i class="bi bi-download me-2" aria-hidden="true"></i> Exportar
+                                    </button>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" aria-label="Agregar nuevo producto">
+                                        <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nuevo Producto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- NUEVO: Filtros Avanzados -->
+                            <div class="advanced-filters mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="filterCategory" class="form-label">Categoría</label>
+                                        <select id="filterCategory" class="form-select">
+                                            <option value="">Todas las categorías</option>
+                                            <option>Electrónicos</option>
+                                            <option>Alimentos</option>
+                                            <option>Oficina</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filterStock" class="form-label">Estado de Stock</label>
+                                        <select id="filterStock" class="form-select">
+                                            <option value="">Todos</option>
+                                            <option value="ok">Stock OK</option>
+                                            <option value="bajo">Stock Bajo</option>
+                                            <option value="agotado">Agotado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filterPrice" class="form-label">Rango de Precio</label>
+                                        <select id="filterPrice" class="form-select">
+                                            <option value="">Todos los precios</option>
+                                            <option>$0 - $100</option>
+                                            <option>$100 - $500</option>
+                                            <option>$500 - $1,000</option>
+                                            <option>Más de $1,000</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" id="btnApplyFilters">
+                                            <i class="bi bi-funnel me-2" aria-hidden="true"></i> Aplicar Filtros
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- NUEVO: Alertas de Stock Crítico -->
+                            <div class="alert alert-warning mb-4" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill fs-3 me-3" aria-hidden="true"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>¡Atención!</strong> 12 productos requieren reabastecimiento urgente.
+                                    </div>
+                                    <button class="btn btn-sm btn-warning">Ver Productos</button>
+                                </div>
+                            </div>
+
+                            <!-- Tabla de productos mejorada -->
+                            <div class="table-responsive">
+                                <table class="table product-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">
+                                                <input type="checkbox" class="form-check-input" id="selectAll" aria-label="Seleccionar todos">
+                                            </th>
+                                            <th scope="col">Producto</th>
+                                            <th scope="col">SKU / Código</th>
+                                            <th scope="col">Categoría</th>
+                                            <th scope="col">Stock</th>
+                                            <th scope="col">Ubicación</th>
+                                            <th scope="col">Precio Compra</th>
+                                            <th scope="col">Precio Venta</th>
+                                            <th scope="col">Estado</th>
+                                            <th scope="col">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><input type="checkbox" class="form-check-input row-select"></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="product-img me-3">
+                                                        <img src="https://via.placeholder.com/50" alt="Laptop HP ProBook" width="50" height="50">
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">Laptop HP ProBook</div>
+                                                        <div class="text-muted small">Intel i7, 16GB RAM</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>ELEC-1001</div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-upc-scan me-1" aria-hidden="true"></i> 7891234567890
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-primary">Electrónicos</span></td>
+                                            <td>
+                                                <div class="stock-indicator">
+                                                    <div class="stock-ok">25</div>
+                                                    <div class="small text-muted">Min: 5</div>
+                                                    <div class="progress mt-1" style="height: 4px;">
+                                                        <div class="progress-bar bg-success" style="width: 80%"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-geo-alt me-1" aria-hidden="true"></i> Bodega A - Est. 12
+                                            </td>
+                                            <td>$1,150.00</td>
+                                            <td class="fw-bold text-success">$1,250.00</td>
+                                            <td><span class="badge bg-success">Activo</span></td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary" title="Ver detalles" aria-label="Ver detalles">
+                                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-warning" title="Editar" aria-label="Editar">
+                                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-info" title="Imprimir código" aria-label="Imprimir código de barras">
+                                                        <i class="bi bi-printer" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar">
+                                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><input type="checkbox" class="form-check-input row-select"></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="product-img me-3">
+                                                        <img src="https://via.placeholder.com/50" alt="Mouse Inalámbrico" width="50" height="50">
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">Mouse Inalámbrico</div>
+                                                        <div class="text-muted small">Logitech M280</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>ELEC-1002</div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-upc-scan me-1" aria-hidden="true"></i> 7891234567891
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-info">Accesorios</span></td>
+                                            <td>
+                                                <div class="stock-indicator">
+                                                    <div class="stock-low">3</div>
+                                                    <div class="small text-muted">Min: 10</div>
+                                                    <div class="progress mt-1" style="height: 4px;">
+                                                        <div class="progress-bar bg-danger" style="width: 30%"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-geo-alt me-1" aria-hidden="true"></i> Bodega B - Est. 5
+                                            </td>
+                                            <td>$18.00</td>
+                                            <td class="fw-bold text-success">$25.00</td>
+                                            <td><span class="badge bg-warning text-dark">Stock Bajo</span></td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary" aria-label="Ver detalles">
+                                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-warning" aria-label="Editar">
+                                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-info" aria-label="Imprimir código">
+                                                        <i class="bi bi-printer" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar">
+                                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- NUEVO: Paginación -->
+                            <nav aria-label="Paginación de productos">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </section>
+
+                    <!-- NUEVA Pestaña: Reportes con Gráficos -->
+                    <section class="tab-pane fade" id="reportes" role="tabpanel">
+                        <div class="content-container">
+                            <h2 class="section-title">Reportes y Analítica de Inventario</h2>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="chart-card">
+                                        <h5>Rotación de Inventario</h5>
+                                        <canvas id="rotationChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="chart-card">
+                                        <h5>Valorización por Categoría</h5>
+                                        <canvas id="valuationChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <div class="chart-card">
+                                        <h5>Movimientos de Inventario (Últimos 30 días)</h5>
+                                        <canvas id="movementsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- NUEVO: Top productos -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="content-container">
+                                        <h5 class="mb-3">Top 10 Productos Más Vendidos</h5>
+                                        <ul class="top-products-list">
+                                            <li>
+                                                <div class="product-rank">1</div>
+                                                <div class="product-info">
+                                                    <div class="fw-bold">Laptop HP ProBook</div>
+                                                    <div class="text-muted small">125 unidades vendidas</div>
+                                                </div>
+                                                <div class="product-value">$156,250</div>
+                                            </li>
+                                            <li>
+                                                <div class="product-rank">2</div>
+                                                <div class="product-info">
+                                                    <div class="fw-bold">Mouse Inalámbrico</div>
+                                                    <div class="text-muted small">320 unidades vendidas</div>
+                                                </div>
+                                                <div class="product-value">$8,000</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="content-container">
+                                        <h5 class="mb-3">Productos con Menor Rotación</h5>
+                                        <ul class="top-products-list low-rotation">
+                                            <li>
+                                                <div class="product-rank">1</div>
+                                                <div class="product-info">
+                                                    <div class="fw-bold">Impresora Láser</div>
+                                                    <div class="text-muted small">2 unidades en 90 días</div>
+                                                </div>
+                                                <div class="text-danger">Revisar</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña Categorías (CONTENIDO ORIGINAL) -->
+                    <section class="tab-pane fade" id="categorias" role="tabpanel">
+                        <div class="content-container">
+                            <h2 class="section-title">Gestión de Categorías</h2>
+                            <p class="text-muted">Organiza tus productos por categorías y subcategorías</p>
+                            <button class="btn btn-primary mb-3" aria-label="Agregar nueva categoría">
+                                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nueva Categoría
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña Movimientos (CONTENIDO ORIGINAL) -->
+                    <section class="tab-pane fade" id="movimientos" role="tabpanel">
+                        <div class="content-container">
+                            <h2 class="section-title">Movimientos de Inventario</h2>
+                            <p class="text-muted">Historial de entradas y salidas de productos</p>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña Ajustes (CONTENIDO ORIGINAL) -->
+                    <section class="tab-pane fade" id="ajustes" role="tabpanel">
+                        <div class="content-container">
+                            <h2 class="section-title">Ajustes de Inventario</h2>
+                            <p class="text-muted">Realiza ajustes manuales al stock de productos</p>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <footer class="mt-4 py-3 text-center text-muted small" role="contentinfo">
+                <p class="mb-0">© 2025 MarketWorld. Todos los derechos reservados.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- NUEVO: Modal para agregar/editar producto -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productModalLabel">Agregar Nuevo Producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productForm" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="productSKU" class="form-label">SKU</label>
+                                <input type="text" class="form-control" id="productSKU" required>
+                                <div class="invalid-feedback">El SKU es obligatorio</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="productName" class="form-label">Nombre del Producto</label>
+                                <input type="text" class="form-control" id="productName" required>
+                                <div class="invalid-feedback">El nombre es obligatorio</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="productCategory" class="form-label">Categoría</label>
+                                <select class="form-select" id="productCategory" required>
+                                    <option value="">Seleccionar categoría</option>
+                                    <option value="Electrónica">Electrónica</option>
+                                    <option value="Alimentos">Alimentos</option>
+                                    <option value="Ropa">Ropa</option>
+                                    <option value="Hogar">Hogar</option>
+                                </select>
+                                <div class="invalid-feedback">Selecciona una categoría</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="productPrice" class="form-label">Precio</label>
+                                <input type="number" class="form-control" id="productPrice" min="0" step="0.01" required>
+                                <div class="invalid-feedback">El precio debe ser mayor a 0</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="productStock" class="form-label">Stock</label>
+                                <input type="number" class="form-control" id="productStock" min="0" required>
+                                <div class="invalid-feedback">El stock debe ser mayor o igual a 0</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="productMinStock" class="form-label">Stock Mínimo</label>
+                                <input type="number" class="form-control" id="productMinStock" min="0" required>
+                                <div class="invalid-feedback">El stock mínimo es obligatorio</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productDescription" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productImage" class="form-label">Imagen del Producto</label>
+                            <input type="file" class="form-control" id="productImage" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Sidebar toggle -->
+    <script defer src="../js/sidebar-toggle.js"></script>
+    <!-- Script específico -->
+    <script defer src="../js/inventario.js"></script>
+</body>
+</html>

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Contabilidad</title>
+    <!-- Bootstrap CSS para estilos base y componentes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons para iconografía -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Chart.js para gráficos contables y financieros -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Hoja de estilos para el módulo de contabilidad -->
+    <link rel="stylesheet" href="../css/contabilidad.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra de navegación lateral con acceso a los módulos principales -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
+                <li class="nav-item">
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link active" href="contabilidad.html" aria-current="page"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal del módulo de contabilidad -->
+        <div class="main-content">
+            <!-- Barra superior con buscador y datos de usuario -->
+            <div class="top-bar">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" placeholder="Buscar cuentas, asientos, transacciones...">
+                </div>
+                <div class="user-info">
+                    <!-- Notificaciones y mensajes -->
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">2</span>
+                    </div>
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-envelope fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">4</span>
+                    </div>
+                    <!-- Información del usuario actual -->
+                    <img src="https://ui-avatars.com/api/?name=Contador+User&background=3498db&color=fff" alt="User">
+                    <div>
+                        <div class="fw-bold">Contador User</div>
+                        <div class="small text-muted">Contador General</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjetas de indicadores contables (KPIs) -->
+            <div class="row mb-4">
+                <!-- Cada tarjeta muestra un indicador clave del módulo de contabilidad -->
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-wallet2 fs-4 text-success"></i>
+                        <div class="kpi-value">$185,450</div>
+                        <div class="kpi-title">Activos Totales</div>
+                        <div class="kpi-growth positive">
+                            <i class="bi bi-arrow-up"></i> 8.5% vs mes anterior
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-credit-card fs-4 text-danger"></i>
+                        <div class="kpi-value">$72,800</div>
+                        <div class="kpi-title">Pasivos Totales</div>
+                        <div class="kpi-growth negative">
+                            <i class="bi bi-arrow-down"></i> 3.2% vs mes anterior
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-graph-up fs-4 text-warning"></i>
+                        <div class="kpi-value">$112,650</div>
+                        <div class="kpi-title">Patrimonio</div>
+                        <div class="kpi-growth positive">
+                            <i class="bi bi-arrow-up"></i> 12.8% vs mes anterior
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-card">
+                        <i class="bi bi-cash fs-4 text-primary"></i>
+                        <div class="kpi-value">$37,650</div>
+                        <div class="kpi-title">Utilidad Neta</div>
+                        <div class="kpi-growth positive">
+                            <i class="bi bi-arrow-up"></i> 15.8% vs mes anterior
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación por pestañas para acceder a las diferentes funcionalidades -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#plan-contable">Plan Contable</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#asientos">Asientos Contables</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#libros">Libros Contables</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#estados">Estados Financieros</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#impuestos">Impuestos</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Pestaña: Plan Contable -->
+                <div class="tab-pane fade show active" id="plan-contable">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="content-container">
+                                <h4 class="section-title">Plan Contable</h4>
+                                <!-- Buscador de cuentas contables -->
+                                <div class="input-group mb-4">
+                                    <input type="text" class="form-control" placeholder="Buscar cuenta...">
+                                    <button class="btn btn-outline-primary">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <!-- Estructura jerárquica del plan contable -->
+                                <div class="mb-4">
+                                    <h5>Estructura Jerárquica</h5>
+                                    <ul class="account-tree">
+                                        <!-- Listado de cuentas principales y subcuentas -->
+                                        <li>
+                                            <span class="account-code">1</span> Activos
+                                            <span class="account-type type-asset">Activo</span>
+                                            <ul>
+                                                <li>
+                                                    <span class="account-code">1.1</span> Activo Corriente
+                                                    <ul>
+                                                        <li><span class="account-code">1.1.1</span> Caja y Bancos</li>
+                                                        <li><span class="account-code">1.1.2</span> Cuentas por Cobrar</li>
+                                                        <li><span class="account-code">1.1.3</span> Inventarios</li>
+                                                    </ul>
+                                                </li>
+                                                <li>
+                                                    <span class="account-code">1.2</span> Activo No Corriente
+                                                    <ul>
+                                                        <li><span class="account-code">1.2.1</span> Propiedades, Planta y Equipo</li>
+                                                        <li><span class="account-code">1.2.2</span> Activos Intangibles</li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <span class="account-code">2</span> Pasivos
+                                            <span class="account-type type-liability">Pasivo</span>
+                                            <ul>
+                                                <li><span class="account-code">2.1</span> Pasivo Corriente</li>
+                                                <li><span class="account-code">2.2</span> Pasivo No Corriente</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <span class="account-code">3</span> Patrimonio
+                                            <span class="account-type type-equity">Patrimonio</span>
+                                        </li>
+                                        <li>
+                                            <span class="account-code">4</span> Ingresos
+                                            <span class="account-type type-income">Ingreso</span>
+                                        </li>
+                                        <li>
+                                            <span class="account-code">5</span> Gastos
+                                            <span class="account-type type-expense">Gasto</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="content-container">
+                                <h4 class="section-title">Detalle de Cuenta</h4>
+                                <!-- Formulario para editar o crear cuentas contables -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Código de Cuenta</label>
+                                            <input type="text" class="form-control" value="1.1.1.01">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Nombre de Cuenta</label>
+                                            <input type="text" class="form-control" value="Caja General">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Cuenta</label>
+                                            <select class="form-select">
+                                                <option>Activo</option>
+                                                <option>Pasivo</option>
+                                                <option>Patrimonio</option>
+                                                <option>Ingreso</option>
+                                                <option selected>Gasto</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nivel</label>
+                                            <input type="text" class="form-control" value="Subcuenta" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Cuenta Padre</label>
+                                            <select class="form-select">
+                                                <option selected>1.1.1 - Caja y Bancos</option>
+                                                <option>1.1.2 - Cuentas por Cobrar</option>
+                                                <option>1.1.3 - Inventarios</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Moneda</label>
+                                            <select class="form-select">
+                                                <option selected>Pesos Colombianos (COP)</option>
+                                                <option>Dólares (USD)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción</label>
+                                    <textarea class="form-control" rows="3">Cuenta principal para registrar transacciones en efectivo</textarea>
+                                </div>
+                                <!-- Botones para cancelar o guardar cambios en la cuenta -->
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-outline-secondary me-2">
+                                        <i class="bi bi-x-circle me-2"></i> Cancelar
+                                    </button>
+                                    <button class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i> Guardar Cuenta
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Tabla de movimientos de la cuenta seleccionada -->
+                            <div class="content-container mt-4">
+                                <h4 class="section-title">Movimientos de la Cuenta</h4>
+                                <div class="table-responsive">
+                                    <table class="table data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Descripción</th>
+                                                <th>Debe</th>
+                                                <th>Haber</th>
+                                                <th>Saldo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ejemplo de movimientos contables -->
+                                            <tr>
+                                                <td>20/06/2025</td>
+                                                <td>Apertura de caja</td>
+                                                <td class="debit">$5,000,000</td>
+                                                <td></td>
+                                                <td class="debit">$5,000,000</td>
+                                            </tr>
+                                            <tr>
+                                                <td>21/06/2025</td>
+                                                <td>Venta contado - FAC-2025-00128</td>
+                                                <td class="debit">$1,513,480</td>
+                                                <td></td>
+                                                <td class="debit">$6,513,480</td>
+                                            </tr>
+                                            <tr>
+                                                <td>22/06/2025</td>
+                                                <td>Pago proveedor - PAG-0625-001</td>
+                                                <td></td>
+                                                <td class="credit">$2,500,000</td>
+                                                <td class="debit">$4,013,480</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="fw-bold">
+                                                <td colspan="2">Total</td>
+                                                <td class="debit">$6,513,480</td>
+                                                <td class="credit">$2,500,000</td>
+                                                <td class="debit">$4,013,480</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Asientos Contables -->
+                <div class="tab-pane fade" id="asientos">
+                    <div class="content-container">
+                        <!-- Encabezado y botón para agregar nuevo asiento contable -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="section-title mb-0">Asientos Contables</h4>
+                            <div>
+                                <button class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-2"></i> Nuevo Asiento
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Listado de asientos contables registrados -->
+                                <div class="journal-entry">
+                                    <!-- Encabezado del asiento contable -->
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <div>
+                                            <span class="fw-bold">#AS-2025-00128</span>
+                                            <span class="ms-3">20/06/2025</span>
+                                            <span class="ms-3 badge bg-info">Automático</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">Registro de venta - FAC-2025-00128</div>
+                                    <!-- Detalle de partidas del asiento -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between">
+                                                <div>1.1.1.01 Caja General</div>
+                                                <div class="debit">$1,513,480</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between">
+                                                <div>4.1.01 Ventas de Productos</div>
+                                                <div class="credit">$1,275,980</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between">
+                                                <div>2.3.01 IVA por Pagar</div>
+                                                <div class="credit">$237,500</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- ...otros asientos contables... -->
+                            </div>
+                            <div class="col-md-4">
+                                <!-- Formulario para registrar nuevo asiento contable -->
+                                <div class="content-container">
+                                    <h5>Nuevo Asiento Contable</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="date" class="form-control" value="2025-06-23">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Descripción</label>
+                                        <textarea class="form-control" rows="2" placeholder="Descripción del asiento"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo</label>
+                                        <select class="form-select">
+                                            <option selected>Manual</option>
+                                            <option>Automático (Ventas)</option>
+                                            <option>Automático (Compras)</option>
+                                            <option>Automático (Nómina)</option>
+                                        </select>
+                                    </div>
+                                    <hr>
+                                    <h6>Partidas del Asiento</h6>
+                                    <!-- Campos para agregar partidas al asiento contable -->
+                                    <div class="mb-3">
+                                        <div class="input-group mb-2">
+                                            <select class="form-select">
+                                                <option>Seleccionar cuenta</option>
+                                                <option>1.1.1.01 Caja General</option>
+                                                <option>1.1.2.01 Cuentas por Cobrar Clientes</option>
+                                                <option>1.1.3.01 Inventario de Mercancías</option>
+                                            </select>
+                                            <input type="text" class="form-control" placeholder="Monto" style="max-width: 120px;">
+                                            <select class="form-select" style="max-width: 120px;">
+                                                <option>Debe</option>
+                                                <option>Haber</option>
+                                            </select>
+                                            <button class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <!-- ...otras partidas... -->
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus"></i> Agregar Partida
+                                        </button>
+                                    </div>
+                                    <!-- Diferencia entre debe y haber para validar el asiento -->
+                                    <div class="d-flex justify-content-between fw-bold mb-3">
+                                        <span>Diferencia:</span>
+                                        <span class="text-danger">$1,000</span>
+                                    </div>
+                                    <!-- Botón para registrar el asiento contable -->
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" disabled>
+                                            <i class="bi bi-check-circle me-2"></i> Registrar Asiento (La suma debe ser 0)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Libros Contables -->
+                <div class="tab-pane fade" id="libros">
+                    <div class="content-container">
+                        <h4 class="section-title">Libros Contables</h4>
+                        <!-- Navegación por sub-pestañas de libros contables -->
+                        <ul class="nav nav-tabs mb-4">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#diario">Libro Diario</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#mayor">Libro Mayor</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#conciliacion">Conciliación Bancaria</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+                            <!-- Sub-pestaña: Libro Diario -->
+                            <div class="tab-pane fade show active" id="diario">
+                                <!-- Filtros para buscar asientos en el libro diario -->
+                                <div class="row mb-4">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Inicio</label>
+                                        <input type="date" class="form-control" value="2025-06-01">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Fin</label>
+                                        <input type="date" class="form-control" value="2025-06-23">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Tipo Asiento</label>
+                                        <select class="form-select">
+                                            <option>Todos</option>
+                                            <option>Manual</option>
+                                            <option>Automático</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100">
+                                            <i class="bi bi-funnel me-2"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Tabla con los asientos del libro diario -->
+                                <div class="table-responsive">
+                                    <table class="table data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>N° Asiento</th>
+                                                <th>Fecha</th>
+                                                <th>Descripción</th>
+                                                <th>Tipo</th>
+                                                <th>Debe</th>
+                                                <th>Haber</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ejemplo de asientos -->
+                                            <tr>
+                                                <td>AS-2025-00128</td>
+                                                <td>20/06/2025</td>
+                                                <td>Registro de venta - FAC-2025-00128</td>
+                                                <td><span class="badge bg-info">Automático</span></td>
+                                                <td class="debit">$1,513,480</td>
+                                                <td class="credit">$1,513,480</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <!-- ...otros asientos... -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="fw-bold">
+                                                <td colspan="4">Total</td>
+                                                <td class="debit">$12,763,980</td>
+                                                <td class="credit">$12,763,980</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- Sub-pestaña: Libro Mayor -->
+                            <div class="tab-pane fade" id="mayor">
+                                <!-- Filtros para buscar movimientos por cuenta -->
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Seleccionar Cuenta</label>
+                                        <select class="form-select">
+                                            <option>1.1.1.01 - Caja General</option>
+                                            <option>1.1.2.01 - Cuentas por Cobrar Clientes</option>
+                                            <option selected>1.1.3.01 - Inventario de Mercancías</option>
+                                            <option>2.1.01 - Cuentas por Pagar</option>
+                                            <option>4.1.01 - Ventas de Productos</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Inicio</label>
+                                        <input type="date" class="form-control" value="2025-06-01">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Fin</label>
+                                        <input type="date" class="form-control" value="2025-06-23">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100">
+                                            <i class="bi bi-funnel me-2"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Resumen y tabla de movimientos de la cuenta seleccionada -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h5>1.1.3.01 - Inventario de Mercancías</h5>
+                                                <div class="text-muted">Cuenta de Activo</div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="fw-bold">Saldo Actual:</div>
+                                                <div class="fs-4 debit">$42,350,250</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Asiento</th>
+                                                <th>Descripción</th>
+                                                <th>Debe</th>
+                                                <th>Haber</th>
+                                                <th>Saldo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ejemplo de movimientos -->
+                                            <tr>
+                                                <td>01/06/2025</td>
+                                                <td>AS-2025-00101</td>
+                                                <td>Saldo inicial</td>
+                                                <td class="debit">$35,250,000</td>
+                                                <td></td>
+                                                <td class="debit">$35,250,000</td>
+                                            </tr>
+                                            <!-- ...otros movimientos... -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- Sub-pestaña: Conciliación Bancaria -->
+                            <div class="tab-pane fade" id="conciliacion">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="reconciliation-card">
+                                            <h5>Conciliación Bancaria</h5>
+                                            <!-- Formulario para conciliación de cuentas bancarias -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Cuenta Bancaria</label>
+                                                <select class="form-select">
+                                                    <option selected>Bancolombia ****1234</option>
+                                                    <option>Davivienda ****5678</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Fecha de Corte</label>
+                                                <input type="date" class="form-control" value="2025-06-20">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Saldo según Banco</label>
+                                                <input type="text" class="form-control" value="$18,450,750">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Saldo según Libros</label>
+                                                <input type="text" class="form-control" value="$17,920,500">
+                                            </div>
+                                            <div class="d-flex justify-content-between fw-bold mb-3">
+                                                <span>Diferencia:</span>
+                                                <span class="text-danger">$530,250</span>
+                                            </div>
+                                            <button class="btn btn-primary">
+                                                <i class="bi bi-calculator me-2"></i> Calcular Conciliación
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="reconciliation-card">
+                                            <h5>Ajustes de Conciliación</h5>
+                                            <!-- Formulario para registrar ajustes de conciliación -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Depósitos en Tránsito</label>
+                                                <input type="text" class="form-control" value="$650,000">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Cheques Pendientes</label>
+                                                <input type="text" class="form-control" value="$1,180,250">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Gastos Bancarios</label>
+                                                <input type="text" class="form-control" value="$35,000">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Intereses Ganados</label>
+                                                <input type="text" class="form-control" value="$45,000">
+                                            </div>
+                                            <div class="d-grid mt-4">
+                                                <button class="btn btn-success">
+                                                    <i class="bi bi-check-circle me-2"></i> Registrar Asientos de Ajuste
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Estados Financieros -->
+                <div class="tab-pane fade" id="estados">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="content-container">
+                                <h4 class="section-title">Balance General</h4>
+                                <!-- Gráfico de balance general -->
+                                <div class="chart-container">
+                                    <canvas id="balanceChart"></canvas>
+                                </div>
+                                <!-- Resumen de totales del balance general -->
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Total Activos:</span>
+                                        <span class="debit">$185,450,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Total Pasivos:</span>
+                                        <span class="credit">$72,800,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Total Patrimonio:</span>
+                                        <span class="debit">$112,650,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Total Pasivos + Patrimonio:</span>
+                                        <span class="debit">$185,450,000</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="content-container">
+                                <h4 class="section-title">Estado de Resultados</h4>
+                                <!-- Gráfico de estado de resultados -->
+                                <div class="chart-container">
+                                    <canvas id="incomeChart"></canvas>
+                                </div>
+                                <!-- Resumen de totales del estado de resultados -->
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Ventas Netas:</span>
+                                        <span class="debit">$125,450,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Costo de Ventas:</span>
+                                        <span class="credit">$72,800,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Utilidad Bruta:</span>
+                                        <span class="debit">$52,650,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <span>Gastos Operacionales:</span>
+                                        <span class="credit">$15,000,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Utilidad Operacional:</span>
+                                        <span class="debit">$37,650,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <span>Impuestos:</span>
+                                        <span class="credit">$7,530,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Utilidad Neta:</span>
+                                        <span class="debit">$30,120,000</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Impuestos -->
+                <div class="tab-pane fade" id="impuestos">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="content-container">
+                                <h4 class="section-title">Cálculo de Impuestos</h4>
+                                <!-- Detalle de cálculo de impuestos por periodo -->
+                                <div class="mb-4">
+                                    <h5>Periodo: Junio 2025</h5>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Fecha de presentación:</span>
+                                        <span class="fw-bold">15/07/2025</span>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <h6>Impuesto sobre la Renta</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Utilidad antes de impuestos:</span>
+                                        <span>$37,650,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Tasa de impuesto (20%):</span>
+                                        <span class="credit">$7,530,000</span>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <h6>Impuesto al Valor Agregado (IVA)</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>IVA Débito:</span>
+                                        <span class="debit">$23,750,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>IVA Crédito:</span>
+                                        <span class="credit">$18,250,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>IVA a Pagar:</span>
+                                        <span class="credit">$5,500,000</span>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <h6>Retenciones en la Fuente</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Retenciones realizadas:</span>
+                                        <span class="debit">$3,250,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Retenciones sufridas:</span>
+                                        <span class="credit">$2,150,000</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                                        <span>Saldo a favor:</span>
+                                        <span class="debit">$1,100,000</span>
+                                    </div>
+                                </div>
+                                <!-- Botón para calcular el total de impuestos a pagar -->
+                                <div class="d-grid">
+                                    <button class="btn btn-primary">
+                                        <i class="bi bi-calculator me-2"></i> Calcular Total a Pagar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="content-container">
+                                <h4 class="section-title">Declaraciones Tributarias</h4>
+                                <!-- Tabla con el historial de declaraciones tributarias -->
+                                <div class="table-responsive">
+                                    <table class="table data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Periodo</th>
+                                                <th>Impuesto</th>
+                                                <th>Estado</th>
+                                                <th>Monto</th>
+                                                <th>Fecha Presentación</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ejemplo de declaraciones -->
+                                            <tr>
+                                                <td>Mayo 2025</td>
+                                                <td>IVA</td>
+                                                <td><span class="badge bg-success">Pagado</span></td>
+                                                <td class="credit">$5,250,000</td>
+                                                <td>15/06/2025</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <!-- ...otras declaraciones... -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Botón para presentar declaración tributaria -->
+                                <div class="d-grid mt-3">
+                                    <button class="btn btn-danger">
+                                        <i class="bi bi-cloud-arrow-up me-2"></i> Presentar Declaración a la DIAN
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script JS para el módulo de contabilidad -->
+    <script defer src="../js/contabilidad.js"></script>
+</body>
+</html>

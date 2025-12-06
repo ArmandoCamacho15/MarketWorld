@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Compras y Proveedores</title>
+    <!-- Bootstrap CSS para estilos base y componentes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons para iconografía -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Hoja de estilos para el módulo de compras -->
+    <link rel="stylesheet" href="../css/compras.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra de navegación lateral con acceso a los módulos principales -->
+        <aside class="sidebar" aria-label="Navegación principal">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+            </div>
+            <nav aria-label="Menú principal">
+                <ul class="nav flex-column mt-4">
+                    <li class="nav-item">
+                        <a class="nav-link" href="inicio.html" aria-current="false">
+                            <i class="bi bi-house-door" aria-hidden="true"></i>
+                            <span class="nav-text">Inicio</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html" aria-current="false">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="inventario.html" aria-current="false">
+                            <i class="bi bi-box-seam" aria-hidden="true"></i>
+                            <span class="nav-text">Inventario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="facturacion.html" aria-current="false">
+                            <i class="bi bi-receipt" aria-hidden="true"></i>
+                            <span class="nav-text">Facturación</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contabilidad.html" aria-current="false">
+                            <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                            <span class="nav-text">Contabilidad</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="compras.html" aria-current="page">
+                            <i class="bi bi-cart" aria-hidden="true"></i>
+                            <span class="nav-text">Compras</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="crm.html" aria-current="false">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            <span class="nav-text">CRM</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="reporte.html" aria-current="false">
+                            <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                            <span class="nav-text">Reportes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="configuracion.html" aria-current="false">
+                            <i class="bi bi-gear" aria-hidden="true"></i>
+                            <span class="nav-text">Configuración</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal del módulo de compras -->
+        <div class="main-content-wrapper">
+            <header class="top-bar" role="banner" aria-label="Barra superior">
+                <div class="search-bar" role="search" aria-label="Buscar">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label for="globalSearch" class="visually-hidden">Buscar</label>
+                    <input id="globalSearch" type="text" class="form-control" placeholder="Buscar compras, proveedores..." />
+                </div>
+
+                <div class="user-info" role="region" aria-label="Información del usuario">
+                    <!-- Notificaciones y mensajes -->
+                    <div class="me-4 position-relative" aria-hidden="false">
+                        <button class="btn btn-link p-0" aria-label="Notificaciones">
+                            <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                        </button>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" aria-hidden="true">2</span>
+                    </div>
+                    <div class="me-4 position-relative" aria-hidden="false">
+                        <button class="btn btn-link p-0" aria-label="Mensajes">
+                            <i class="bi bi-envelope fs-5" aria-hidden="true"></i>
+                        </button>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" aria-hidden="true">4</span>
+                    </div>
+
+                    <!-- Información del usuario actual -->
+                    <div class="d-flex align-items-center">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar Admin User" width="40" height="40" />
+                        <div class="ms-2">
+                            <div class="fw-bold">Admin User</div>
+                            <div class="small text-muted">Administrador</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="mainContent" class="main-content" role="main" aria-label="Contenido principal">
+                <!-- Tarjetas de resumen financiero y de proveedores -->
+                <section class="dashboard-cards row mb-4" aria-label="Resumen financiero y proveedores">
+                    <div class="col-md-3">
+                        <article class="balance-card" aria-labelledby="totalPagarTitle">
+                            <div id="totalPagarTitle" class="title">Total a Pagar</div>
+                            <div class="amount">$18,450.75</div>
+                        </article>
+                    </div>
+                    <div class="col-md-3">
+                        <article class="balance-card" aria-labelledby="comprasMesTitle" style="background: linear-gradient(135deg, #2ecc71, #16a085);">
+                            <div id="comprasMesTitle" class="title">Compras Este Mes</div>
+                            <div class="amount">$42,800.20</div>
+                        </article>
+                    </div>
+                    <div class="col-md-3">
+                        <article class="balance-card" aria-labelledby="comprasPendientesTitle" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                            <div id="comprasPendientesTitle" class="title">Compras Pendientes</div>
+                            <div class="amount">7</div>
+                        </article>
+                    </div>
+                    <div class="col-md-3">
+                        <article class="balance-card" aria-labelledby="proveedoresActivosTitle" style="background: linear-gradient(135deg, #f39c12, #d35400);">
+                            <div id="proveedoresActivosTitle" class="title">Proveedores Activos</div>
+                            <div class="amount">24</div>
+                        </article>
+                    </div>
+                </section>
+
+                <!-- Navegación por pestañas para acceder a las diferentes funcionalidades -->
+                <nav aria-label="Pestañas de módulo compras" class="mb-4">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#new-purchase" role="tab" aria-controls="new-purchase" aria-selected="true">Nueva Compra</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#purchase-history" role="tab" aria-controls="purchase-history" aria-selected="false">Historial Compras</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#suppliers" role="tab" aria-controls="suppliers" aria-selected="false">Proveedores</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#payments" role="tab" aria-controls="payments" aria-selected="false">Pagos</a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="tab-content">
+                    <!-- Pestaña: Nueva Compra -->
+                    <section class="tab-pane fade show active" id="new-purchase" role="tabpanel" aria-labelledby="new-purchase-tab">
+                        <div class="content-container">
+                            <h4 class="section-title">Nueva Orden de Compra</h4>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <!-- Formulario para seleccionar proveedor y datos de la compra -->
+                                    <form class="card mb-4" aria-labelledby="proveedorHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="proveedorHeader" class="mb-0">Proveedor</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <!-- Selección de proveedor -->
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="selectProveedor" class="form-label">Seleccionar Proveedor</label>
+                                                        <select id="selectProveedor" class="form-select">
+                                                            <option>Seleccionar proveedor</option>
+                                                            <option selected>Tecnología Global S.A. (NIT 900123456-1)</option>
+                                                            <option>Distribuidora Alimentos S.A.S. (NIT 800987654-2)</option>
+                                                            <option>Suministros Industriales Ltda. (NIT 700654321-3)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <!-- Fecha de compra -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="fechaCompra" class="form-label">Fecha Compra</label>
+                                                        <input id="fechaCompra" type="date" class="form-control" value="2025-06-20">
+                                                    </div>
+                                                </div>
+                                                <!-- Número de orden de compra -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="numeroOrden" class="form-label">N° Orden</label>
+                                                        <input id="numeroOrden" type="text" class="form-control" value="OC-2025-00128" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Estado de cuenta del proveedor seleccionado -->
+                                            <div class="alert alert-info" role="status">
+                                                <i class="bi bi-info-circle me-2" aria-hidden="true"></i> 
+                                                <strong>Estado de cuenta:</strong> 
+                                                Saldo pendiente: $5,250.00 | Próximo vencimiento: 30/06/2025
+                                            </div>
+                                        </div>
+                                    </form>
+                                    
+                                    <!-- Buscador y tabla de productos a comprar -->
+                                    <section class="card mb-4" aria-labelledby="productosHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="productosHeader" class="mb-0">Productos a Comprar</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <!-- Buscador de productos por SKU o nombre -->
+                                                <div class="col-md-8">
+                                                    <label for="buscarProducto" class="form-label">Buscar Producto</label>
+                                                    <div class="input-group">
+                                                        <input id="buscarProducto" type="text" class="form-control" placeholder="SKU o nombre del producto">
+                                                        <button class="btn btn-outline-primary" type="button" aria-label="Buscar producto">
+                                                            <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <!-- Cantidad de producto a agregar -->
+                                                <div class="col-md-4">
+                                                    <label for="cantidadProducto" class="form-label">Cantidad</label>
+                                                    <input id="cantidadProducto" type="number" class="form-control" value="1" min="1">
+                                                </div>
+                                            </div>
+                                            <!-- Tabla con los productos seleccionados para la compra -->
+                                            <div class="table-responsive">
+                                                <table class="table purchase-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">Producto</th>
+                                                            <th scope="col">Precio Unitario</th>
+                                                            <th scope="col">Cantidad</th>
+                                                            <th scope="col">Subtotal</th>
+                                                            <th scope="col">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Ejemplo de producto agregado -->
+                                                        <tr>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    <i class="bi bi-laptop me-2" aria-hidden="true"></i>
+                                                                    <div>
+                                                                        <div>Laptop HP ProBook</div>
+                                                                        <div class="text-muted small">SKU: ELEC-1001</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" value="$1,150.00" style="width: 100px;">
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" class="form-control form-control-sm" value="5" min="1" style="width: 70px;">
+                                                            </td>
+                                                            <td>$5,750.00</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-danger" type="button" aria-label="Eliminar producto">
+                                                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                        <!-- ...otros productos... -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                                
+                                <aside class="col-md-4" aria-labelledby="resumenHeader">
+                                    <!-- Resumen de la compra con totales y opciones de registro -->
+                                    <section class="card mb-4" aria-labelledby="resumenHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="resumenHeader" class="mb-0">Resumen de Compra</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <!-- Detalle de totales: subtotal, IVA, descuento, envío y total final -->
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Subtotal:</span>
+                                                <span>$6,009.90</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>IVA (19%):</span>
+                                                <span>$1,141.88</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Descuento:</span>
+                                                <span class="text-success">-$300.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Envío:</span>
+                                                <span>$50.00</span>
+                                            </div>
+                                            <hr>
+                                            <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                                                <span>Total:</span>
+                                                <span>$6,901.78</span>
+                                            </div>
+                                            <!-- Opción para afectar el inventario automáticamente -->
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="affectInventory" checked>
+                                                <label class="form-check-label" for="affectInventory">
+                                                    Afectar automáticamente al inventario
+                                                </label>
+                                            </div>
+                                            <!-- Botones para registrar la compra o guardar como borrador -->
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-success" id="btnRegistrarCompra" type="button" aria-label="Registrar compra">
+                                                    <i class="bi bi-check-circle me-2" aria-hidden="true"></i> Registrar Compra
+                                                </button>
+                                                <button class="btn btn-outline-primary" type="button" aria-label="Guardar borrador">
+                                                    <i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i> Guardar Borrador
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+                                    
+                                    <!-- Información adicional de la compra -->
+                                    <section class="card" aria-labelledby="infoAdicionalHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="infoAdicionalHeader" class="mb-0">Información Adicional</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <!-- Selección de términos de pago -->
+                                            <div class="mb-3">
+                                                <label for="terminosPago" class="form-label">Términos de Pago</label>
+                                                <select id="terminosPago" class="form-select">
+                                                    <option>Contado</option>
+                                                    <option selected>30 días</option>
+                                                    <option>60 días</option>
+                                                    <option>90 días</option>
+                                                </select>
+                                            </div>
+                                            <!-- Fecha de vencimiento de la compra -->
+                                            <div class="mb-3">
+                                                <label for="fechaVencimiento" class="form-label">Fecha Vencimiento</label>
+                                                <input id="fechaVencimiento" type="date" class="form-control" value="2025-07-20">
+                                            </div>
+                                            <!-- Observaciones adicionales -->
+                                            <div class="mb-3">
+                                                <label for="observacionesCompra" class="form-label">Observaciones</label>
+                                                <textarea id="observacionesCompra" class="form-control" rows="3" placeholder="Notas adicionales..."></textarea>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </aside>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña: Historial de Compras -->
+                    <section class="tab-pane fade" id="purchase-history" role="tabpanel" aria-labelledby="purchase-history-tab">
+                        <div class="content-container">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="section-title mb-0">Historial de Compras</h4>
+                                <div>
+                                    <button class="btn btn-outline-secondary me-2" type="button" aria-label="Exportar historial">
+                                        <i class="bi bi-download me-2" aria-hidden="true"></i> Exportar
+                                    </button>
+                                    <button class="btn btn-primary" id="btnFiltroHistorial" type="button" aria-label="Filtrar historial">
+                                        <i class="bi bi-funnel me-2" aria-hidden="true"></i> Filtrar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form class="row mb-4" aria-label="Filtros historial compras">
+                                <div class="col-md-3">
+                                    <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                                    <input id="fechaInicio" type="date" class="form-control" value="2025-06-01">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="fechaFin" class="form-label">Fecha Fin</label>
+                                    <input id="fechaFin" type="date" class="form-control" value="2025-06-20">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="estadoFiltro" class="form-label">Estado</label>
+                                    <select id="estadoFiltro" class="form-select">
+                                        <option>Todos</option>
+                                        <option selected>Pendiente</option>
+                                        <option>Recibido</option>
+                                        <option>Cancelado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="proveedorFiltro" class="form-label">Proveedor</label>
+                                    <input id="proveedorFiltro" type="text" class="form-control" placeholder="Nombre o NIT">
+                                </div>
+                            </form>
+
+                            <div class="table-responsive" role="region" aria-label="Tabla historial de compras">
+                                <table class="table purchase-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">N° Orden</th>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Proveedor</th>
+                                            <th scope="col">Total</th>
+                                            <th scope="col">Estado</th>
+                                            <th scope="col">Vencimiento</th>
+                                            <th scope="col">Saldo</th>
+                                            <th scope="col">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>OC-2025-00127</td>
+                                            <td>15/06/2025</td>
+                                            <td>Tecnología Global S.A.</td>
+                                            <td>$5,450.25</td>
+                                            <td><span class="badge status-pending">Pendiente</span></td>
+                                            <td>15/07/2025</td>
+                                            <td class="fw-bold">$5,450.25</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" aria-label="Ver detalle OC-2025-00127">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-info me-1" title="Editar" aria-label="Editar OC-2025-00127">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success" title="Registrar pago" aria-label="Registrar pago OC-2025-00127">
+                                                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>OC-2025-00126</td>
+                                            <td>10/06/2025</td>
+                                            <td>Distribuidora Alimentos</td>
+                                            <td>$8,750.50</td>
+                                            <td><span class="badge status-approved">Recibido</span></td>
+                                            <td>10/07/2025</td>
+                                            <td class="fw-bold">$4,250.00</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" aria-label="Ver detalle OC-2025-00126">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success" aria-label="Registrar pago OC-2025-00126">
+                                                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>OC-2025-00125</td>
+                                            <td>05/06/2025</td>
+                                            <td>Suministros Industriales</td>
+                                            <td>$12,350.75</td>
+                                            <td><span class="badge status-approved">Pagado</span></td>
+                                            <td>05/07/2025</td>
+                                            <td class="fw-bold text-success">$0.00</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" aria-label="Ver detalle OC-2025-00125">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" aria-label="Descargar PDF OC-2025-00125">
+                                                    <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginación -->
+                            <nav class="mt-4" aria-label="Paginación historial de compras">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item disabled"><a class="page-link" href="#" aria-disabled="true">Anterior</a></li>
+                                    <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña: Proveedores -->
+                    <section class="tab-pane fade" id="suppliers" role="tabpanel" aria-labelledby="suppliers-tab">
+                        <div class="content-container">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="section-title mb-0">Gestión de Proveedores</h4>
+                                <button class="btn btn-primary" type="button" aria-label="Agregar nuevo proveedor">
+                                    <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nuevo Proveedor
+                                </button>
+                            </div>
+
+                            <div class="row">
+                                <!-- Listado de proveedores con buscador -->
+                                <div class="col-md-7">
+                                    <div class="input-group mb-4">
+                                        <label for="buscarProveedorListado" class="visually-hidden">Buscar proveedor</label>
+                                        <input id="buscarProveedorListado" type="text" class="form-control" placeholder="Buscar proveedor...">
+                                        <button class="btn btn-outline-primary" type="button" aria-label="Buscar proveedor">
+                                            <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                                        </button>
+                                    </div>
+
+                                    <!-- Tabla con información de proveedores -->
+                                    <div class="table-responsive" role="region" aria-label="Listado de proveedores">
+                                        <table class="table purchase-table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Proveedor</th>
+                                                    <th scope="col">Contacto</th>
+                                                    <th scope="col">Compras</th>
+                                                    <th scope="col">Saldo</th>
+                                                    <th scope="col">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold">Tecnología Global S.A.</div>
+                                                        <div class="text-muted small">NIT 900123456-1</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>Carlos Mendoza</div>
+                                                        <div class="text-muted small">carlos@tecnoglobal.com</div>
+                                                    </td>
+                                                    <td>12</td>
+                                                    <td class="fw-bold amount-due">$5,450.25</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" aria-label="Ver detalle proveedor Tecnología Global">
+                                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" title="Editar" aria-label="Editar proveedor Tecnología Global">
+                                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold">Distribuidora Alimentos S.A.S.</div>
+                                                        <div class="text-muted small">NIT 800987654-2</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>María Rodríguez</div>
+                                                        <div class="text-muted small">maria@distribalimentos.com</div>
+                                                    </td>
+                                                    <td>8</td>
+                                                    <td class="fw-bold amount-due">$4,250.00</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" aria-label="Ver detalle distribuidora alimentos">
+                                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" aria-label="Editar distribuidora alimentos">
+                                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold">Suministros Industriales Ltda.</div>
+                                                        <div class="text-muted small">NIT 700654321-3</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>Roberto Sánchez</div>
+                                                        <div class="text-muted small">roberto@suministrosind.com</div>
+                                                    </td>
+                                                    <td>15</td>
+                                                    <td class="fw-bold text-success">$0.00</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" aria-label="Ver detalle suministros industriales">
+                                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" aria-label="Editar suministros industriales">
+                                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Detalle del proveedor seleccionado -->
+                                <aside class="col-md-5" aria-labelledby="detalleProveedorHeader">
+                                    <section class="card">
+                                        <header class="card-header bg-light">
+                                            <h5 id="detalleProveedorHeader" class="mb-0">Detalle del Proveedor</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <div class="text-center mb-4">
+                                                <div class="fw-bold fs-4">Tecnología Global S.A.</div>
+                                                <div class="text-muted">NIT 900123456-1</div>
+                                                <span class="supplier-badge">Proveedor Premium</span>
+                                            </div>
+                                            <div class="mb-4">
+                                                <h6>Información de Contacto</h6>
+                                                <ul class="list-group">
+                                                    <li class="list-group-item">
+                                                        <i class="bi bi-person me-2" aria-hidden="true"></i> Carlos Mendoza
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="bi bi-envelope me-2" aria-hidden="true"></i> carlos@tecnoglobal.com
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="bi bi-telephone me-2" aria-hidden="true"></i> (601) 345 6789
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="bi bi-geo-alt me-2" aria-hidden="true"></i> Calle 100 #25-30, Bogotá
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="mb-4">
+                                                <h6>Condiciones Comerciales</h6>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Términos de pago:</span>
+                                                    <span>30 días</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Descuentos habituales:</span>
+                                                    <span>5% por volumen</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h6>Estado de Cuenta</h6>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Total compras:</span>
+                                                    <span>$85,450.25</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Total pagado:</span>
+                                                    <span>$80,000.00</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between fw-bold">
+                                                    <span>Saldo pendiente:</span>
+                                                    <span class="amount-due">$5,450.25</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </aside>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Pestaña: Pagos -->
+                    <section class="tab-pane fade" id="payments" role="tabpanel" aria-labelledby="payments-tab">
+                        <div class="content-container">
+                            <h4 class="section-title">Gestión de Pagos a Proveedores</h4>
+                            <div class="row">
+                                <!-- Formulario para registrar nuevos pagos -->
+                                <div class="col-md-6">
+                                    <section class="card mb-4" aria-labelledby="registrarPagoHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="registrarPagoHeader" class="mb-0">Registrar Nuevo Pago</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="selectProveedorPago" class="form-label">Proveedor</label>
+                                                <select id="selectProveedorPago" class="form-select">
+                                                    <option>Seleccionar proveedor</option>
+                                                    <option selected>Tecnología Global S.A. (Saldo: $5,450.25)</option>
+                                                    <option>Distribuidora Alimentos S.A.S. (Saldo: $4,250.00)</option>
+                                                </select>
+                                            </div>
+                                            <fieldset class="mb-3" aria-label="Seleccionar compras a pagar">
+                                                <legend class="visually-hidden">Seleccionar Compras</legend>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="purchase1" checked>
+                                                    <label class="form-check-label" for="purchase1">OC-2025-00127 - $5,450.25 (Vence 15/07/2025)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="purchase2">
+                                                    <label class="form-check-label" for="purchase2">OC-2025-00120 - $2,150.50 (Vence 10/08/2025)</label>
+                                                </div>
+                                            </fieldset>
+
+                                            <div class="mb-3">
+                                                <label for="montoPagar" class="form-label">Monto a Pagar</label>
+                                                <input id="montoPagar" type="text" class="form-control" value="$5,450.25">
+                                            </div>
+
+                                            <div class="mb-3" aria-label="Método de pago">
+                                                <label class="form-label">Método de Pago</label>
+                                                <div class="payment-methods d-flex gap-2" role="radiogroup" aria-labelledby="metodoPagoLabel">
+                                                    <button type="button" class="payment-method active" aria-pressed="true" aria-label="Transferencia">
+                                                        <i class="bi bi-bank" aria-hidden="true"></i>
+                                                        <div>Transferencia</div>
+                                                    </button>
+                                                    <button type="button" class="payment-method" aria-pressed="false" aria-label="Tarjeta">
+                                                        <i class="bi bi-credit-card" aria-hidden="true"></i>
+                                                        <div>Tarjeta</div>
+                                                    </button>
+                                                    <button type="button" class="payment-method" aria-pressed="false" aria-label="Efectivo">
+                                                        <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                                                        <div>Efectivo</div>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="referenciaPago" class="form-label">Referencia de Pago</label>
+                                                <input id="referenciaPago" type="text" class="form-control" placeholder="Número de transacción">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="fechaPago" class="form-label">Fecha de Pago</label>
+                                                <input id="fechaPago" type="date" class="form-control" value="2025-06-20">
+                                            </div>
+
+                                            <div class="d-grid">
+                                                <button class="btn btn-success" id="btnRegistrarPago" type="button" aria-label="Registrar pago">
+                                                    <i class="bi bi-check-circle me-2" aria-hidden="true"></i> Registrar Pago
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <!-- Historial de pagos realizados -->
+                                <div class="col-md-6">
+                                    <section class="card" aria-labelledby="historialPagosHeader">
+                                        <header class="card-header bg-light">
+                                            <h5 id="historialPagosHeader" class="mb-0">Historial de Pagos</h5>
+                                        </header>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="filtrarProveedorPago" class="form-label">Filtrar por Proveedor</label>
+                                                <select id="filtrarProveedorPago" class="form-select">
+                                                    <option>Todos los proveedores</option>
+                                                    <option selected>Tecnología Global S.A.</option>
+                                                    <option>Distribuidora Alimentos S.A.S.</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="payment-history" role="list" aria-label="Lista de pagos">
+                                                <article class="payment-history-item" role="listitem">
+                                                    <div class="d-flex justify-content-between">
+                                                        <div class="fw-bold">Pago completo</div>
+                                                        <div class="text-success">$8,500.00</div>
+                                                    </div>
+                                                    <div class="text-muted small">OC-2025-00115 | 10/05/2025</div>
+                                                    <div>Transferencia #TX-789456 | Ref: PAG-0525-001</div>
+                                                </article>
+
+                                                <article class="payment-history-item partial" role="listitem">
+                                                    <div class="d-flex justify-content-between">
+                                                        <div class="fw-bold">Pago parcial</div>
+                                                        <div class="text-warning">$3,000.00</div>
+                                                    </div>
+                                                    <div class="text-muted small">OC-2025-00118 | 25/04/2025</div>
+                                                    <div>Efectivo | Ref: PAG-0425-003</div>
+                                                </article>
+
+                                                <article class="payment-history-item" role="listitem">
+                                                    <div class="d-flex justify-content-between">
+                                                        <div class="fw-bold">Pago completo</div>
+                                                        <div class="text-success">$12,350.75</div>
+                                                    </div>
+                                                    <div class="text-muted small">OC-2025-00125 | 05/06/2025</div>
+                                                    <div>Tarjeta Crédito #****1234 | Ref: PAG-0625-001</div>
+                                                </article>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                                                <div class="fw-bold">Total pagado a este proveedor:</div>
+                                                <div class="text-success fw-bold">$23,850.75</div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <footer class="app-footer mt-4" role="contentinfo" aria-label="Pie de página">
+                <div class="text-center small text-muted py-3">© 2025 MarketWorld</div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script JS para el módulo de compras -->
+    <script defer src="../js/compras.js"></script>
+</body>
+</html>

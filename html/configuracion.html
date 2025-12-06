@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Configuración General</title>
+    <!-- Bootstrap CSS para estilos base y componentes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons para iconografía -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Hoja de estilos para el módulo de configuración -->
+    <link rel="stylesheet" href="../css/configuracion.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra de navegación lateral con acceso a los módulos principales -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
+                <li class="nav-item">
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link active" href="configuracion.html" aria-current="page"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal del módulo de configuración -->
+        <div class="main-content">
+            <!-- Barra superior con buscador y datos de usuario -->
+            <div class="top-bar">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" placeholder="Buscar configuraciones...">
+                </div>
+                <div class="user-info">
+                    <!-- Notificaciones -->
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
+                    </div>
+                    <!-- Información del usuario actual -->
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
+                    <div>
+                        <div class="fw-bold">Admin User</div>
+                        <div class="small text-muted">Configuración General</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación por pestañas para acceder a las diferentes funcionalidades -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#empresa">Datos Empresa</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#impuestos">Impuestos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#sistema">Sistema</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#backup">Backup</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#usuarios">Usuarios</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Pestaña: Datos Empresa -->
+                <div class="tab-pane fade" id="empresa">
+                    <div class="content-container">
+                        <h4 class="section-title">Datos de la Empresa</h4>
+                        <!-- Formulario para editar información básica de la empresa -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Campos de identificación y contacto -->
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre de la Empresa</label>
+                                    <input type="text" class="form-control" value="MarketWorld SAS">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">RUT/NIT</label>
+                                    <input type="text" class="form-control" value="900.123.456-1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Dirección</label>
+                                    <input type="text" class="form-control" value="Carrera 45 # 26-85, Bogotá">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Teléfono</label>
+                                    <input type="text" class="form-control" value="(601) 234 5678">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Campos de contacto digital y preferencias -->
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" value="info@marketworld.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Sitio Web</label>
+                                    <input type="text" class="form-control" value="https://www.marketworld.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Moneda Principal</label>
+                                    <select class="form-select">
+                                        <option>COP - Peso Colombiano</option>
+                                        <option>USD - Dólar Americano</option>
+                                        <option>EUR - Euro</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Logo de la Empresa</label>
+                                    <input type="file" class="form-control">
+                                    <div class="form-text">Formatos: JPG, PNG. Tamaño máximo: 2MB</div>
+                                    <div class="logo-preview">
+                                        <img src="https://via.placeholder.com/200x100?text=Logo+Empresa" alt="Logo Actual">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Botones de acción para cancelar o guardar cambios -->
+                        <div class="config-actions">
+                            <button class="btn btn-outline-secondary">Cancelar</button>
+                            <button class="btn btn-primary">Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Impuestos -->
+                <div class="tab-pane fade" id="impuestos">
+                    <div class="content-container">
+                        <h4 class="section-title">Configuración de Impuestos</h4>
+                        <!-- Configuración de impuestos principales y adicionales -->
+                        <div class="tax-grid">
+                            <div class="config-card">
+                                <h5><i class="bi bi-percent me-2"></i> IVA (Impuesto al Valor Agregado)</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">Porcentaje de IVA</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" value="19" min="0" max="100" step="0.1">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ivaIncluido" checked>
+                                    <label class="form-check-label" for="ivaIncluido">IVA incluido en precios</label>
+                                </div>
+                            </div>
+                            
+                            <div class="config-card">
+                                <h5><i class="bi bi-cash-coin me-2"></i> Retención en la Fuente</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">Porcentaje de Retención</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" value="3.5" min="0" max="100" step="0.1">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="aplicaRetencion" checked>
+                                    <label class="form-check-label" for="aplicaRetencion">Aplicar retención en facturas</label>
+                                </div>
+                            </div>
+                            
+                            <div class="config-card">
+                                <h5><i class="bi bi-receipt me-2"></i> Otros Impuestos</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">Impuesto al Consumo</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" value="8" min="0" max="100" step="0.1">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Impuesto ICA</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" value="0.5" min="0" max="100" step="0.1">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Botones para restaurar valores o guardar configuración -->
+                        <div class="config-actions">
+                            <button class="btn btn-outline-secondary">Restaurar Valores</button>
+                            <button class="btn btn-primary">Guardar Configuración</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Sistema -->
+                <div class="tab-pane fade" id="sistema">
+                    <div class="content-container">
+                        <h4 class="section-title">Opciones del Sistema</h4>
+                        <!-- Configuración de impresión, correo e idioma -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="config-card">
+                                    <h5><i class="bi bi-printer me-2"></i> Configuración de Impresión</h5>
+                                    <!-- Preferencias de impresión como tamaño de papel y márgenes -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Tamaño de Papel</label>
+                                        <select class="form-select">
+                                            <option>Letter (8.5" x 11")</option>
+                                            <option selected>A4 (210mm x 297mm)</option>
+                                            <option>Legal (8.5" x 14")</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Orientación</label>
+                                        <select class="form-select">
+                                            <option selected>Vertical</option>
+                                            <option>Horizontal</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Márgenes (mm)</label>
+                                        <div class="row g-2">
+                                            <div class="col">
+                                                <input type="number" class="form-control" placeholder="Superior" value="20">
+                                            </div>
+                                            <div class="col">
+                                                <input type="number" class="form-control" placeholder="Inferior" value="20">
+                                            </div>
+                                            <div class="col">
+                                                <input type="number" class="form-control" placeholder="Izquierdo" value="15">
+                                            </div>
+                                            <div class="col">
+                                                <input type="number" class="form-control" placeholder="Derecho" value="15">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="print-preview">
+                                        <div class="print-header">
+                                            <img src="https://via.placeholder.com/150x50?text=MarketWorld" alt="Logo" class="print-logo">
+                                            <h5>Factura de Venta</h5>
+                                            <p>FAC-2025-00128 | 20 Junio 2025</p>
+                                        </div>
+                                        <p>Este es un ejemplo de cómo se verá su documento impreso con la configuración actual.</p>
+                                        <div class="print-footer">
+                                            MarketWorld SAS | NIT: 900.123.456-1 | Bogotá, Colombia
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="config-card">
+                                    <h5><i class="bi bi-envelope me-2"></i> Configuración de Correo</h5>
+                                    <!-- Configuración SMTP y prueba de envío -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Servidor SMTP</label>
+                                        <input type="text" class="form-control" value="smtp.marketworld.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Puerto</label>
+                                        <input type="number" class="form-control" value="587">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Usuario</label>
+                                        <input type="text" class="form-control" value="sistema@marketworld.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Contraseña</label>
+                                        <input type="password" class="form-control" value="********">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Encriptación</label>
+                                        <select class="form-select">
+                                            <option>SSL/TLS</option>
+                                            <option selected>STARTTLS</option>
+                                            <option>Ninguna</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email de Envío</label>
+                                        <input type="email" class="form-control" value="no-reply@marketworld.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre del Remitente</label>
+                                        <input type="text" class="form-control" value="Sistema MarketWorld">
+                                    </div>
+                                    <div class="smtp-test">
+                                        <input type="email" class="form-control" placeholder="Email de prueba">
+                                        <button class="btn btn-outline-primary">
+                                            <i class="bi bi-send me-1"></i> Probar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="config-card">
+                                    <h5><i class="bi bi-translate me-2"></i> Configuración de Idioma</h5>
+                                    <!-- Preferencias de idioma, formato de fecha y zona horaria -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Idioma del Sistema</label>
+                                        <select class="form-select">
+                                            <option selected>Español (Colombia)</option>
+                                            <option>Español (México)</option>
+                                            <option>Español (España)</option>
+                                            <option>Inglés (Estados Unidos)</option>
+                                            <option>Portugués (Brasil)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Formato de Fecha</label>
+                                        <select class="form-select">
+                                            <option selected>DD/MM/AAAA (20/06/2025)</option>
+                                            <option>MM/DD/AAAA (06/20/2025)</option>
+                                            <option>AAAA-MM-DD (2025-06-20)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Formato de Hora</label>
+                                        <select class="form-select">
+                                            <option selected>24 horas (14:30)</option>
+                                            <option>12 horas (2:30 PM)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Zona Horaria</label>
+                                        <select class="form-select">
+                                            <option selected>Bogotá, Colombia (UTC-5)</option>
+                                            <option>México (UTC-6)</option>
+                                            <option>Madrid, España (UTC+1)</option>
+                                            <option>Nueva York, EE.UU. (UTC-4)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Botones para cancelar o aplicar configuración -->
+                        <div class="config-actions">
+                            <button class="btn btn-outline-secondary">Cancelar</button>
+                            <button class="btn btn-primary">Aplicar Configuración</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Backup -->
+                <div class="tab-pane fade" id="backup">
+                    <div class="content-container">
+                        <h4 class="section-title">Backup de Base de Datos</h4>
+                        <!-- Opciones para backup manual, automático y en la nube -->
+                        <div class="backup-grid">
+                            <div class="backup-option">
+                                <i class="bi bi-download"></i>
+                                <h5>Backup Manual</h5>
+                                <p class="text-muted">Realiza una copia de seguridad inmediata de toda la base de datos</p>
+                                <button class="btn btn-primary mt-2">
+                                    <i class="bi bi-download me-1"></i> Descargar Backup
+                                </button>
+                                <div class="mt-3 small text-muted">
+                                    Último backup: 28/06/2025 02:15 AM
+                                </div>
+                            </div>
+                            
+                            <div class="backup-option">
+                                <i class="bi bi-clock-history"></i>
+                                <h5>Backup Automático</h5>
+                                <p class="text-muted">Programa backups periódicos de tu base de datos</p>
+                                <div class="mt-3">
+                                    <div class="mb-2">
+                                        <label class="form-label">Frecuencia</label>
+                                        <select class="form-select">
+                                            <option>Diario</option>
+                                            <option selected>Semanal</option>
+                                            <option>Mensual</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Día/Hora</label>
+                                        <div class="row g-2">
+                                            <div class="col-7">
+                                                <select class="form-select">
+                                                    <option>Domingo</option>
+                                                    <option>Lunes</option>
+                                                    <option>Martes</option>
+                                                    <option>Miércoles</option>
+                                                    <option>Jueves</option>
+                                                    <option>Viernes</option>
+                                                    <option selected>Sábado</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-5">
+                                                <input type="time" class="form-control" value="02:00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-primary w-100 mt-2">
+                                        <i class="bi bi-save me-1"></i> Programar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="backup-option">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                                <h5>Backup en la Nube</h5>
+                                <p class="text-muted">Guarda tus backups automáticamente en servicios en la nube</p>
+                                <div class="mt-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="googleDrive" checked>
+                                        <label class="form-check-label" for="googleDrive">Google Drive</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="dropbox">
+                                        <label class="form-check-label" for="dropbox">Dropbox</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="onedrive">
+                                        <label class="form-check-label" for="onedrive">OneDrive</label>
+                                    </div>
+                                    <button class="btn btn-outline-primary w-100 mt-2">
+                                        <i class="bi bi-link-45deg me-1"></i> Conectar Servicios
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Historial de backups realizados -->
+                        <div class="mt-4">
+                            <h6>Historial de Backups</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Tamaño</th>
+                                            <th>Ubicación</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>28/06/2025 02:15</td>
+                                            <td>Automático</td>
+                                            <td>45.2 MB</td>
+                                            <td>Servidor Local</td>
+                                            <td><span class="badge bg-success">Completado</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-download"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>21/06/2025 02:15</td>
+                                            <td>Automático</td>
+                                            <td>44.8 MB</td>
+                                            <td>Servidor Local, Google Drive</td>
+                                            <td><span class="badge bg-success">Completado</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-download"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>14/06/2025 02:15</td>
+                                            <td>Automático</td>
+                                            <td>44.5 MB</td>
+                                            <td>Servidor Local</td>
+                                            <td><span class="badge bg-success">Completado</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-download"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Gestión de Usuarios -->
+                <div class="tab-pane fade show active" id="usuarios">
+                    <div class="content-container">
+                        <!-- Sub-pestañas para usuarios, roles, auditoría y sesiones -->
+                        <ul class="nav nav-tabs mb-4">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#usuarios-sub">Usuarios</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#roles">Roles y Permisos</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#auditoria">Auditoría</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#sesiones">Sesiones</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <!-- Sub-pestaña: Usuarios -->
+                            <div class="tab-pane fade show active" id="usuarios-sub">
+                                <!-- Encabezado y botón para agregar nuevo usuario -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="section-title mb-0">Gestión de Usuarios</h4>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+                                        <i class="bi bi-plus-circle me-2"></i> Nuevo Usuario
+                                    </button>
+                                </div>
+                                <!-- Filtros para búsqueda de usuarios por rol, estado y departamento -->
+                                <div class="filter-bar mb-4">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Rol</label>
+                                            <select class="form-select">
+                                                <option>Todos</option>
+                                                <option>Administrador</option>
+                                                <option>Gerente</option>
+                                                <option>Vendedor</option>
+                                                <option>Soporte</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Estado</label>
+                                            <select class="form-select">
+                                                <option>Todos</option>
+                                                <option>Activo</option>
+                                                <option>Inactivo</option>
+                                                <option>Pendiente</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Departamento</label>
+                                            <select class="form-select">
+                                                <option>Todos</option>
+                                                <option>Ventas</option>
+                                                <option>Soporte</option>
+                                                <option>Administración</option>
+                                                <option>Logística</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end">
+                                            <button class="btn btn-primary w-100">
+                                                <i class="bi bi-funnel me-2"></i> Filtrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Tarjetas y tabla con información de usuarios -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="text-center">
+                                                <img src="https://randomuser.me/api/portraits/men/32.jpg" class="user-avatar" alt="Juan Pérez">
+                                                <h5>Juan Pérez</h5>
+                                                <div class="role-badge badge-admin">Administrador</div>
+                                                <div class="status-badge status-active mt-2">Activo</div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
+                                                    <span>juan.perez@marketworld.com</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
+                                                    <span>(601) 345 6789</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
+                                                    <span>Administración</span>
+                                                </div>
+                                            </div>
+                                            <div class="action-buttons mt-3">
+                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
+                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="text-center">
+                                                <img src="https://randomuser.me/api/portraits/women/44.jpg" class="user-avatar" alt="María Gómez">
+                                                <h5>María Gómez</h5>
+                                                <div class="role-badge badge-seller">Vendedor</div>
+                                                <div class="status-badge status-active mt-2">Activo</div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
+                                                    <span>maria.gomez@marketworld.com</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
+                                                    <span>(604) 456 7890</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
+                                                    <span>Ventas</span>
+                                                </div>
+                                            </div>
+                                            <div class="action-buttons mt-3">
+                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
+                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="text-center">
+                                                <img src="https://randomuser.me/api/portraits/men/67.jpg" class="user-avatar" alt="Carlos Mendoza">
+                                                <h5>Carlos Mendoza</h5>
+                                                <div class="role-badge badge-support">Soporte</div>
+                                                <div class="status-badge status-pending mt-2">Pendiente</div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
+                                                    <span>carlos.mendoza@marketworld.com</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
+                                                    <span>(601) 789 0123</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
+                                                    <span>Soporte</span>
+                                                </div>
+                                            </div>
+                                            <div class="action-buttons mt-3">
+                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
+                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h4 class="section-title">Lista Completa de Usuarios</h4>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Usuario</th>
+                                                    <th>Email</th>
+                                                    <th>Rol</th>
+                                                    <th>Departamento</th>
+                                                    <th>Estado</th>
+                                                    <th>Último Acceso</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="https://randomuser.me/api/portraits/men/32.jpg" width="40" height="40" class="rounded-circle me-3">
+                                                            <div>Juan Pérez</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>juan.perez@marketworld.com</td>
+                                                    <td><span class="role-badge badge-admin">Administrador</span></td>
+                                                    <td>Administración</td>
+                                                    <td><span class="status-badge status-active">Activo</span></td>
+                                                    <td>20/06/2025 10:30</td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="btn btn-sm btn-outline-primary">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-warning">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="https://randomuser.me/api/portraits/women/44.jpg" width="40" height="40" class="rounded-circle me-3">
+                                                            <div>María Gómez</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>maria.gomez@marketworld.com</td>
+                                                    <td><span class="role-badge badge-seller">Vendedor</span></td>
+                                                    <td>Ventas</td>
+                                                    <td><span class="status-badge status-active">Activo</span></td>
+                                                    <td>20/06/2025 14:15</td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="btn btn-sm btn-outline-primary">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-warning">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="https://randomuser.me/api/portraits/men/67.jpg" width="40" height="40" class="rounded-circle me-3">
+                                                            <div>Carlos Mendoza</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>carlos.mendoza@marketworld.com</td>
+                                                    <td><span class="role-badge badge-support">Soporte</span></td>
+                                                    <td>Soporte</td>
+                                                    <td><span class="status-badge status-pending">Pendiente</span></td>
+                                                    <td>19/06/2025 16:45</td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="btn btn-sm btn-outline-primary">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-warning">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-pestaña: Roles y Permisos -->
+                            <div class="tab-pane fade" id="roles">
+                                <!-- Encabezado y botón para agregar nuevo rol -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="section-title mb-0">Roles y Permisos</h4>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleModal">
+                                        <i class="bi bi-plus-circle me-2"></i> Nuevo Rol
+                                    </button>
+                                </div>
+                                <!-- Tarjetas con información de roles y permisos asignados -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="mb-0">Administrador</h5>
+                                                <span class="badge bg-primary">12 usuarios</span>
+                                            </div>
+                                            <p class="text-muted">Acceso completo a todas las funcionalidades del sistema.</p>
+                                            <div class="mt-3">
+                                                <h6>Permisos Asignados:</h6>
+                                                <div class="permission-item">
+                                                    <span>Acceso total al sistema</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Gestión de usuarios</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Configuración global</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-3">
+                                                <button class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="mb-0">Vendedor</h5>
+                                                <span class="badge bg-primary">24 usuarios</span>
+                                            </div>
+                                            <p class="text-muted">Acceso a módulos de ventas, clientes e inventario.</p>
+                                            <div class="mt-3">
+                                                <h6>Permisos Asignados:</h6>
+                                                <div class="permission-item">
+                                                    <span>Gestión de ventas</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Consulta de clientes</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Consulta de inventario</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Acceso a reportes</span>
+                                                    <i class="bi bi-x-circle text-danger"></i>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-3">
+                                                <button class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="user-card">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="mb-0">Soporte Técnico</h5>
+                                                <span class="badge bg-primary">8 usuarios</span>
+                                            </div>
+                                            <p class="text-muted">Acceso a módulos de atención al cliente y soporte.</p>
+                                            <div class="mt-3">
+                                                <h6>Permisos Asignados:</h6>
+                                                <div class="permission-item">
+                                                    <span>Gestión de tickets</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Consulta de clientes</span>
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                </div>
+                                                <div class="permission-item">
+                                                    <span>Acceso a facturación</span>
+                                                    <i class="bi bi-x-circle text-danger"></i>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-3">
+                                                <button class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-pencil me-1"></i> Editar
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash me-1"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-pestaña: Auditoría -->
+                            <div class="tab-pane fade" id="auditoria">
+                                <!-- Encabezado y acciones para exportar y filtrar auditoría -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="section-title mb-0">Bitácora de Auditoría</h4>
+                                    <div>
+                                        <button class="btn btn-outline-secondary me-2">
+                                            <i class="bi bi-download me-2"></i> Exportar
+                                        </button>
+                                        <button class="btn btn-primary">
+                                            <i class="bi bi-funnel me-2"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Filtros y registros de auditoría -->
+                                <div class="row mb-4">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Inicio</label>
+                                        <input type="date" class="form-control" value="2025-06-01">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Fin</label>
+                                        <input type="date" class="form-control" value="2025-06-20">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Usuario</label>
+                                        <input type="text" class="form-control" placeholder="Nombre de usuario">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Tipo de Acción</label>
+                                        <select class="form-select">
+                                            <option>Todas</option>
+                                            <option>Creación</option>
+                                            <option>Modificación</option>
+                                            <option>Eliminación</option>
+                                            <option>Acceso</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="content-container">
+                                    <div class="audit-log">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <div class="fw-bold">Creación de usuario</div>
+                                            <div class="text-muted small">20/06/2025 10:15:32</div>
+                                        </div>
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <img src="https://randomuser.me/api/portraits/men/32.jpg" width="32" height="32" class="rounded-circle">
+                                            </div>
+                                            <div>
+                                                <div><strong>Juan Pérez</strong> creó el usuario <strong>Carlos Mendoza</strong></div>
+                                                <div class="text-muted small">IP: 192.168.1.100 - Navegador: Chrome</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="audit-log">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <div class="fw-bold">Modificación de factura</div>
+                                            <div class="text-muted small">19/06/2025 14:30:45</div>
+                                        </div>
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <img src="https://randomuser.me/api/portraits/women/44.jpg" width="32" height="32" class="rounded-circle">
+                                            </div>
+                                            <div>
+                                                <div><strong>María Gómez</strong> modificó la factura <strong>FAC-2025-00127</strong></div>
+                                                <div class="text-muted small">IP: 192.168.1.105 - Navegador: Firefox</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="audit-log">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <div class="fw-bold">Acceso al sistema</div>
+                                            <div class="text-muted small">19/06/2025 08:45:12</div>
+                                        </div>
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <img src="https://randomuser.me/api/portraits/men/67.jpg" width="32" height="32" class="rounded-circle">
+                                            </div>
+                                            <div>
+                                                <div><strong>Carlos Mendoza</strong> inició sesión en el sistema</div>
+                                                <div class="text-muted small">IP: 192.168.1.110 - Navegador: Safari</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-pestaña: Sesiones -->
+                            <div class="tab-pane fade" id="sesiones">
+                                <!-- Encabezado y botón para cerrar todas las sesiones activas -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="section-title mb-0">Sesiones Activas</h4>
+                                    <button class="btn btn-outline-danger">
+                                        <i class="bi bi-door-closed me-2"></i> Cerrar Todas las Sesiones
+                                    </button>
+                                </div>
+                                <!-- Tarjetas con información de sesiones activas e inactivas -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="user-card session-card">
+                                            <div class="d-flex">
+                                                <div class="me-3">
+                                                    <img src="https://randomuser.me/api/portraits/men/32.jpg" width="64" height="64" class="rounded-circle">
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <h5>Juan Pérez</h5>
+                                                        <span class="badge bg-success">Activa</span>
+                                                    </div>
+                                                    <div class="mb-2"><i class="bi bi-clock me-2"></i> Inicio: 20/06/2025 08:30:15</div>
+                                                    <div class="mb-2"><i class="bi bi-pc me-2"></i> Dispositivo: Desktop - Windows</div>
+                                                    <div><i class="bi bi-globe me-2"></i> IP: 192.168.1.100 - Bogotá, CO</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-end mt-3">
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-door-closed me-1"></i> Cerrar Sesión
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="user-card session-card">
+                                            <div class="d-flex">
+                                                <div class="me-3">
+                                                    <img src="https://randomuser.me/api/portraits/women/44.jpg" width="64" height="64" class="rounded-circle">
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <h5>María Gómez</h5>
+                                                        <span class="badge bg-success">Activa</span>
+                                                    </div>
+                                                    <div class="mb-2"><i class="bi bi-clock me-2"></i> Inicio: 20/06/2025 09:15:30</div>
+                                                    <div class="mb-2"><i class="bi bi-phone me-2"></i> Dispositivo: Mobile - Android</div>
+                                                    <div><i class="bi bi-globe me-2"></i> IP: 192.168.1.105 - Medellín, CO</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-end mt-3">
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-door-closed me-1"></i> Cerrar Sesión
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="user-card session-inactive">
+                                            <div class="d-flex">
+                                                <div class="me-3">
+                                                    <img src="https://randomuser.me/api/portraits/men/67.jpg" width="64" height="64" class="rounded-circle">
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <h5>Carlos Mendoza</h5>
+                                                        <span class="badge bg-secondary">Inactiva</span>
+                                                    </div>
+                                                    <div class="mb-2"><i class="bi bi-clock me-2"></i> Último acceso: 19/06/2025 16:45:22</div>
+                                                    <div class="mb-2"><i class="bi bi-laptop me-2"></i> Dispositivo: Desktop - macOS</div>
+                                                    <div><i class="bi bi-globe me-2"></i> IP: 192.168.1.110 - Cali, CO</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para registrar nuevo usuario -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Registrar Nuevo Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="avatar-upload mb-3">
+                                <img src="https://via.placeholder.com/150" class="rounded-circle mb-2" width="150" height="150" id="avatarPreview">
+                                <input type="file" id="avatarInput" accept="image/*">
+                                <button class="btn btn-sm btn-outline-primary w-100">
+                                    <i class="bi bi-upload me-1"></i> Subir Foto
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" placeholder="Ingrese nombre">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" placeholder="Ingrese apellido">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" placeholder="usuario@correo.com">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Rol</label>
+                                    <select class="form-select">
+                                        <option>Seleccionar rol</option>
+                                        <option>Administrador</option>
+                                        <option>Gerente</option>
+                                        <option>Vendedor</option>
+                                        <option>Soporte</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Departamento</label>
+                                    <select class="form-select">
+                                        <option>Seleccionar departamento</option>
+                                        <option>Administración</option>
+                                        <option>Ventas</option>
+                                        <option>Soporte</option>
+                                        <option>Logística</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select">
+                                    <option>Activo</option>
+                                    <option>Inactivo</option>
+                                    <option>Pendiente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary">Guardar Usuario</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear nuevo rol y asignar permisos -->
+    <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="roleModalLabel">Crear Nuevo Rol</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Formulario para definir nombre, descripción y permisos del rol -->
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Rol</label>
+                        <input type="text" class="form-control" placeholder="Ej: Supervisor de Ventas">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" rows="3" placeholder="Descripción del rol y sus responsabilidades"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Permisos</label>
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="permiso1">
+                                <label class="form-check-label" for="permiso1">Acceso a ventas</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="permiso2">
+                                <label class="form-check-label" for="permiso2">Edición de productos</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="permiso3">
+                                <label class="form-check-label" for="permiso3">Generación de reportes</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="permiso4">
+                                <label class="form-check-label" for="permiso4">Gestión de clientes</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="permiso5">
+                                <label class="form-check-label" for="permiso5">Administración de usuarios</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary">Crear Rol</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script JS para el módulo de configuración -->
+    <script defer src="../js/configuracion.js"></script>
+</body>
+</html>

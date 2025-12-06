@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Sistema de Facturación Completo</title>
+    <!-- Bootstrap CSS para estilos base y componentes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons para iconografía -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Hoja de estilos para el módulo de facturación -->
+    <link rel="stylesheet" href="../css/facturacion.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra de navegación lateral con acceso a los módulos principales -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">MarketWorld</div>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
+                <li class="nav-item">
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="facturacion.html" aria-current="page"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal del módulo de facturación -->
+        <div class="main-content">
+            <!-- Barra superior con buscador y datos de usuario -->
+            <div class="top-bar">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" placeholder="Buscar facturas, clientes...">
+                </div>
+                <div class="user-info">
+                    <!-- Notificaciones y mensajes -->
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
+                    </div>
+                    <div class="me-4 position-relative">
+                        <i class="bi bi-envelope fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+                    </div>
+                    <!-- Información del usuario actual -->
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
+                    <div>
+                        <div class="fw-bold">Admin User</div>
+                        <div class="small text-muted">Administrador</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación por pestañas (SIN nueva factura) -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#pos">
+                        <i class="bi bi-cart3 me-2"></i>Punto de Venta
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#history">
+                        <i class="bi bi-clock-history me-2"></i>Historial
+                    </a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Pestaña: Punto de Venta UNIFICADO -->
+                <div class="tab-pane fade show active" id="pos">
+                    <div class="content-container">
+                        <!-- Selector de modo: Rápido o Completo -->
+                        <div class="mode-selector mb-4">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="modoFacturacion" id="modoRapido" checked>
+                                <label class="btn btn-outline-primary" for="modoRapido">
+                                    <i class="bi bi-lightning-charge me-2"></i>
+                                    <strong>Facturación Rápida</strong>
+                                    <small class="d-block">Ventas en mostrador</small>
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="modoFacturacion" id="modoCompleto">
+                                <label class="btn btn-outline-primary" for="modoCompleto">
+                                    <i class="bi bi-file-earmark-text me-2"></i>
+                                    <strong>Factura Completa</strong>
+                                    <small class="d-block">Con todos los detalles</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <!-- MODO RÁPIDO (por defecto) -->
+                                <div id="contenidoRapido">
+                                    <!-- BUSCADOR DE PRODUCTOS -->
+                                    <div class="card mb-4 search-card">
+                                        <div class="card-header bg-gradient-primary text-white">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-search me-2"></i>Buscar Producto
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <label for="buscarProducto" class="form-label fw-semibold">SKU o Nombre del Producto</label>
+                                                    <div style="position: relative;">
+                                                        <input type="text" class="form-control form-control-lg" id="buscarProducto" placeholder="Ej: ELEC-1001 o Laptop" autocomplete="off">
+                                                        <div id="suggestions" class="suggestions-container" style="display: none;"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label for="cantidadProducto" class="form-label fw-semibold">Cantidad</label>
+                                                    <input type="number" class="form-control form-control-lg" id="cantidadProducto" value="1" min="1">
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                    <button class="btn btn-primary btn-lg w-100 shadow-sm" id="btnBuscarProducto">
+                                                        <i class="bi bi-plus-circle me-1"></i> Agregar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- PRODUCTOS DESTACADOS -->
+                                    <div class="card mb-4 featured-card">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-fire text-danger me-2"></i>Productos Destacados
+                                            </h5>
+                                            <span class="badge bg-danger">Top Ventas</span>
+                                        </div>
+                                        <div class="card-body" id="productosDisponibles">
+                                            <!-- Los productos se cargan dinámicamente desde JS -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- MODO COMPLETO (oculto por defecto) -->
+                                <div id="contenidoCompleto" style="display: none;">
+                                    <!-- Datos del Cliente Completos -->
+                                    <div class="card mb-4 client-card">
+                                        <div class="card-header bg-gradient-primary text-white">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-person-vcard me-2"></i>Información del Cliente
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="clienteNombreCompleto" class="form-label fw-semibold">Nombre Completo / Razón Social</label>
+                                                    <input type="text" class="form-control" id="clienteNombreCompleto" placeholder="Nombre del cliente">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="clienteDocumentoCompleto" class="form-label fw-semibold">Documento (CC/NIT)</label>
+                                                    <input type="text" class="form-control" id="clienteDocumentoCompleto" placeholder="Número de documento">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-8 mb-3">
+                                                    <label for="clienteDireccion" class="form-label fw-semibold">Dirección</label>
+                                                    <input type="text" class="form-control" id="clienteDireccion" placeholder="Dirección completa">
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label for="clienteTelefono" class="form-label fw-semibold">Teléfono</label>
+                                                    <input type="tel" class="form-control" id="clienteTelefono" placeholder="Teléfono">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="clienteEmail" class="form-label fw-semibold">Email</label>
+                                                    <input type="email" class="form-control" id="clienteEmail" placeholder="correo@ejemplo.com">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="clienteCiudad" class="form-label fw-semibold">Ciudad</label>
+                                                    <input type="text" class="form-control" id="clienteCiudad" placeholder="Ciudad">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Detalles de la Factura -->
+                                    <div class="card mb-4 invoice-details-card">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-receipt me-2"></i>Detalles de la Factura
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <label for="numeroFacturaCompleta" class="form-label fw-semibold">Número de Factura</label>
+                                                    <input type="text" class="form-control" id="numeroFacturaCompleta" value="FAC-2025-00129" readonly>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="fechaFacturaCompleta" class="form-label fw-semibold">Fecha de Emisión</label>
+                                                    <input type="date" class="form-control" id="fechaFacturaCompleta" value="2025-06-28">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="fechaVencimientoCompleta" class="form-label fw-semibold">Fecha de Vencimiento</label>
+                                                    <input type="date" class="form-control" id="fechaVencimientoCompleta" value="2025-07-28">
+                                                </div>
+                                            </div>
+
+                                            <!-- Buscador de Productos en modo completo -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-8">
+                                                    <label for="buscarProductoCompleto" class="form-label fw-semibold">Buscar Producto</label>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" id="buscarProductoCompleto" placeholder="SKU o nombre del producto">
+                                                        <button class="btn btn-primary" type="button">
+                                                            <i class="bi bi-search"></i> Buscar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="cantidadProductoCompleto" class="form-label fw-semibold">Cantidad</label>
+                                                    <input type="number" class="form-control" id="cantidadProductoCompleto" value="1" min="1">
+                                                </div>
+                                            </div>
+
+                                            <!-- Observaciones -->
+                                            <div class="mb-3">
+                                                <label for="observacionesFactura" class="form-label fw-semibold">Observaciones / Notas</label>
+                                                <textarea class="form-control" id="observacionesFactura" rows="3" placeholder="Observaciones adicionales..."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TABLA DEL CARRITO (común para ambos modos) -->
+                                <div class="card cart-card shadow-sm">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-cart3 me-2 text-primary"></i>Carrito de Compras
+                                        </h5>
+                                        <button class="btn btn-sm btn-outline-danger" id="btnVaciarCarrito">
+                                            <i class="bi bi-trash me-1"></i> Vaciar Carrito
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0 modern-table" id="tablaCarrito">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th>Precio</th>
+                                                        <th>Cantidad</th>
+                                                        <th>IVA</th>
+                                                        <th>Subtotal</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td colspan="6" class="text-center py-5 text-muted">
+                                                            <i class="bi bi-cart-x display-4 d-block mb-3 text-secondary"></i>
+                                                            <p class="fw-semibold">No hay productos en el carrito</p>
+                                                            <small>Busca y agrega productos para comenzar</small>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PANEL LATERAL: RESUMEN Y PAGO -->
+                            <div class="col-lg-4">
+                                <!-- DATOS DEL CLIENTE (Modo Rápido) -->
+                                <div class="card mb-3 shadow-sm client-quick-card">
+                                    <div class="card-header bg-gradient-primary text-white">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-person me-2"></i>Datos del Cliente
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <label for="clienteNombre" class="form-label fw-semibold small">Nombre Completo</label>
+                                            <input type="text" class="form-control" id="clienteNombre" placeholder="Nombre del cliente">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="clienteDocumento" class="form-label fw-semibold small">Documento</label>
+                                            <input type="text" class="form-control" id="clienteDocumento" placeholder="CC o NIT">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- MÉTODOS DE PAGO -->
+                                <div class="card mb-3 shadow-sm payment-card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-credit-card me-2 text-primary"></i>Método de Pago
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="payment-methods">
+                                            <button type="button" class="payment-method active" data-method="efectivo">
+                                                <i class="bi bi-cash-coin"></i>
+                                                <div class="small">Efectivo</div>
+                                            </button>
+                                            <button type="button" class="payment-method" data-method="tarjeta">
+                                                <i class="bi bi-credit-card"></i>
+                                                <div class="small">Tarjeta</div>
+                                            </button>
+                                            <button type="button" class="payment-method" data-method="transferencia">
+                                                <i class="bi bi-bank"></i>
+                                                <div class="small">Transferencia</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- RESUMEN DE TOTALES -->
+                                <div class="card mb-3 shadow-sm summary-card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-calculator me-2 text-success"></i>Resumen
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2 summary-item">
+                                            <span>Subtotal:</span>
+                                            <span class="fw-bold" id="subtotalFactura">$0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 summary-item">
+                                            <span>IVA (19%):</span>
+                                            <span class="fw-bold" id="ivaFactura">$0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-3 summary-item">
+                                            <label for="descuentoInput" class="mb-0 small">Descuento:</label>
+                                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" id="descuentoInput" value="0" min="0">
+                                            </div>
+                                        </div>
+                                        <hr class="my-3">
+                                        <div class="d-flex justify-content-between total-amount">
+                                            <span class="fs-5 fw-bold">TOTAL:</span>
+                                            <span class="fs-4 fw-bold text-primary" id="totalFactura">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- BOTÓN DE FACTURAR -->
+                                <div class="d-grid">
+                                    <button class="btn btn-success btn-lg shadow" id="btnGenerarFactura">
+                                        <i class="bi bi-receipt me-2"></i> Generar Factura
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña: Historial -->
+                <div class="tab-pane fade" id="history">
+                    <div class="content-container">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="section-title mb-0">Historial de Facturas</h4>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2">
+                                    <i class="bi bi-download me-2"></i> Exportar
+                                </button>
+                                <button class="btn btn-primary">
+                                    <i class="bi bi-funnel me-2"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filtros Avanzados -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="filtroFechaInicio" class="form-label">Fecha Inicio</label>
+                                        <input type="date" class="form-control" id="filtroFechaInicio" value="2025-06-01">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filtroFechaFin" class="form-label">Fecha Fin</label>
+                                        <input type="date" class="form-control" id="filtroFechaFin" value="2025-06-28">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filtroEstado" class="form-label">Estado</label>
+                                        <select class="form-select" id="filtroEstado">
+                                            <option value="todos">Todos</option>
+                                            <option value="pagada">Pagada</option>
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="vencida">Vencida</option>
+                                            <option value="anulada">Anulada</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filtroCliente" class="form-label">Cliente</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="filtroCliente" placeholder="Nombre o documento">
+                                            <button class="btn btn-outline-primary" type="button">
+                                                <i class="bi bi-search"></i> Buscar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estadísticas Rápidas -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Total Facturado</h6>
+                                        <h3 class="text-primary">$85,450,250</h3>
+                                        <small class="text-success"><i class="bi bi-arrow-up"></i> +12.5%</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Facturas Pagadas</h6>
+                                        <h3 class="text-success">142</h3>
+                                        <small class="text-muted">84% del total</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Pendientes</h6>
+                                        <h3 class="text-warning">23</h3>
+                                        <small class="text-muted">$5,250,000</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Vencidas</h6>
+                                        <h3 class="text-danger">5</h3>
+                                        <small class="text-muted">$1,150,000</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Historial -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>N° Factura</th>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Vencimiento</th>
+                                        <th>Método Pago</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>FAC-2025-00128</strong></td>
+                                        <td>20/06/2025</td>
+                                        <td>
+                                            <div>Juan Pérez García</div>
+                                            <div class="text-muted small">CC 1234567890</div>
+                                        </td>
+                                        <td class="fw-bold">$1,513,480</td>
+                                        <td><span class="badge bg-success">Pagada</span></td>
+                                        <td>20/07/2025</td>
+                                        <td><i class="bi bi-cash-coin me-1"></i> Efectivo</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
+                                                <i class="bi bi-printer"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                                <i class="bi bi-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>FAC-2025-00127</strong></td>
+                                        <td>18/06/2025</td>
+                                        <td>
+                                            <div>María Rodríguez S.A.S.</div>
+                                            <div class="text-muted small">NIT 900123456-1</div>
+                                        </td>
+                                        <td class="fw-bold">$5,450,250</td>
+                                        <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                                        <td>18/07/2025</td>
+                                        <td><i class="bi bi-credit-card me-1"></i> Crédito 30d</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1" title="Registrar pago">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" title="Enviar recordatorio">
+                                                <i class="bi bi-envelope"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>FAC-2025-00126</strong></td>
+                                        <td>15/06/2025</td>
+                                        <td>
+                                            <div>Carlos Mendoza Ltda.</div>
+                                            <div class="text-muted small">NIT 800654321-2</div>
+                                        </td>
+                                        <td class="fw-bold">$2,350,780</td>
+                                        <td><span class="badge bg-danger">Vencida</span></td>
+                                        <td>15/06/2025</td>
+                                        <td><i class="bi bi-bank me-1"></i> Transferencia</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1" title="Registrar pago">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" title="Enviar cobro">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>FAC-2025-00125</strong></td>
+                                        <td>10/06/2025</td>
+                                        <td>
+                                            <div>Ana López Martínez</div>
+                                            <div class="text-muted small">CC 9876543210</div>
+                                        </td>
+                                        <td class="fw-bold">$850,500</td>
+                                        <td><span class="badge bg-success">Pagada</span></td>
+                                        <td>10/07/2025</td>
+                                        <td><i class="bi bi-credit-card me-1"></i> Tarjeta</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
+                                                <i class="bi bi-printer"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                                <i class="bi bi-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>FAC-2025-00124</strong></td>
+                                        <td>05/06/2025</td>
+                                        <td>
+                                            <div>Roberto Sánchez Inc.</div>
+                                            <div class="text-muted small">NIT 700987654-3</div>
+                                        </td>
+                                        <td class="fw-bold">$12,350,980</td>
+                                        <td><span class="badge bg-success">Pagada</span></td>
+                                        <td>05/07/2025</td>
+                                        <td><i class="bi bi-bank me-1"></i> Transferencia</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
+                                                <i class="bi bi-printer"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                                <i class="bi bi-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        <nav class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item"><a class="page-link" href="#">4</a></li>
+                                <li class="page-item"><a class="page-link" href="#">5</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script para el módulo de facturación -->
+    <script defer src="../js/facturacion.js"></script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketWorld - Crear Cuenta</title>
+    <meta name="description" content="Crea tu cuenta en MarketWorld - Sistema de Gestión Empresarial">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="../css/nuevo_usuario.css">
+</head>
+<body>
+    <!-- Fondo animado -->
+    <div class="animated-background">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="register-container">
+        <div class="row g-0 h-100">
+            <!-- Panel izquierdo con información -->
+            <div class="col-lg-5 d-none d-lg-flex left-panel">
+                <div class="panel-content">
+                    <img src="../img/logo.png" alt="MarketWorld Logo" class="logo-large">
+                    <h1 class="welcome-title">Únete a MarketWorld</h1>
+                    <p class="welcome-subtitle">Potencia tu negocio con nuestro sistema integral</p>
+                    
+                    <div class="benefits-list mt-5">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-rocket-takeoff"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h5>Rápida Implementación</h5>
+                                <p>Comienza a usar el sistema en minutos</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h5>Seguridad Garantizada</h5>
+                                <p>Tus datos protegidos con encriptación</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="bi bi-headset"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h5>Soporte 24/7</h5>
+                                <p>Asistencia técnica siempre disponible</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel derecho con formulario -->
+            <div class="col-lg-7 d-flex align-items-center">
+                <div class="register-form-wrapper">
+                    <!-- Logo para mobile -->
+                    <div class="text-center d-lg-none mb-4">
+                        <img src="../img/logo.png" alt="MarketWorld Logo" class="logo-mobile">
+                    </div>
+
+                    <div class="register-card">
+                        <div class="text-center mb-4">
+                            <h2 class="register-title">Crear Cuenta</h2>
+                            <p class="register-subtitle">Completa el formulario para comenzar</p>
+                        </div>
+
+                        <!-- Progress steps -->
+                        <div class="progress-steps mb-4">
+                            <div class="step active">
+                                <div class="step-number">1</div>
+                                <div class="step-label">Datos personales</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-label">Credenciales</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-label">Confirmación</div>
+                            </div>
+                        </div>
+
+                        <form id="registerForm" novalidate>
+                            <!-- Nombre y Apellido -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="firstName" placeholder="Nombre" required>
+                                        <label for="firstName">
+                                            <i class="bi bi-person me-2"></i>Nombre
+                                        </label>
+                                        <div class="invalid-feedback">Campo requerido</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="lastName" placeholder="Apellido" required>
+                                        <label for="lastName">
+                                            <i class="bi bi-person me-2"></i>Apellido
+                                        </label>
+                                        <div class="invalid-feedback">Campo requerido</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" placeholder="correo@ejemplo.com" required>
+                                <label for="email">
+                                    <i class="bi bi-envelope me-2"></i>Correo Electrónico
+                                </label>
+                                <div class="invalid-feedback">Ingresa un email válido</div>
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div class="form-floating mb-3">
+                                <input type="tel" class="form-control" id="phone" placeholder="Teléfono" pattern="[0-9]{10}" required>
+                                <label for="phone">
+                                    <i class="bi bi-telephone me-2"></i>Teléfono (10 dígitos)
+                                </label>
+                                <div class="invalid-feedback">Ingresa un teléfono válido de 10 dígitos</div>
+                            </div>
+
+                            <!-- Contraseña con medidor de seguridad -->
+                            <div class="form-floating mb-2 position-relative">
+                                <input type="password" class="form-control" id="password" placeholder="Contraseña" required minlength="8">
+                                <label for="password">
+                                    <i class="bi bi-lock me-2"></i>Contraseña
+                                </label>
+                                <button type="button" class="password-toggle-btn" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">Mínimo 8 caracteres</div>
+                            </div>
+
+                            <!-- Medidor de seguridad de contraseña -->
+                            <div class="password-strength mb-3">
+                                <div class="strength-bar">
+                                    <div class="strength-bar-fill" id="strengthBar"></div>
+                                </div>
+                                <div class="strength-text" id="strengthText">Ingresa una contraseña</div>
+                            </div>
+
+                            <!-- Confirmar contraseña -->
+                            <div class="form-floating mb-3 position-relative">
+                                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirmar Contraseña" required>
+                                <label for="confirmPassword">
+                                    <i class="bi bi-lock-fill me-2"></i>Confirmar Contraseña
+                                </label>
+                                <button type="button" class="password-toggle-btn" id="toggleConfirmPassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">Las contraseñas no coinciden</div>
+                            </div>
+
+                            <!-- Tipo de cuenta -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-briefcase me-2"></i>Tipo de Cuenta
+                                </label>
+                                <div class="account-types">
+                                    <div class="account-type-card">
+                                        <input type="radio" class="btn-check" name="accountType" id="personal" value="personal" checked>
+                                        <label class="btn" for="personal">
+                                            <i class="bi bi-person"></i>
+                                            <span>Personal</span>
+                                        </label>
+                                    </div>
+                                    <div class="account-type-card">
+                                        <input type="radio" class="btn-check" name="accountType" id="business" value="business">
+                                        <label class="btn" for="business">
+                                            <i class="bi bi-building"></i>
+                                            <span>Empresa</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Términos y condiciones -->
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    Acepto los <a href="#" class="terms-link">Términos y Condiciones</a> y la 
+                                    <a href="#" class="terms-link">Política de Privacidad</a>
+                                </label>
+                                <div class="invalid-feedback">Debes aceptar los términos</div>
+                            </div>
+
+                            <!-- Botón de registro -->
+                            <button type="submit" class="btn btn-register w-100 mb-3">
+                                <span class="btn-text">Crear Cuenta</span>
+                                <span class="btn-loader d-none">
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    Creando...
+                                </span>
+                            </button>
+
+                            <!-- Login -->
+                            <div class="text-center mt-4">
+                                <p class="login-text">
+                                    ¿Ya tienes una cuenta? 
+                                    <a href="Login.html" class="login-link">Inicia sesión aquí</a>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center mt-4">
+                        <p class="footer-text">
+                            © 2025 MarketWorld. Todos los derechos reservados.
+                        </p>
+                        <p class="footer-text mb-0">
+                            <a href="#" class="footer-link">Términos de Servicio</a>
+                            <span class="footer-divider">|</span>
+                            <a href="#" class="footer-link">Política de Privacidad</a>
+                            <span class="footer-divider">|</span>
+                            <a href="#" class="footer-link">Ayuda</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Register script -->
+    <script defer src="../js/nuevo_usuario.js"></script>
+</body>
+</html>

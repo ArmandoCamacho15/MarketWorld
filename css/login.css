@@ -1,0 +1,400 @@
+/* =========================
+   Estilos generales para el módulo de login
+   ========================= */
+/* Estilos para la línea divisoria en formularios */
+.divider:after,
+.divider:before {
+    content: "";           /* Elemento vacío para crear la línea */
+    flex: 1;               /* Ocupa el espacio disponible */
+    height: 1px;           /* Altura de la línea */
+    background: #eee;      /* Color de la línea */
+}
+
+/* Clase para ajustar la altura personalizada del contenedor principal */
+.h-custom {
+    height: calc(100% - 73px); /* Calcula la altura restando 73px */
+}
+
+/* Estilos para la imagen del logo */
+.logo-image {
+    width: 100%;           /* Ocupa todo el ancho disponible */
+    max-width: 400px;      /* Máximo ancho de 400px */
+    height: auto;          /* Altura automática para mantener proporción */
+    object-fit: contain;   /* Ajusta la imagen sin recortarla */
+    display: block;        /* Se muestra como bloque */
+    margin: 0 auto;        /* Centra la imagen horizontalmente */
+}
+
+/* Estilos responsivos para pantallas pequeñas */
+@media (max-width: 450px) {
+    .h-custom {
+        height: 100%;          /* Usa toda la altura disponible */
+    }
+    .logo-image {
+        max-width: 100%;       /* El logo ocupa todo el ancho disponible */
+    }
+}
+
+/* =========================
+   Login Moderno - Paleta Azul MarketWorld y Gris Cálido
+   ========================= */
+
+:root {
+    --primary: #0d6ef0;
+    --primary-dark: #0a58ca;
+    --secondary: #6c757d;
+    --light-gray: #e9ecef;
+    --warm-gray: #f8f9fa;
+    --dark-gray: #495057;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: white;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.login-container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+}
+
+/* =========================
+   PANEL IZQUIERDO BLANCO CON LOGO
+   ========================= */
+.left-panel-white {
+    background: #ffffff; /* FONDO BLANCO */
+    border-right: 1px solid #e9ecef;
+    padding: 60px 50px;
+    color: var(--dark-gray);
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-content-white {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.logo-large {
+    max-width: 280px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto 40px;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+}
+
+.welcome-title-blue {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--primary); /* AZUL */
+}
+
+.welcome-subtitle-gray {
+    font-size: 1.3rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: var(--secondary); /* GRIS */
+}
+
+.features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    margin-top: 50px;
+}
+
+.feature-item-white {
+    display: flex;
+    align-items: center;
+    font-size: 1.15rem;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    transition: all 0.3s;
+    color: var(--dark-gray);
+}
+
+.feature-item-white:hover {
+    background: #e9ecef;
+    transform: translateX(10px);
+}
+
+.feature-item-white i {
+    font-size: 1.8rem;
+    margin-right: 20px;
+    color: var(--primary); /* ICONOS AZULES */
+}
+
+/* =========================
+   PANEL DERECHO AZUL CON FORMULARIO
+   ========================= */
+.right-panel-blue {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); /* FONDO AZUL */
+    padding: 40px;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-form-wrapper-blue {
+    width: 100%;
+    max-width: 480px;
+}
+
+.logo-mobile {
+    max-width: 200px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+}
+
+.login-card-blue {
+    background: rgba(255, 255, 255, 0.1); /* TRANSLÚCIDO */
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
+    padding: 50px 40px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-title-white {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: white; /* TÍTULO BLANCO */
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.login-subtitle-white {
+    color: rgba(255, 255, 255, 0.9); /* SUBTÍTULO BLANCO */
+    font-size: 1.05rem;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+/* Form controls */
+.form-floating {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.form-control {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 1.2rem 1.5rem;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--dark-gray);
+}
+
+.form-control:focus {
+    border-color: white;
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    background: white;
+}
+
+.form-floating label {
+    padding: 1.2rem 1.5rem;
+    color: var(--secondary);
+    font-weight: 500;
+}
+
+/* Password toggle */
+.password-toggle-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--secondary);
+    cursor: pointer;
+    z-index: 10;
+    padding: 8px 12px;
+    transition: all 0.3s;
+    border-radius: 8px;
+}
+
+.password-toggle-btn:hover {
+    color: var(--primary);
+    background: rgba(13, 110, 240, 0.1);
+}
+
+/* Forgot link */
+.forgot-link-white {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.forgot-link-white:hover {
+    text-decoration: underline;
+}
+
+/* Login button */
+.btn-login-white {
+    background: white;
+    color: var(--primary);
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    transition: all 0.4s;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn-login-white:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    background: #f8f9fa;
+}
+
+/* =========================
+   Divider
+   ========================= */
+.divider-white {
+    position: relative;
+    text-align: center;
+    margin: 30px 0;
+}
+
+.divider-white::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.divider-white span {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    padding: 0 20px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* =========================
+   Social login
+   ========================= */
+.social-login {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn-social-white {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    transition: all 0.3s;
+    color: white;
+}
+
+.btn-social-white:hover {
+    transform: translateY(-5px);
+    background: white;
+    border-color: white;
+}
+
+.btn-google:hover { color: #EA4335; }
+.btn-microsoft:hover { color: #00A4EF; }
+.btn-apple:hover { color: #000; }
+
+/* =========================
+   Register link
+   ========================= */
+.register-text-white {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.register-link-white {
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.register-link-white:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   Footer con términos y privacidad
+   ========================= */
+.footer-text-white {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.footer-link-white {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.footer-link-white:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+@media (max-width: 991.98px) {
+    .right-panel-blue {
+        padding: 30px 20px;
+    }
+    
+    .login-card-blue {
+        padding: 40px 30px;
+        border-radius: 25px;
+    }
+    
+    .logo-large {
+        max-width: 220px;
+    }
+    
+    .welcome-title-blue {
+        font-size: 2.2rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .login-card-blue {
+        padding: 35px 25px;
+    }
+    
+    .login-title-white {
+        font-size: 1.8rem;
+    }
+    
+    .logo-mobile {
+        max-width: 160px;
+    }
+}
