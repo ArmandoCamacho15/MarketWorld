@@ -37,6 +37,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    aspectRatio: 2,
+                    layout: {
+                        padding: 10
+                    },
                     plugins: {
                         legend: { display: true, position: 'top' },
                         tooltip: {

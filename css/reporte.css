@@ -211,6 +211,15 @@
             height: 250px;
             margin: 15px 0;
         }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            max-width: 100%;
+            margin: 15px 0;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
         .filter-bar {
             background: var(--light-bg);
             border-radius: 8px;
@@ -400,6 +409,10 @@
     padding: 25px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .chart-header {
@@ -547,4 +560,22 @@
     .chart-card {
         page-break-inside: avoid;
     }
+}
+
+/* Ajustes específicos para canvas en reportes */
+canvas {
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block;
+    box-sizing: border-box;
+}
+
+/* Canvas principales de las tarjetas de gráfico (alto fijo) */
+.chart-card canvas {
+    height: 350px !important;
+}
+
+/* Sparklines dentro de KPIs (alto pequeño) */
+.kpi-sparkline canvas {
+    height: 40px !important;
 }

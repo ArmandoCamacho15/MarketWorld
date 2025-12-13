@@ -222,11 +222,16 @@
                                                 <div class="col-md-8">
                                                     <label for="buscarProducto" class="form-label">Buscar Producto</label>
                                                     <div class="input-group">
-                                                        <input id="buscarProducto" type="text" class="form-control" placeholder="SKU o nombre del producto">
-                                                        <button class="btn btn-outline-primary" type="button" aria-label="Buscar producto">
+                                                        <input id="buscarProducto" list="productosList" type="text" class="form-control" placeholder="SKU o nombre del producto">
+                                                        <button id="btnBuscarProducto" class="btn btn-outline-primary" type="button" aria-label="Buscar producto">
                                                             <i class="bi bi-search" aria-hidden="true"></i> Buscar
                                                         </button>
                                                     </div>
+                                                    <datalist id="productosList">
+                                                        <option value="ELEC-1001">Laptop HP ProBook</option>
+                                                        <option value="ELEC-1002">Monitor 24\"</option>
+                                                        <option value="ALIM-2001">Caja de cereales</option>
+                                                    </datalist>
                                                 </div>
                                                 <!-- Cantidad de producto a agregar -->
                                                 <div class="col-md-4">
@@ -246,7 +251,7 @@
                                                             <th scope="col">Acciones</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody>
+                                                    <tbody id="productosTbody">
                                                         <!-- Ejemplo de producto agregado -->
                                                         <tr>
                                                             <td>
@@ -289,24 +294,24 @@
                                             <!-- Detalle de totales: subtotal, IVA, descuento, envío y total final -->
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Subtotal:</span>
-                                                <span>$6,009.90</span>
+                                                <span id="subtotalVal">$0.00</span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>IVA (19%):</span>
-                                                <span>$1,141.88</span>
+                                                <span id="ivaVal">$0.00</span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Descuento:</span>
-                                                <span class="text-success">-$300.00</span>
+                                                <span id="descuentoVal" class="text-success">-$0.00</span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Envío:</span>
-                                                <span>$50.00</span>
+                                                <span id="envioVal">$0.00</span>
                                             </div>
                                             <hr>
                                             <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
                                                 <span>Total:</span>
-                                                <span>$6,901.78</span>
+                                                <span id="totalVal">$0.00</span>
                                             </div>
                                             <!-- Opción para afectar el inventario automáticamente -->
                                             <div class="form-check mb-3">

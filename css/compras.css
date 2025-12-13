@@ -302,6 +302,20 @@ html, body {
     object-fit: cover;
 }
 
+/* Sección de tarjetas dashboard */
+.dashboard-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0 -12px;
+}
+
+.dashboard-cards .col-md-3 {
+    padding: 0 12px;
+    max-width: 25%;
+    flex: 0 0 25%;
+}
+
 /* Tarjeta de balance */
 .balance-card {
     background: linear-gradient(135deg, #3498db, #0d6ef0);
@@ -309,12 +323,26 @@ html, body {
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 20px;
+    min-height: 120px;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 .balance-card .title {
     font-size: 1rem;
     opacity: 0.9;
+    margin-bottom: 10px;
 }
 .balance-card .amount {
     font-size: 1.8rem;
     font-weight: 700;
+    margin: 0;
+}
+.balance-card .amount {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
 }
