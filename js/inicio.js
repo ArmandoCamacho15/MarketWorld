@@ -5,13 +5,65 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log(' Módulo Inicio cargado correctamente');
         
+        // Verificar sesion
+        checkSession();
+        loadUserInfo();
+        
         // Inicializar
+        initLogout();
         initSearch();
         initQuickAccess();
         initNotifications();
         initTasks();
         initAlerts();
+        
+        // Inicializar sistema de notificaciones
+        if (typeof MarketWorld.notifications !== 'undefined') {
+            MarketWorld.notifications.init();
+        }
     });
+
+    // Verificar sesion activa
+    function checkSession() {
+        if (!MarketWorld.data.isLoggedIn()) {
+            window.location.href = 'Login.html';
+        }
+    }
+
+    // Cargar info del usuario
+    function loadUserInfo() {
+        var user = MarketWorld.data.getCurrentUser();
+        if (user) {
+            var userName = document.getElementById('userName');
+            var userRole = document.getElementById('userRole');
+            
+            if (userName) userName.textContent = user.nombre + ' ' + user.apellido;
+            if (userRole) userRole.textContent = user.rol;
+        }
+    }
+
+    // Cerrar sesion
+    function initLogout() {
+        var logoutBtn = document.getElementById('logoutBtn');
+        var logoutBtnTop = document.getElementById('logoutBtnTop');
+        
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+        
+        if (logoutBtnTop) {
+            logoutBtnTop.addEventListener('click', handleLogout);
+        }
+    }
+
+    function handleLogout(e) {
+        e.preventDefault();
+        
+        if (confirm('¿Seguro que deseas cerrar sesion?')) {
+            MarketWorld.data.logout();
+            window.location.href = 'Login.html';
+        }
+    }
 
     // Búsqueda global en el sistema
     function initSearch() {

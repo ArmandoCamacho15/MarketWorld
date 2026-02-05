@@ -1,340 +1,250 @@
+// nuevo_usuario.js - Registro de usuarios
 
 (function() {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('📝 Módulo Registro cargado');
-        
+    // Iniciar cuando cargue la pagina
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Modulo Registro cargado');
         initRegisterForm();
         initPasswordStrength();
         initPasswordToggle();
-        initTermsValidation();
-        initEmailValidation();
     });
 
-    // Formulario de registro
+    // Configurar formulario
     function initRegisterForm() {
-        const registerForm = document.querySelector('form');
+        var form = document.getElementById('registerForm');
+        if (!form) return;
         
-        if (registerForm) {
-            registerForm.addEventListener('submit', handleRegister);
-        }
+        form.addEventListener('submit', handleRegister);
     }
 
+    // Manejar el registro
     function handleRegister(e) {
         e.preventDefault();
         
-        const firstName = document.getElementById('firstName')?.value.trim();
-        const lastName = document.getElementById('lastName')?.value.trim();
-        const email = document.getElementById('email')?.value.trim();
-        const password = document.getElementById('password')?.value;
-        const confirmPassword = document.getElementById('confirmPassword')?.value;
-        const termsAccepted = document.getElementById('termsCheck')?.checked;
+        var firstName = document.getElementById('firstName');
+        var lastName = document.getElementById('lastName');
+        var email = document.getElementById('email');
+        var phone = document.getElementById('phone');
+        var password = document.getElementById('password');
+        var confirmPassword = document.getElementById('confirmPassword');
+        var termsCheck = document.getElementById('termsCheck');
+        var btnRegister = document.querySelector('.btn-register');
         
-        // Validaciones
-        if (!firstName || !lastName) {
-            showError('Campos requeridos', 'Por favor completa tu nombre y apellido');
+        clearErrors();
+        
+        // Validar campos
+        var hasErrors = false;
+        
+        if (!firstName.value.trim()) {
+            showFieldError(firstName, 'El nombre es obligatorio');
+            hasErrors = true;
+        }
+        
+        if (!lastName.value.trim()) {
+            showFieldError(lastName, 'El apellido es obligatorio');
+            hasErrors = true;
+        }
+        
+        if (!isValidEmail(email.value.trim())) {
+            showFieldError(email, 'Email invalido');
+            hasErrors = true;
+        }
+        
+        if (!isValidPhone(phone.value.trim())) {
+            showFieldError(phone, 'Telefono debe tener 10 digitos');
+            hasErrors = true;
+        }
+        
+        if (password.value.length < 8) {
+            showFieldError(password, 'Minimo 8 caracteres');
+            hasErrors = true;
+        }
+        
+        if (password.value !== confirmPassword.value) {
+            showFieldError(confirmPassword, 'Las contrasenas no coinciden');
+            hasErrors = true;
+        }
+        
+        if (!termsCheck.checked) {
+            showNotification('Debes aceptar los terminos y condiciones', 'error');
+            hasErrors = true;
+        }
+        
+        if (hasErrors) return;
+        
+        // Verificar si el email ya existe
+        if (MarketWorld.data.findUserByEmail(email.value.trim())) {
+            showNotification('Este email ya esta registrado', 'error');
+            showFieldError(email, 'Email ya registrado');
             return;
         }
         
-        if (!validateEmail(email)) {
-            showError('Email inválido', 'Por favor ingresa un email válido');
-            return;
-        }
+        // Registrar usuario
+        setLoadingState(btnRegister, true);
         
-        if (password.length < 8) {
-            showError('Contraseña débil', 'La contraseña debe tener al menos 8 caracteres');
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            showError('Contraseñas no coinciden', 'Las contraseñas deben ser iguales');
-            return;
-        }
-        
-        if (!termsAccepted) {
-            showError('Términos no aceptados', 'Debes aceptar los términos y condiciones');
-            return;
-        }
-        
-        console.log('📤 Registrando usuario:', { firstName, lastName, email });
-        
-        // registro
-        registerUser({ firstName, lastName, email, password });
-    }
-
-    function registerUser(userData) {
-        console.log('🌐 Creando usuario...');
-        
-        // llamada API
-        setTimeout(() => {
-            console.log(' Usuario registrado exitosamente');
-            
-            // Guardar datos de sesión
-            localStorage.setItem('marketworld_user', JSON.stringify({
-                email: userData.email,
-                name: `${userData.firstName} ${userData.lastName}`,
-                role: 'Usuario',
-                registeredAt: new Date().toISOString()
-            }));
-            
-            showSuccess('¡Registro exitoso! Redirigiendo...');
-            
-            setTimeout(() => {
-                window.location.href = 'inicio.html';
-            }, 2000);
-        }, 1500);
-    }
-
-    function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    }
-
-    // Indicador de fortaleza de contraseña
-    function initPasswordStrength() {
-        const passwordInput = document.getElementById('password');
-        
-        if (passwordInput) {
-            passwordInput.addEventListener('input', (e) => {
-                const password = e.target.value;
-                const strength = calculatePasswordStrength(password);
-                
-                displayPasswordStrength(strength);
-            });
-        }
-    }
-
-    function calculatePasswordStrength(password) {
-        let strength = 0;
-        
-        if (password.length >= 8) strength++;
-        if (password.length >= 12) strength++;
-        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-        if (/\d/.test(password)) strength++;
-        if (/[^a-zA-Z0-9]/.test(password)) strength++;
-        
-        return strength;
-    }
-
-    function displayPasswordStrength(strength) {
-        let strengthIndicator = document.getElementById('passwordStrength');
-        
-        if (!strengthIndicator) {
-            strengthIndicator = document.createElement('div');
-            strengthIndicator.id = 'passwordStrength';
-            strengthIndicator.style.cssText = 'margin-top: 5px; font-size: 0.85rem;';
-            document.getElementById('password').parentElement.appendChild(strengthIndicator);
-        }
-        
-        const levels = [
-            { text: 'Muy débil', color: '#e74c3c' },
-            { text: 'Débil', color: '#f39c12' },
-            { text: 'Media', color: '#f1c40f' },
-            { text: 'Fuerte', color: '#2ecc71' },
-            { text: 'Muy fuerte', color: '#27ae60' }
-        ];
-        
-        const level = levels[strength] || levels[0];
-        strengthIndicator.textContent = `Fortaleza: ${level.text}`;
-        strengthIndicator.style.color = level.color;
-    }
-
-    // Toggle para mostrar/ocultar contraseña
-    function initPasswordToggle() {
-        const toggleButtons = document.querySelectorAll('.password-toggle');
-        
-        toggleButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const input = btn.previousElementSibling;
-                const icon = btn.querySelector('i');
-                
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('bi-eye-slash');
-                    icon.classList.add('bi-eye');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('bi-eye');
-                    icon.classList.add('bi-eye-slash');
-                }
-            });
-        });
-    }
-
-    // Validación de términos y condiciones
-    function initTermsValidation() {
-        const termsCheckbox = document.getElementById('termsCheck');
-        const submitButton = document.querySelector('button[type="submit"]');
-        
-        if (termsCheckbox && submitButton) {
-            termsCheckbox.addEventListener('change', (e) => {
-                submitButton.disabled = !e.target.checked;
-                console.log(`✅ Términos ${e.target.checked ? 'aceptados' : 'no aceptados'}`);
+        setTimeout(function() {
+            var result = MarketWorld.data.registerUser({
+                nombre: firstName.value.trim(),
+                apellido: lastName.value.trim(),
+                email: email.value.trim(),
+                password: password.value
             });
             
-            // Inicialmente deshabilitar botón
-            submitButton.disabled = !termsCheckbox.checked;
-        }
-        
-        // Enlaces de términos
-        const termsLink = document.querySelector('a[href*="terminos"]');
-        const privacyLink = document.querySelector('a[href*="privacidad"]');
-        
-        if (termsLink) {
-            termsLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                showTermsModal();
-            });
-        }
-        
-        if (privacyLink) {
-            privacyLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                showPrivacyModal();
-            });
-        }
+            if (result.success) {
+                showNotification('Cuenta creada exitosamente!', 'success');
+                setTimeout(function() {
+                    window.location.href = 'Login.html';
+                }, 1500);
+            } else {
+                setLoadingState(btnRegister, false);
+                showNotification(result.message, 'error');
+            }
+        }, 1000);
     }
 
-    function showTermsModal() {
-        alert('Términos y Condiciones\n\n1. Uso del servicio\n2. Privacidad de datos\n3. Responsabilidades\n\n(En producción, esto sería un modal completo)');
+    // Validar email
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function showPrivacyModal() {
-        alert('Política de Privacidad\n\n1. Recopilación de datos\n2. Uso de información\n3. Protección de datos\n\n(En producción, esto sería un modal completo)');
+    // Validar telefono
+    function isValidPhone(phone) {
+        return /^[0-9]{10}$/.test(phone);
     }
 
-    // Validación de email en tiempo real
-    function initEmailValidation() {
-        const emailInput = document.getElementById('email');
-        
-        if (emailInput) {
-            emailInput.addEventListener('blur', (e) => {
-                const email = e.target.value.trim();
-                
-                if (email && !validateEmail(email)) {
-                    emailInput.classList.add('is-invalid');
-                    showFieldError(emailInput, 'Email inválido');
-                } else {
-                    emailInput.classList.remove('is-invalid');
-                    emailInput.classList.add('is-valid');
-                    removeFieldError(emailInput);
-                }
-            });
-        }
-    }
-
+    // Mostrar error en campo
     function showFieldError(input, message) {
-        let errorDiv = input.parentElement.querySelector('.invalid-feedback');
+        if (!input) return;
+        input.classList.add('is-invalid');
         
+        var errorDiv = input.parentElement.querySelector('.invalid-feedback');
         if (!errorDiv) {
             errorDiv = document.createElement('div');
             errorDiv.className = 'invalid-feedback';
             input.parentElement.appendChild(errorDiv);
         }
-        
         errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
     }
 
-    function removeFieldError(input) {
-        const errorDiv = input.parentElement.querySelector('.invalid-feedback');
-        if (errorDiv) {
-            errorDiv.remove();
+    // Limpiar errores
+    function clearErrors() {
+        var invalidInputs = document.querySelectorAll('.is-invalid');
+        for (var i = 0; i < invalidInputs.length; i++) {
+            invalidInputs[i].classList.remove('is-invalid');
         }
     }
 
-    // Mensajes de error y éxito
-    function showError(title, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            <strong>${title}:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+    // Medidor de fortaleza de contrasena
+    function initPasswordStrength() {
+        var passwordInput = document.getElementById('password');
+        var strengthBar = document.getElementById('strengthBar');
+        var strengthText = document.getElementById('strengthText');
         
-        document.body.appendChild(alertDiv);
+        if (!passwordInput || !strengthBar || !strengthText) return;
         
-        setTimeout(() => alertDiv.remove(), 5000);
+        passwordInput.addEventListener('input', function() {
+            var password = passwordInput.value;
+            var strength = calculateStrength(password);
+            
+            strengthBar.style.width = strength.percent + '%';
+            strengthBar.className = 'strength-bar-fill ' + strength.class;
+            strengthText.textContent = strength.text;
+        });
     }
 
-    function showSuccess(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            <strong>✅ Éxito:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+    // Calcular fortaleza
+    function calculateStrength(password) {
+        if (password.length === 0) {
+            return { percent: 0, class: '', text: 'Ingresa una contrasena' };
+        }
         
-        document.body.appendChild(alertDiv);
+        var strength = 0;
         
-        setTimeout(() => alertDiv.remove(), 3000);
+        if (password.length >= 8) strength += 25;
+        if (password.length >= 12) strength += 25;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 15;
+        if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+        
+        if (strength < 40) {
+            return { percent: strength, class: 'weak', text: 'Debil' };
+        } else if (strength < 70) {
+            return { percent: strength, class: 'medium', text: 'Media' };
+        } else {
+            return { percent: strength, class: 'strong', text: 'Fuerte' };
+        }
     }
 
-
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log(' Registro iniciado');
-        
-        const togglePassword = document.getElementById('togglePassword');
-        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirmPassword');
+    // Mostrar/ocultar contrasenas
+    function initPasswordToggle() {
+        var togglePassword = document.getElementById('togglePassword');
+        var toggleConfirm = document.getElementById('toggleConfirmPassword');
+        var passwordInput = document.getElementById('password');
+        var confirmInput = document.getElementById('confirmPassword');
         
         if (togglePassword && passwordInput) {
             togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                const icon = this.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('bi-eye');
-                    icon.classList.toggle('bi-eye-slash');
-                }
+                togglePasswordVisibility(passwordInput, togglePassword);
             });
         }
         
-        if (toggleConfirmPassword && confirmPasswordInput) {
-            toggleConfirmPassword.addEventListener('click', function() {
-                const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                confirmPasswordInput.setAttribute('type', type);
-                
-                const icon = this.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('bi-eye');
-                    icon.classList.toggle('bi-eye-slash');
-                }
+        if (toggleConfirm && confirmInput) {
+            toggleConfirm.addEventListener('click', function() {
+                togglePasswordVisibility(confirmInput, toggleConfirm);
             });
         }
-        
-        const registerForm = document.getElementById('registerForm');
-        
-        if (registerForm) {
-            registerForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const firstName = document.getElementById('firstName')?.value;
-                const lastName = document.getElementById('lastName')?.value;
-                const email = document.getElementById('email')?.value;
-                const password = passwordInput?.value;
-                const confirmPassword = confirmPasswordInput?.value;
-                
-                if (!firstName || !lastName || !email || !password || !confirmPassword) {
-                    alert('⚠️ Completa todos los campos');
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    alert('⚠️ Las contraseñas no coinciden');
-                    return;
-                }
-                
-                setTimeout(() => {
-                    alert('✅ Registro exitoso');
-                    window.location.href = 'Login.html';
-                }, 1000);
-            });
+    }
+
+    function togglePasswordVisibility(input, button) {
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.innerHTML = '<i class="bi bi-eye-slash"></i>';
+        } else {
+            input.type = 'password';
+            button.innerHTML = '<i class="bi bi-eye"></i>';
         }
-    });
+    }
+
+    // Estado de carga del boton
+    function setLoadingState(button, isLoading) {
+        if (!button) return;
+        var btnText = button.querySelector('.btn-text');
+        var btnLoader = button.querySelector('.btn-loader');
+        
+        if (isLoading) {
+            if (btnText) btnText.classList.add('d-none');
+            if (btnLoader) btnLoader.classList.remove('d-none');
+            button.disabled = true;
+        } else {
+            if (btnText) btnText.classList.remove('d-none');
+            if (btnLoader) btnLoader.classList.add('d-none');
+            button.disabled = false;
+        }
+    }
+
+    // Mostrar notificacion
+    function showNotification(message, type) {
+        var existing = document.querySelector('.register-notification');
+        if (existing) existing.remove();
+        
+        var alertClass = type === 'success' ? 'alert-success' : 
+                         type === 'error' ? 'alert-danger' : 'alert-info';
+        var icon = type === 'success' ? 'bi-check-circle' : 
+                   type === 'error' ? 'bi-x-circle' : 'bi-info-circle';
+        
+        var alertDiv = document.createElement('div');
+        alertDiv.className = 'alert ' + alertClass + ' alert-dismissible fade show position-fixed register-notification';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = '<i class="bi ' + icon + ' me-2"></i>' + message + 
+                            '<button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>';
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(function() {
+            if (alertDiv.parentNode) alertDiv.remove();
+        }, 5000);
+    }
 
 })();

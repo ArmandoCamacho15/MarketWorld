@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="../css/inventario.css">
+    <link rel="stylesheet" href="../css/notifications.css">
 </head>
 <body>
     <!-- Skip link -->
@@ -56,6 +57,9 @@
                     <li class="nav-item mt-4">
                         <a class="nav-link" href="configuracion.html"><i class="bi bi-gear" aria-hidden="true"></i> <span class="nav-text">Configuración</span></a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> <span class="nav-text">Cerrar Sesión</span></a>
+                    </li>
                 </ul>
             </nav>
         </aside>
@@ -74,14 +78,30 @@
                 </div>
                 
                 <div class="user-info">
-                    <button class="btn btn-link position-relative me-3" aria-label="Notificaciones">
-                        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5<span class="visually-hidden"> notificaciones</span></span>
-                    </button>
-                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar Admin User" width="40" height="40">
-                    <div class="ms-2">
-                        <div class="fw-bold">Admin User</div>
-                        <div class="small text-muted">Gestión de Inventario</div>
+                    <div class="notification-container position-relative me-3">
+                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                            <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                            <div id="notificationsList"></div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-link text-decoration-none d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="Avatar Admin User" width="40" height="40">
+                            <div class="ms-2 text-start">
+                                <div class="fw-bold text-dark" id="userName">Admin User</div>
+                                <div class="small text-muted" id="userRole">Administrador</div>
+                            </div>
+                            <i class="bi bi-chevron-down ms-2 text-muted"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
                     </div>
                 </div>
             </header>
@@ -93,33 +113,33 @@
                         <div class="col-md-3">
                             <div class="kpi-card kpi-total">
                                 <div class="kpi-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
-                                <div class="kpi-value">3,890</div>
+                                <div class="kpi-value" id="kpiTotalProductos">0</div>
                                 <div class="kpi-label">Productos Totales</div>
-                                <div class="kpi-trend positive"><i class="bi bi-arrow-up"></i> +125 este mes</div>
+                                <div class="kpi-trend positive" id="kpiTrendProductos"><i class="bi bi-arrow-up"></i> Cargando...</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="kpi-card kpi-value-amount">
                                 <div class="kpi-icon"><i class="bi bi-currency-dollar" aria-hidden="true"></i></div>
-                                <div class="kpi-value">$485,250</div>
+                                <div class="kpi-value" id="kpiValorTotal">$0</div>
                                 <div class="kpi-label">Valor Total Inventario</div>
-                                <div class="kpi-trend positive"><i class="bi bi-arrow-up"></i> +8.5%</div>
+                                <div class="kpi-trend positive" id="kpiTrendValor"><i class="bi bi-arrow-up"></i> Calculando...</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="kpi-card kpi-alert">
                                 <div class="kpi-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></div>
-                                <div class="kpi-value">12</div>
+                                <div class="kpi-value" id="kpiStockBajo">0</div>
                                 <div class="kpi-label">Productos Stock Bajo</div>
-                                <div class="kpi-trend negative"><i class="bi bi-arrow-down"></i> Requiere atención</div>
+                                <div class="kpi-trend negative" id="kpiTrendStock"><i class="bi bi-arrow-down"></i> Verificando...</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="kpi-card kpi-movement">
                                 <div class="kpi-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
-                                <div class="kpi-value">245</div>
+                                <div class="kpi-value" id="kpiMovimientos">0</div>
                                 <div class="kpi-label">Movimientos Hoy</div>
-                                <div class="kpi-trend">128 entradas / 117 salidas</div>
+                                <div class="kpi-trend" id="kpiTrendMovimientos">Sin movimientos</div>
                             </div>
                         </div>
                     </div>
@@ -179,54 +199,49 @@
                             <div class="advanced-filters mb-4">
                                 <div class="row g-3">
                                     <div class="col-md-3">
-                                        <label for="filterCategory" class="form-label">Categoría</label>
-                                        <select id="filterCategory" class="form-select">
+                                        <label for="filterCategoria" class="form-label">Categoría</label>
+                                        <select id="filterCategoria" class="form-select">
                                             <option value="">Todas las categorías</option>
-                                            <option>Electrónicos</option>
-                                            <option>Alimentos</option>
-                                            <option>Oficina</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label for="filterStock" class="form-label">Estado de Stock</label>
+                                    <div class="col-md-2">
+                                        <label for="filterEstado" class="form-label">Estado</label>
+                                        <select id="filterEstado" class="form-select">
+                                            <option value="">Todos</option>
+                                            <option value="activo">Activos</option>
+                                            <option value="inactivo">Inactivos</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="filterStock" class="form-label">Stock</label>
                                         <select id="filterStock" class="form-select">
                                             <option value="">Todos</option>
                                             <option value="ok">Stock OK</option>
                                             <option value="bajo">Stock Bajo</option>
-                                            <option value="agotado">Agotado</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
-                                        <label for="filterPrice" class="form-label">Rango de Precio</label>
-                                        <select id="filterPrice" class="form-select">
-                                            <option value="">Todos los precios</option>
-                                            <option>$0 - $100</option>
-                                            <option>$100 - $500</option>
-                                            <option>$500 - $1,000</option>
-                                            <option>Más de $1,000</option>
-                                        </select>
+                                        <label for="filterSearch" class="form-label">Buscar</label>
+                                        <input type="text" id="filterSearch" class="form-control" placeholder="Nombre o código...">
                                     </div>
-                                    <div class="col-md-3 d-flex align-items-end">
-                                        <button class="btn btn-primary w-100" id="btnApplyFilters">
-                                            <i class="bi bi-funnel me-2" aria-hidden="true"></i> Aplicar Filtros
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" id="btnFilter">
+                                            <i class="bi bi-funnel me-2" aria-hidden="true"></i> Filtrar
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- NUEVO: Alertas de Stock Crítico -->
-                            <div class="alert alert-warning mb-4" role="alert">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-exclamation-triangle-fill fs-3 me-3" aria-hidden="true"></i>
-                                    <div class="flex-grow-1">
-                                        <strong>¡Atención!</strong> 12 productos requieren reabastecimiento urgente.
-                                    </div>
-                                    <button class="btn btn-sm btn-warning">Ver Productos</button>
-                                </div>
-                            </div>
+                            <!-- Alertas de Stock Bajo -->
+                            <div id="lowStockAlerts"></div>
 
-                            <!-- Tabla de productos mejorada -->
-                            <div class="table-responsive">
+                            <!-- Lista de productos -->
+                            <div class="row" id="productsList">
+                                <!-- Los productos se cargan dinámicamente con JS -->
+                            </div>
+                            
+                            <!-- Tabla de productos mejorada (legacy) -->
+                            <div class="table-responsive" style="display:none;">
                                 <table class="table product-table">
                                     <thead>
                                         <tr>
@@ -484,61 +499,80 @@
                 </div>
                 <div class="modal-body">
                     <form id="productForm" novalidate>
+                        <input type="hidden" id="productId">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="productSKU" class="form-label">SKU</label>
-                                <input type="text" class="form-control" id="productSKU" required>
-                                <div class="invalid-feedback">El SKU es obligatorio</div>
+                                <label for="productCodigo" class="form-label">Código *</label>
+                                <input type="text" class="form-control" id="productCodigo" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="productName" class="form-label">Nombre del Producto</label>
-                                <input type="text" class="form-control" id="productName" required>
-                                <div class="invalid-feedback">El nombre es obligatorio</div>
+                                <label for="productNombre" class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="productNombre" required>
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productDescripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="productDescripcion" rows="2"></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="productCategory" class="form-label">Categoría</label>
-                                <select class="form-select" id="productCategory" required>
-                                    <option value="">Seleccionar categoría</option>
-                                    <option value="Electrónica">Electrónica</option>
-                                    <option value="Alimentos">Alimentos</option>
-                                    <option value="Ropa">Ropa</option>
-                                    <option value="Hogar">Hogar</option>
+                                <label for="productCategoria" class="form-label">Categoría *</label>
+                                <select class="form-select" id="productCategoria" required>
+                                    <option value="">Seleccionar categoría...</option>
                                 </select>
-                                <div class="invalid-feedback">Selecciona una categoría</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="productPrice" class="form-label">Precio</label>
-                                <input type="number" class="form-control" id="productPrice" min="0" step="0.01" required>
-                                <div class="invalid-feedback">El precio debe ser mayor a 0</div>
+                                <label for="productUnidad" class="form-label">Unidad</label>
+                                <select class="form-select" id="productUnidad">
+                                    <option value="Unidad">Unidad</option>
+                                    <option value="Kg">Kilogramo (Kg)</option>
+                                    <option value="Litro">Litro</option>
+                                    <option value="Caja">Caja</option>
+                                    <option value="Paquete">Paquete</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="productPrecio" class="form-label">Precio *</label>
+                                <input type="number" class="form-control" id="productPrecio" min="0" step="0.01" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="productCosto" class="form-label">Costo</label>
+                                <input type="number" class="form-control" id="productCosto" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Margen</label>
+                                <div class="form-control-plaintext"><strong id="margenCalculado">0%</strong></div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="productStock" class="form-label">Stock</label>
-                                <input type="number" class="form-control" id="productStock" min="0" required>
-                                <div class="invalid-feedback">El stock debe ser mayor o igual a 0</div>
+                                <label for="productStock" class="form-label">Stock Actual</label>
+                                <input type="number" class="form-control" id="productStock" min="0" value="0">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="productMinStock" class="form-label">Stock Mínimo</label>
-                                <input type="number" class="form-control" id="productMinStock" min="0" required>
-                                <div class="invalid-feedback">El stock mínimo es obligatorio</div>
+                                <label for="productStockMinimo" class="form-label">Stock Mínimo</label>
+                                <input type="number" class="form-control" id="productStockMinimo" min="0" value="0">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="productDescription" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="productProveedor" class="form-label">Proveedor</label>
+                                <input type="text" class="form-control" id="productProveedor">
+                            </div>
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="productActivo" checked>
+                                    <label class="form-check-label" for="productActivo">Producto Activo</label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="productImage" class="form-label">Imagen del Producto</label>
-                            <input type="file" class="form-control" id="productImage" accept="image/*">
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Producto</button>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Producto</button>
                 </div>
             </div>
         </div>
@@ -546,11 +580,12 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Utilidades comunes -->
+    <!-- Scripts del sistema -->
     <script src="../js/utils.js"></script>
-    <!-- Sidebar toggle -->
-    <script defer src="../js/sidebar-toggle.js"></script>
-    <!-- Script específico -->
-    <script defer src="../js/inventario.js"></script>
+    <script src="../js/data.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/auth-check.js"></script>
+    <script src="../js/sidebar-toggle.js"></script>
+    <script src="../js/inventario.js"></script>
 </body>
 </html>

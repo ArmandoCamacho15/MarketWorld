@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Hoja de estilos para el módulo de configuración -->
     <link rel="stylesheet" href="../css/configuracion.css">
+    <link rel="stylesheet" href="../css/notifications.css">
 </head>
 <body>
     <div class="app-container">
@@ -47,6 +48,9 @@
                 <li class="nav-item active">
                     <a class="nav-link active" href="configuracion.html" aria-current="page"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Cerrar Sesión</span></a>
+                </li>
             </ul>
         </div>
 
@@ -59,16 +63,30 @@
                     <input type="text" class="form-control" placeholder="Buscar configuraciones...">
                 </div>
                 <div class="user-info">
-                    <!-- Notificaciones -->
-                    <div class="me-4 position-relative">
-                        <i class="bi bi-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
+                    <div class="notification-container position-relative me-3">
+                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                            <div id="notificationsList"></div>
+                        </div>
                     </div>
-                    <!-- Información del usuario actual -->
-                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
-                    <div>
-                        <div class="fw-bold">Admin User</div>
-                        <div class="small text-muted">Configuración General</div>
+                    <div class="dropdown">
+                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
+                            <div class="ms-2 text-start">
+                                <div class="fw-bold text-dark" id="userName">Admin User</div>
+                                <div class="small text-muted" id="userRole">Configuración General</div>
+                            </div>
+                            <i class="bi bi-chevron-down ms-2 text-muted"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -539,242 +557,37 @@
                                     <div class="row g-3">
                                         <div class="col-md-3">
                                             <label class="form-label">Rol</label>
-                                            <select class="form-select">
-                                                <option>Todos</option>
-                                                <option>Administrador</option>
-                                                <option>Gerente</option>
-                                                <option>Vendedor</option>
-                                                <option>Soporte</option>
+                                            <select class="form-select" id="filterRol">
+                                                <option value="">Todos</option>
+                                                <option value="Administrador">Administrador</option>
+                                                <option value="Vendedor">Vendedor</option>
+                                                <option value="Usuario">Usuario</option>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label">Estado</label>
-                                            <select class="form-select">
-                                                <option>Todos</option>
-                                                <option>Activo</option>
-                                                <option>Inactivo</option>
-                                                <option>Pendiente</option>
+                                            <select class="form-select" id="filterEstado">
+                                                <option value="">Todos</option>
+                                                <option value="Activo">Activo</option>
+                                                <option value="Inactivo">Inactivo</option>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label">Departamento</label>
-                                            <select class="form-select">
-                                                <option>Todos</option>
-                                                <option>Ventas</option>
-                                                <option>Soporte</option>
-                                                <option>Administración</option>
-                                                <option>Logística</option>
-                                            </select>
+                                            <label class="form-label">Buscar</label>
+                                            <input type="text" class="form-control" id="filterSearch" placeholder="Nombre o email...">
                                         </div>
                                         <div class="col-md-3 d-flex align-items-end">
-                                            <button class="btn btn-primary w-100">
+                                            <button class="btn btn-primary w-100" id="btnFilter">
                                                 <i class="bi bi-funnel me-2"></i> Filtrar
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Tarjetas y tabla con información de usuarios -->
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="user-card">
-                                            <div class="text-center">
-                                                <img src="https://randomuser.me/api/portraits/men/32.jpg" class="user-avatar" alt="Juan Pérez">
-                                                <h5>Juan Pérez</h5>
-                                                <div class="role-badge badge-admin">Administrador</div>
-                                                <div class="status-badge status-active mt-2">Activo</div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
-                                                    <span>juan.perez@marketworld.com</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
-                                                    <span>(601) 345 6789</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between">
-                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
-                                                    <span>Administración</span>
-                                                </div>
-                                            </div>
-                                            <div class="action-buttons mt-3">
-                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
-                                                    <i class="bi bi-eye me-1"></i> Ver
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
-                                                    <i class="bi bi-pencil me-1"></i> Editar
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
-                                                    <i class="bi bi-trash me-1"></i> Eliminar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <div class="user-card">
-                                            <div class="text-center">
-                                                <img src="https://randomuser.me/api/portraits/women/44.jpg" class="user-avatar" alt="María Gómez">
-                                                <h5>María Gómez</h5>
-                                                <div class="role-badge badge-seller">Vendedor</div>
-                                                <div class="status-badge status-active mt-2">Activo</div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
-                                                    <span>maria.gomez@marketworld.com</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
-                                                    <span>(604) 456 7890</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between">
-                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
-                                                    <span>Ventas</span>
-                                                </div>
-                                            </div>
-                                            <div class="action-buttons mt-3">
-                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
-                                                    <i class="bi bi-eye me-1"></i> Ver
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
-                                                    <i class="bi bi-pencil me-1"></i> Editar
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
-                                                    <i class="bi bi-trash me-1"></i> Eliminar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <div class="user-card">
-                                            <div class="text-center">
-                                                <img src="https://randomuser.me/api/portraits/men/67.jpg" class="user-avatar" alt="Carlos Mendoza">
-                                                <h5>Carlos Mendoza</h5>
-                                                <div class="role-badge badge-support">Soporte</div>
-                                                <div class="status-badge status-pending mt-2">Pendiente</div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-envelope me-2"></i> Email:</span>
-                                                    <span>carlos.mendoza@marketworld.com</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span><i class="bi bi-telephone me-2"></i> Teléfono:</span>
-                                                    <span>(601) 789 0123</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between">
-                                                    <span><i class="bi bi-building me-2"></i> Departamento:</span>
-                                                    <span>Soporte</span>
-                                                </div>
-                                            </div>
-                                            <div class="action-buttons mt-3">
-                                                <button class="btn btn-sm btn-outline-primary flex-grow-1">
-                                                    <i class="bi bi-eye me-1"></i> Ver
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning flex-grow-1">
-                                                    <i class="bi bi-pencil me-1"></i> Editar
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger flex-grow-1">
-                                                    <i class="bi bi-trash me-1"></i> Eliminar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                               
+                               <!-- Lista de usuarios -->
+                                <div class="row" id="usersList">
+                                    <!-- Se cargan dinámicamente con JS -->
                                 </div>
-                                
-                                <div class="mt-4">
-                                    <h4 class="section-title">Lista Completa de Usuarios</h4>
-                                    
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th>Usuario</th>
-                                                    <th>Email</th>
-                                                    <th>Rol</th>
-                                                    <th>Departamento</th>
-                                                    <th>Estado</th>
-                                                    <th>Último Acceso</th>
-                                                    <th>Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <img src="https://randomuser.me/api/portraits/men/32.jpg" width="40" height="40" class="rounded-circle me-3">
-                                                            <div>Juan Pérez</div>
-                                                        </div>
-                                                    </td>
-                                                    <td>juan.perez@marketworld.com</td>
-                                                    <td><span class="role-badge badge-admin">Administrador</span></td>
-                                                    <td>Administración</td>
-                                                    <td><span class="status-badge status-active">Activo</span></td>
-                                                    <td>20/06/2025 10:30</td>
-                                                    <td>
-                                                        <div class="action-buttons">
-                                                            <button class="btn btn-sm btn-outline-primary">
-                                                                <i class="bi bi-eye"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-outline-warning">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <img src="https://randomuser.me/api/portraits/women/44.jpg" width="40" height="40" class="rounded-circle me-3">
-                                                            <div>María Gómez</div>
-                                                        </div>
-                                                    </td>
-                                                    <td>maria.gomez@marketworld.com</td>
-                                                    <td><span class="role-badge badge-seller">Vendedor</span></td>
-                                                    <td>Ventas</td>
-                                                    <td><span class="status-badge status-active">Activo</span></td>
-                                                    <td>20/06/2025 14:15</td>
-                                                    <td>
-                                                        <div class="action-buttons">
-                                                            <button class="btn btn-sm btn-outline-primary">
-                                                                <i class="bi bi-eye"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-outline-warning">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <img src="https://randomuser.me/api/portraits/men/67.jpg" width="40" height="40" class="rounded-circle me-3">
-                                                            <div>Carlos Mendoza</div>
-                                                        </div>
-                                                    </td>
-                                                    <td>carlos.mendoza@marketworld.com</td>
-                                                    <td><span class="role-badge badge-support">Soporte</span></td>
-                                                    <td>Soporte</td>
-                                                    <td><span class="status-badge status-pending">Pendiente</span></td>
-                                                    <td>19/06/2025 16:45</td>
-                                                    <td>
-                                                        <div class="action-buttons">
-                                                            <button class="btn btn-sm btn-outline-primary">
-                                                                <i class="bi bi-eye"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-outline-warning">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
 
                             <!-- Sub-pestaña: Roles y Permisos -->
                             <div class="tab-pane fade" id="roles">
@@ -1071,74 +884,56 @@
 
     <!-- Modal para registrar nuevo usuario -->
     <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">Registrar Nuevo Usuario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="userModalLabel">Nuevo Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center">
-                            <div class="avatar-upload mb-3">
-                                <img src="https://via.placeholder.com/150" class="rounded-circle mb-2" width="150" height="150" id="avatarPreview">
-                                <input type="file" id="avatarInput" accept="image/*">
-                                <button class="btn btn-sm btn-outline-primary w-100">
-                                    <i class="bi bi-upload me-1"></i> Subir Foto
-                                </button>
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="userNombre" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Apellido *</label>
+                                <input type="text" class="form-control" id="userApellido" required>
                             </div>
                         </div>
-                        <div class="col-md-8">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nombre</label>
-                                    <input type="text" class="form-control" placeholder="Ingrese nombre">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Apellido</label>
-                                    <input type="text" class="form-control" placeholder="Ingrese apellido">
-                                </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="userPassword" placeholder="Dejar vacío para no cambiar" minlength="6">
+                            <small class="text-muted">Mínimo 6 caracteres</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Rol *</label>
+                                <select class="form-select" id="userRol">
+                                    <option value="Usuario">Usuario</option>
+                                    <option value="Vendedor">Vendedor</option>
+                                    <option value="Administrador">Administrador</option>
+                                </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" placeholder="usuario@correo.com">
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Rol</label>
-                                    <select class="form-select">
-                                        <option>Seleccionar rol</option>
-                                        <option>Administrador</option>
-                                        <option>Gerente</option>
-                                        <option>Vendedor</option>
-                                        <option>Soporte</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Departamento</label>
-                                    <select class="form-select">
-                                        <option>Seleccionar departamento</option>
-                                        <option>Administración</option>
-                                        <option>Ventas</option>
-                                        <option>Soporte</option>
-                                        <option>Logística</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Estado</label>
-                                <select class="form-select">
-                                    <option>Activo</option>
-                                    <option>Inactivo</option>
-                                    <option>Pendiente</option>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Estado *</label>
+                                <select class="form-select" id="userEstado">
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary">Guardar Usuario</button>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1198,11 +993,12 @@
 
     <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Utilidades comunes -->
+    <!-- Scripts del sistema -->
     <script src="../js/utils.js"></script>
-    <!-- Sidebar toggle -->
-    <script defer src="../js/sidebar-toggle.js"></script>
-    <!-- Script JS para el módulo de configuración -->
-    <script defer src="../js/configuracion.js"></script>
+    <script src="../js/data.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/auth-check.js"></script>
+    <script src="../js/sidebar-toggle.js"></script>
+    <script src="../js/configuracion.js"></script>
 </body>
 </html>

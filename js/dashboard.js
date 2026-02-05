@@ -14,6 +14,11 @@
         initCalendar();
         initTransactions();
         animateKPIs();
+        
+        // Inicializar sistema de notificaciones
+        if (typeof MarketWorld.notifications !== 'undefined') {
+            MarketWorld.notifications.init();
+        }
     });
 
     // Inicializar gráficos con Chart.js

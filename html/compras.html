@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Hoja de estilos para el módulo de compras -->
     <link rel="stylesheet" href="../css/compras.css">
+    <link rel="stylesheet" href="../css/notifications.css">
 </head>
 <body>
     <div class="app-container">
@@ -74,6 +75,12 @@
                             <span class="nav-text">Configuración</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="#" id="logoutBtn">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                            <span class="nav-text">Cerrar Sesión</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </aside>
@@ -89,11 +96,14 @@
 
                 <div class="user-info" role="region" aria-label="Información del usuario">
                     <!-- Notificaciones y mensajes -->
-                    <div class="me-4 position-relative" aria-hidden="false">
-                        <button class="btn btn-link p-0" aria-label="Notificaciones">
+                    <div class="notification-container position-relative me-3" aria-hidden="false">
+                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
                             <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
                         </button>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" aria-hidden="true">2</span>
+                        <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                            <div id="notificationsList"></div>
+                        </div>
                     </div>
                     <div class="me-4 position-relative" aria-hidden="false">
                         <button class="btn btn-link p-0" aria-label="Mensajes">
@@ -791,11 +801,12 @@
 
     <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Utilidades comunes -->
+    <!-- Scripts del sistema -->
     <script src="../js/utils.js"></script>
-    <!-- Sidebar toggle -->
-    <script defer src="../js/sidebar-toggle.js"></script>
-    <!-- Script JS para el módulo de compras -->
-    <script defer src="../js/compras.js"></script>
+    <script src="../js/data.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/auth-check.js"></script>
+    <script src="../js/sidebar-toggle.js"></script>
+    <script src="../js/compras.js"></script>
 </body>
 </html>

@@ -1,464 +1,560 @@
+// inventario.js - Gestion de inventario y productos
 
 (function() {
     'use strict';
 
-    // ===========================
-    // VARIABLES GLOBALES
-    // ===========================
-    // base de datos de productos
-    let productos = [
-        {
-            id: 1,
-            sku: 'ELEC-1001',
-            nombre: 'Laptop HP ProBook',
-            categoria: 'Electrónica',
-            precio: 1250000,
-            stock: 15,
-            minStock: 5,
-            imagen: 'laptop.jpg'
-        },
-        {
-            id: 2,
-            sku: 'ALIM-2001',
-            nombre: 'Arroz Diana 500g',
-            categoria: 'Alimentos',
-            precio: 3500,
-            stock: 120,
-            minStock: 50,
-            imagen: 'arroz.jpg'
-        },
-        {
-            id: 3,
-            sku: 'ELEC-1002',
-            nombre: 'Mouse Logitech',
-            categoria: 'Electrónica',
-            precio: 45000,
-            stock: 3,
-            minStock: 10,
-            imagen: 'mouse.jpg'
-        }
-    ];
-
-    let nextId = 4; // ID para nuevos productos
-
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('Módulo Inventario Profesional cargado');
-        
-        // Inicializar
-        initSearchAndFilters();
-        initCharts();
-        initBarcodeScanner();
-        initProductForm();
-        checkLowStock();
-        cargarProductos();
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Modulo Inventario cargado');
+        initInventory();
     });
 
-    // Búsqueda avanzada con debounce
-    function initSearchAndFilters() {
-        const searchInput = document.getElementById('searchProduct');
-        const btnApplyFilters = document.getElementById('btnApplyFilters');
+    // Inicializar inventario
+    function initInventory() {
+        loadProducts();
+        loadCategories();
+        initNewProductButton();
+        initProductForm();
+        initProductActions();
+        initFilters();
+        showLowStockAlerts();
+        updateDashboardKPIs();
         
-        if (searchInput) {
-            searchInput.addEventListener('input', debounce((e) => {
-                const query = e.target.value.trim();
-                if (query.length > 2) {
-                    console.log('Buscando producto:', query);
-                    
-                }
-            }, 300));
-        }
-        
-        if (btnApplyFilters) {
-            btnApplyFilters.addEventListener('click', applyAdvancedFilters);
+        // Inicializar sistema de notificaciones
+        if (typeof MarketWorld.notifications !== 'undefined') {
+            MarketWorld.notifications.init();
+            MarketWorld.notifications.checkLowStock();
         }
     }
 
-    function applyAdvancedFilters() {
-        const category = document.getElementById('filterCategory').value;
-        const stock = document.getElementById('filterStock').value;
-        const price = document.getElementById('filterPrice').value;
-        
-        console.log('Aplicando filtros:', { category, stock, price });
-        
+    // Cargar productos
+    function loadProducts() {
+        var products = MarketWorld.data.getProducts();
+        displayProducts(products);
     }
 
-    // Inicializar gráficos con Chart.js
-    function initCharts() {
-        // Gráfico de rotación de inventario
-        const rotationCtx = document.getElementById('rotationChart');
-        if (rotationCtx && typeof Chart !== 'undefined') {
-            new Chart(rotationCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Alta Rotación', 'Media Rotación', 'Baja Rotación'],
-                    datasets: [{
-                        data: [45, 35, 20],
-                        backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
-
-        // Gráfico de valorización
-        const valuationCtx = document.getElementById('valuationChart');
-        if (valuationCtx && typeof Chart !== 'undefined') {
-            new Chart(valuationCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Electrónicos', 'Alimentos', 'Oficina', 'Hogar'],
-                    datasets: [{
-                        label: 'Valor en Inventario',
-                        data: [185450, 75200, 42800, 38500],
-                        backgroundColor: '#0d6ef0'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Gráfico de movimientos
-        const movementsCtx = document.getElementById('movementsChart');
-        if (movementsCtx && typeof Chart !== 'undefined') {
-            new Chart(movementsCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
-                    datasets: [
-                        {
-                            label: 'Entradas',
-                            data: [320, 285, 410, 390],
-                            borderColor: '#2ecc71',
-                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                            fill: true
-                        },
-                        {
-                            label: 'Salidas',
-                            data: [280, 310, 350, 375],
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                }
-            });
-        }
-    }
-
-    // Simulador de escáner de código de barras
-    function initBarcodeScanner() {
-        let barcodeBuffer = '';
-        let lastKeyTime = Date.now();
-
-        document.addEventListener('keypress', (e) => {
-            const currentTime = Date.now();
-            
-            // Si pasan más de 50ms entre teclas, resetear buffer
-            if (currentTime - lastKeyTime > 50) {
-                barcodeBuffer = '';
-            }
-            
-            lastKeyTime = currentTime;
-            
-            if (e.key === 'Enter' && barcodeBuffer.length >= 8) {
-                console.log('Código de barras escaneado:', barcodeBuffer);
-                searchProductByBarcode(barcodeBuffer);
-                barcodeBuffer = '';
-            } else if (e.key !== 'Enter') {
-                barcodeBuffer += e.key;
-            }
-        });
-    }
-
-    function searchProductByBarcode(barcode) {
-        console.log('Buscando producto con código:', barcode);
+    // Mostrar productos
+    function displayProducts(products) {
+        var container = document.getElementById('productsList');
+        if (!container) return;
         
-        alert(`Buscando producto con código: ${barcode}`);
-    }
-
-    // Formulario de productos
-    function initProductForm() {
-        const btnSaveProduct = document.getElementById('btnSaveProduct');
+        container.innerHTML = '';
         
-        if (btnSaveProduct) {
-            btnSaveProduct.addEventListener('click', saveProduct);
-        }
-
-        // Select all checkbox
-        const selectAll = document.getElementById('selectAll');
-        if (selectAll) {
-            selectAll.addEventListener('change', (e) => {
-                const checkboxes = document.querySelectorAll('.row-select');
-                checkboxes.forEach(cb => cb.checked = e.target.checked);
-            });
-        }
-    }
-
-    function saveProduct() {
-        const formData = {
-            name: document.getElementById('productName').value,
-            sku: document.getElementById('productSKU').value,
-            category: document.getElementById('productCategory').value,
-            barcode: document.getElementById('productBarcode').value,
-            purchasePrice: document.getElementById('productPurchasePrice').value,
-            salePrice: document.getElementById('productSalePrice').value,
-            stock: document.getElementById('productStock').value,
-            minStock: document.getElementById('productMinStock').value,
-            location: document.getElementById('productLocation').value,
-            description: document.getElementById('productDescription').value
-        };
-
-        console.log('Guardando producto:', formData);
-        
-
-        // Cerrar modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-        if (modal) modal.hide();
-
-        alert('Producto guardado exitosamente');
-    }
-
-    // Alertas de stock bajo
-    function checkLowStock() {
-        const stockCells = document.querySelectorAll('.stock-low');
-        if (stockCells.length > 0) {
-            console.warn(`⚠️ ${stockCells.length} productos con stock bajo`);
-        }
-    }
-
-    // Cargar productos en la tabla
-    function cargarProductos(listaProductos = productos) {
-        const tbody = document.querySelector('.product-table tbody');
-        
-        if (!tbody) return;
-        
-        // Limpiar tabla
-        tbody.innerHTML = '';
-        
-        // Verificar si hay productos
-        if (listaProductos.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <i class="bi bi-inbox fs-1 text-muted"></i>
-                        <p class="text-muted mt-2">No se encontraron productos</p>
-                    </td>
-                </tr>
-            `;
+        if (products.length === 0) {
+            container.innerHTML = '<div class="col-12"><div class="alert alert-info">No hay productos registrados</div></div>';
             return;
         }
         
-        // Agregar productos a la tabla
-        listaProductos.forEach(producto => {
-            const tr = document.createElement('tr');
-            
-            // Determinar color de stock
-            const stockClass = producto.stock <= producto.minStock ? 'stock-low' : 'stock-ok';
-            const stockIcon = producto.stock <= producto.minStock ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
-            
-            tr.innerHTML = `
-                <td>
-                    <div class="product-img">
-                        <i class="bi bi-box-seam fs-4"></i>
+        products.forEach(function(product) {
+            var productCard = createProductCard(product);
+            container.appendChild(productCard);
+        });
+    }
+
+    // Crear tarjeta de producto
+    function createProductCard(product) {
+        var col = document.createElement('div');
+        col.className = 'col-md-4 mb-3';
+        
+        var stockClass = product.stock <= product.stockMinimo ? 'stock-low' : 
+                         product.stock <= product.stockMinimo * 2 ? 'stock-medium' : 'stock-ok';
+        
+        var statusBadge = product.activo ? 
+            '<span class="badge bg-success">Activo</span>' : 
+            '<span class="badge bg-secondary">Inactivo</span>';
+        
+        var stockAlert = product.stock <= product.stockMinimo ? 
+            '<div class="alert alert-warning alert-sm mb-2"><i class="bi bi-exclamation-triangle me-1"></i> Stock bajo</div>' : '';
+        
+        var margen = product.precio > 0 ? ((product.precio - product.costo) / product.precio * 100).toFixed(1) : 0;
+        
+        col.innerHTML = `
+            <div class="card product-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="text-muted">${product.codigo}</small>
+                        ${statusBadge}
                     </div>
-                </td>
-                <td>
-                    <div class="fw-bold">${producto.nombre}</div>
-                    <div class="text-muted small">SKU: ${producto.sku}</div>
-                </td>
-                <td>
-                    <span class="badge bg-primary">${producto.categoria}</span>
-                </td>
-                <td>$${producto.precio.toLocaleString('es-CO')}</td>
-                <td>
-                    <div class="d-flex align-items-center ${stockClass}">
-                        <i class="bi ${stockIcon} me-2"></i>
-                        ${producto.stock}
+                    <h5 class="card-title">${product.nombre}</h5>
+                    <p class="text-muted small mb-2">${product.categoria}</p>
+                    <p class="card-text small text-truncate">${product.descripcion || 'Sin descripción'}</p>
+                    
+                    ${stockAlert}
+                    
+                    <div class="product-info">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-tag me-1"></i> Precio:</span>
+                            <strong>$${formatCurrency(product.precio)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-cash me-1"></i> Costo:</span>
+                            <span>$${formatCurrency(product.costo)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-graph-up me-1"></i> Margen:</span>
+                            <span class="text-success">${margen}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-box me-1"></i> Stock:</span>
+                            <span class="${stockClass}"><strong>${product.stock}</strong> ${product.unidad}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Mínimo:</span>
+                            <span class="small text-muted">${product.stockMinimo}</span>
+                        </div>
                     </div>
-                </td>
-                <td>${producto.minStock}</td>
-                <td>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary" onclick="verDetalle(${producto.id})" title="Ver detalle">
-                            <i class="bi bi-eye"></i>
+                    
+                    <div class="btn-group w-100 mt-3" role="group">
+                        <button class="btn btn-sm btn-outline-primary btn-adjust-stock" data-product-id="${product.id}">
+                            <i class="bi bi-plus-minus"></i> Stock
                         </button>
-                        <button class="btn btn-outline-warning" onclick="editarProducto(${producto.id})" title="Editar">
-                            <i class="bi bi-pencil"></i>
+                        <button class="btn btn-sm btn-outline-warning btn-edit-product" data-product-id="${product.id}">
+                            <i class="bi bi-pencil"></i> Editar
                         </button>
-                        <button class="btn btn-outline-danger" onclick="eliminarProducto(${producto.id})" title="Eliminar">
+                        <button class="btn btn-sm btn-outline-danger btn-delete-product" data-product-id="${product.id}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
-                </td>
-            `;
-            
-            tbody.appendChild(tr);
-        });
-        
-        // Actualizar contador
-        actualizarContadores();
-    }
-
-    // ===========================
-    // FUNCIONES AUXILIARES
-    // ===========================
-
-    function verDetalle(id) {
-        const producto = productos.find(p => p.id === id);
-        
-        if (!producto) return;
-        
-        alert(`
-Detalle del Producto:
-━━━━━━━━━━━━━━━━━━━━━
-SKU: ${producto.sku}
-Nombre: ${producto.nombre}
-Categoría: ${producto.categoria}
-Precio: $${producto.precio.toLocaleString('es-CO')}
-Stock: ${producto.stock} unidades
-Stock Mínimo: ${producto.minStock} unidades
-Estado: ${producto.stock <= producto.minStock ? '⚠️ STOCK BAJO' : '✅ Stock suficiente'}
-        `);
-    }
-
-    function editarProducto(id) {
-        const producto = productos.find(p => p.id === id);
-        
-        if (!producto) return;
-        
-        // Llenar formulario con datos del producto
-        document.getElementById('productSKU').value = producto.sku;
-        document.getElementById('productName').value = producto.nombre;
-        document.getElementById('productCategory').value = producto.categoria;
-        document.getElementById('productPrice').value = producto.precio;
-        document.getElementById('productStock').value = producto.stock;
-        document.getElementById('productMinStock').value = producto.minStock;
-        
-        // Cambiar título del modal
-        const modalTitle = document.querySelector('#productModal .modal-title');
-        if (modalTitle) modalTitle.textContent = 'Editar Producto';
-        
-        // Guardar ID para edición
-        const form = document.getElementById('productForm');
-        if (form) form.setAttribute('data-edit-id', id);
-        
-        // Abrir modal
-        const productModal = document.getElementById('productModal');
-        if (productModal) {
-            const modal = new bootstrap.Modal(productModal);
-            modal.show();
-        }
-    }
-
-    function eliminarProducto(id) {
-        const producto = productos.find(p => p.id === id);
-        
-        if (!producto) return;
-        
-        // Confirmar eliminación
-        const confirmar = confirm(`¿Estás seguro de eliminar el producto?\n\n${producto.nombre} (${producto.sku})\n\nEsta acción no se puede deshacer.`);
-        
-        if (confirmar) {
-            // Eliminar producto del array
-            productos = productos.filter(p => p.id !== id);
-            
-            // Recargar tabla
-            cargarProductos();
-            
-            // Mostrar notificación
-            mostrarNotificacion('Producto eliminado exitosamente', 'success');
-        }
-    }
-
-    function limpiarFormulario() {
-        const form = document.getElementById('productForm');
-        if (form) {
-            form.reset();
-            form.classList.remove('was-validated');
-            form.removeAttribute('data-edit-id');
-        }
-    }
-
-    function actualizarContadores() {
-        const totalProductos = productos.length;
-        const stockBajo = productos.filter(p => p.stock <= p.minStock).length;
-        const valorTotal = productos.reduce((sum, p) => sum + (p.precio * p.stock), 0);
-        
-        // Actualizar KPIs si existen
-        const kpiTotal = document.querySelector('.kpi-total .kpi-value');
-        const kpiAlert = document.querySelector('.kpi-alert .kpi-value');
-        const kpiValue = document.querySelector('.kpi-value-amount .kpi-value');
-        
-        if (kpiTotal) kpiTotal.textContent = totalProductos;
-        if (kpiAlert) kpiAlert.textContent = stockBajo;
-        if (kpiValue) kpiValue.textContent = `$${valorTotal.toLocaleString('es-CO')}`;
-    }
-
-    function mostrarNotificacion(mensaje, tipo = 'info') {
-        // Crear elemento de notificación
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${tipo} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${mensaje}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
         `;
         
-        // Agregar al body
-        document.body.appendChild(notification);
+        return col;
+    }
+
+    // Formatear moneda
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('es-CO').format(value);
+    }
+
+    // Botón nuevo producto
+    function initNewProductButton() {
+        var btnNew = document.querySelector('[data-bs-target="#productModal"]');
+        if (btnNew) {
+            btnNew.addEventListener('click', function() {
+                resetProductForm();
+                document.getElementById('productModalLabel').textContent = 'Nuevo Producto';
+                document.getElementById('productId').value = '';
+            });
+        }
+    }
+
+    // Formulario de producto
+    function initProductForm() {
+        var form = document.getElementById('productForm');
+        if (!form) return;
         
-        // Eliminar después de 3 segundos
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 150);
-        }, 3000);
-    }
-
-    // Utilidad: debounce
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveProduct();
+        });
+        
+        // Calcular margen automáticamente
+        var precioInput = document.getElementById('productPrecio');
+        var costoInput = document.getElementById('productCosto');
+        
+        if (precioInput && costoInput) {
+            var calculateMargin = function() {
+                var precio = parseFloat(precioInput.value) || 0;
+                var costo = parseFloat(costoInput.value) || 0;
+                var margen = precio > 0 ? ((precio - costo) / precio * 100).toFixed(1) : 0;
+                var margenSpan = document.getElementById('margenCalculado');
+                if (margenSpan) {
+                    margenSpan.textContent = margen + '%';
+                    margenSpan.className = margen > 0 ? 'text-success' : 'text-danger';
+                }
             };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
+            
+            precioInput.addEventListener('input', calculateMargin);
+            costoInput.addEventListener('input', calculateMargin);
+        }
     }
 
-    // ===========================
-    // EXPORTAR FUNCIONES GLOBALES
-    // ===========================
-    window.verDetalle = verDetalle;
-    window.editarProducto = editarProducto;
-    window.eliminarProducto = eliminarProducto;
+    // Inicializar acciones de productos
+    function initProductActions() {
+        var container = document.getElementById('productsList');
+        if (!container) return;
+        
+        container.addEventListener('click', function(e) {
+            var target = e.target.closest('button');
+            if (!target) return;
+            
+            var productId = target.getAttribute('data-product-id');
+            if (!productId) return;
+            
+            if (target.classList.contains('btn-edit-product')) {
+                editProduct(parseInt(productId));
+            } else if (target.classList.contains('btn-delete-product')) {
+                deleteProductConfirm(parseInt(productId));
+            } else if (target.classList.contains('btn-adjust-stock')) {
+                showStockModal(parseInt(productId));
+            }
+        });
+    }
+
+    // Guardar producto
+    function saveProduct() {
+        var productId = document.getElementById('productId').value;
+        var codigo = document.getElementById('productCodigo').value.trim();
+        var nombre = document.getElementById('productNombre').value.trim();
+        var descripcion = document.getElementById('productDescripcion').value.trim();
+        var categoria = document.getElementById('productCategoria').value;
+        var precio = document.getElementById('productPrecio').value;
+        var costo = document.getElementById('productCosto').value;
+        var stock = document.getElementById('productStock').value;
+        var stockMinimo = document.getElementById('productStockMinimo').value;
+        var unidad = document.getElementById('productUnidad').value;
+        var proveedor = document.getElementById('productProveedor').value.trim();
+        var activo = document.getElementById('productActivo').checked;
+        
+        if (!codigo || !nombre || !categoria || !precio) {
+            alert('Por favor completa los campos obligatorios (Código, Nombre, Categoría, Precio)');
+            return;
+        }
+        
+        var productData = {
+            codigo: codigo,
+            nombre: nombre,
+            descripcion: descripcion,
+            categoria: categoria,
+            precio: precio,
+            costo: costo || 0,
+            stock: stock || 0,
+            stockMinimo: stockMinimo || 0,
+            unidad: unidad,
+            proveedor: proveedor,
+            activo: activo
+        };
+        
+        var result;
+        if (productId) {
+            result = MarketWorld.data.updateProduct(productId, productData);
+        } else {
+            result = MarketWorld.data.createProduct(productData);
+            // Notificar creación de producto
+            if (result.success && typeof MarketWorld.notifications !== 'undefined') {
+                MarketWorld.notifications.notifyProductCreated(nombre);
+            }
+        }
+        
+        if (result.success) {
+            alert(result.message);
+            loadProducts();
+            showLowStockAlerts();
+            updateDashboardKPIs();
+            
+            // Verificar stock bajo después de guardar
+            if (typeof MarketWorld.notifications !== 'undefined') {
+                MarketWorld.notifications.checkLowStock();
+            }
+            
+            var modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+            if (modal) modal.hide();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    }
+
+    // Editar producto
+    function editProduct(id) {
+        var product = MarketWorld.data.findProductById(id);
+        if (!product) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
+        document.getElementById('productId').value = product.id;
+        document.getElementById('productCodigo').value = product.codigo;
+        document.getElementById('productNombre').value = product.nombre;
+        document.getElementById('productDescripcion').value = product.descripcion;
+        document.getElementById('productCategoria').value = product.categoria;
+        document.getElementById('productPrecio').value = product.precio;
+        document.getElementById('productCosto').value = product.costo;
+        document.getElementById('productStock').value = product.stock;
+        document.getElementById('productStockMinimo').value = product.stockMinimo;
+        document.getElementById('productUnidad').value = product.unidad;
+        document.getElementById('productProveedor').value = product.proveedor;
+        document.getElementById('productActivo').checked = product.activo;
+        
+        document.getElementById('productModalLabel').textContent = 'Editar Producto';
+        
+        // Calcular margen
+        var margen = product.precio > 0 ? ((product.precio - product.costo) / product.precio * 100).toFixed(1) : 0;
+        var margenSpan = document.getElementById('margenCalculado');
+        if (margenSpan) {
+            margenSpan.textContent = margen + '%';
+        }
+        
+        var modal = new bootstrap.Modal(document.getElementById('productModal'));
+        modal.show();
+    }
+
+    // Eliminar producto
+    function deleteProductConfirm(id) {
+        var product = MarketWorld.data.findProductById(id);
+        if (!product) return;
+        
+        if (confirm('¿ELIMINAR el producto "' + product.nombre + '"?\n\nEsta acción no se puede deshacer.')) {
+            var productName = product.nombre;
+            var result = MarketWorld.data.deleteProduct(id);
+            if (result.success) {
+                alert(result.message);
+                loadProducts();
+                showLowStockAlerts();
+                updateDashboardKPIs();
+                
+                // Notificar eliminación de producto
+                if (typeof MarketWorld.notifications !== 'undefined') {
+                    MarketWorld.notifications.notifyProductDeleted(productName);
+                }
+            } else {
+                alert('Error: ' + result.message);
+            }
+        }
+    }
+
+    // Mostrar modal de ajuste de stock
+    function showStockModal(id) {
+        var product = MarketWorld.data.findProductById(id);
+        if (!product) return;
+        
+        var currentStock = product.stock;
+        var operation = prompt(
+            'Ajuste de Stock - ' + product.nombre + '\n\n' +
+            'Stock actual: ' + currentStock + ' ' + product.unidad + '\n\n' +
+            'Ingresa:\n' +
+            '+10 para agregar 10 unidades\n' +
+            '-5 para restar 5 unidades\n' +
+            '50 para establecer stock en 50'
+        );
+        
+        if (!operation) return;
+        
+        var trimmed = operation.trim();
+        var quantity, opType;
+        
+        if (trimmed.startsWith('+')) {
+            quantity = parseInt(trimmed.substring(1));
+            opType = 'add';
+        } else if (trimmed.startsWith('-')) {
+            quantity = parseInt(trimmed.substring(1));
+            opType = 'subtract';
+        } else {
+            quantity = parseInt(trimmed);
+            opType = 'set';
+        }
+        
+        if (isNaN(quantity)) {
+            alert('Cantidad inválida');
+            return;
+        }
+        
+        var result = MarketWorld.data.updateStock(id, quantity, opType);
+        if (result.success) {
+            var newStock = MarketWorld.data.findProductById(id).stock;
+            alert(result.message);
+            loadProducts();
+            showLowStockAlerts();
+            updateDashboardKPIs();
+            
+            // Notificar cambio de stock
+            if (typeof MarketWorld.notifications !== 'undefined') {
+                MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
+                MarketWorld.notifications.checkLowStock();
+            }
+        } else {
+            alert('Error: ' + result.message);
+        }
+    }
+
+    // Limpiar formulario
+    function resetProductForm() {
+        document.getElementById('productId').value = '';
+        document.getElementById('productCodigo').value = '';
+        document.getElementById('productNombre').value = '';
+        document.getElementById('productDescripcion').value = '';
+        document.getElementById('productCategoria').value = '';
+        document.getElementById('productPrecio').value = '';
+        document.getElementById('productCosto').value = '';
+        document.getElementById('productStock').value = '0';
+        document.getElementById('productStockMinimo').value = '0';
+        document.getElementById('productUnidad').value = 'Unidad';
+        document.getElementById('productProveedor').value = '';
+        document.getElementById('productActivo').checked = true;
+        
+        var margenSpan = document.getElementById('margenCalculado');
+        if (margenSpan) margenSpan.textContent = '0%';
+    }
+
+    // Cargar categorías en select
+    function loadCategories() {
+        var categories = MarketWorld.data.getCategories();
+        var select = document.getElementById('productCategoria');
+        var filterSelect = document.getElementById('filterCategoria');
+        
+        if (select) {
+            select.innerHTML = '<option value="">Seleccionar categoría...</option>';
+            categories.forEach(function(cat) {
+                if (cat.activa) {
+                    var option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    select.appendChild(option);
+                }
+            });
+        }
+        
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
+            categories.forEach(function(cat) {
+                if (cat.activa) {
+                    var option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    filterSelect.appendChild(option);
+                }
+            });
+        }
+    }
+
+    // Inicializar filtros
+    function initFilters() {
+        var btnFilter = document.getElementById('btnFilter');
+        var searchInput = document.getElementById('filterSearch');
+        
+        if (btnFilter) {
+            btnFilter.addEventListener('click', applyFilters);
+        }
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+    }
+
+    // Aplicar filtros
+    function applyFilters() {
+        var categoria = document.getElementById('filterCategoria').value.toLowerCase();
+        var estado = document.getElementById('filterEstado').value;
+        var stock = document.getElementById('filterStock').value;
+        var search = document.getElementById('filterSearch').value.toLowerCase();
+        
+        var products = MarketWorld.data.getProducts();
+        
+        var filtered = products.filter(function(product) {
+            var matchCategoria = !categoria || product.categoria.toLowerCase() === categoria;
+            var matchEstado = !estado || (estado === 'activo' ? product.activo : !product.activo);
+            var matchStock = !stock || 
+                (stock === 'bajo' && product.stock <= product.stockMinimo) ||
+                (stock === 'ok' && product.stock > product.stockMinimo);
+            var matchSearch = !search || 
+                product.nombre.toLowerCase().includes(search) ||
+                product.codigo.toLowerCase().includes(search) ||
+                product.descripcion.toLowerCase().includes(search);
+            
+            return matchCategoria && matchEstado && matchStock && matchSearch;
+        });
+        
+        displayProducts(filtered);
+    }
+
+    // Mostrar alertas de stock bajo
+    function showLowStockAlerts() {
+        var lowStockProducts = MarketWorld.data.getLowStockProducts();
+        var alertContainer = document.getElementById('lowStockAlerts');
+        
+        if (!alertContainer) return;
+        
+        if (lowStockProducts.length === 0) {
+            alertContainer.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i> Todos los productos tienen stock suficiente</div>';
+            return;
+        }
+        
+        var html = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i> <strong>' + lowStockProducts.length + ' producto(s) con stock bajo:</strong><ul class="mb-0 mt-2">';
+        
+        lowStockProducts.forEach(function(product) {
+            html += '<li>' + product.nombre + ' (' + product.codigo + ') - Stock: ' + product.stock + ' (Mínimo: ' + product.stockMinimo + ')</li>';
+        });
+        
+        html += '</ul></div>';
+        alertContainer.innerHTML = html;
+    }
+
+    // Actualizar KPIs del dashboard
+    function updateDashboardKPIs() {
+        var products = MarketWorld.data.getProducts();
+        var lowStockProducts = MarketWorld.data.getLowStockProducts();
+        
+        // Total de productos activos
+        var activeProducts = products.filter(function(p) { return p.activo; });
+        var totalProductos = activeProducts.length;
+        
+        // Valor total del inventario (precio * stock)
+        var valorTotal = products.reduce(function(sum, product) {
+            return sum + (product.precio * product.stock);
+        }, 0);
+        
+        // Productos con stock bajo
+        var stockBajo = lowStockProducts.length;
+        
+        // Actualizar los valores en el HTML
+        var kpiTotal = document.getElementById('kpiTotalProductos');
+        var kpiValor = document.getElementById('kpiValorTotal');
+        var kpiStock = document.getElementById('kpiStockBajo');
+        var kpiMovimientos = document.getElementById('kpiMovimientos');
+        
+        if (kpiTotal) {
+            kpiTotal.textContent = totalProductos.toLocaleString('es-CO');
+            var trendTotal = document.getElementById('kpiTrendProductos');
+            if (trendTotal) {
+                trendTotal.innerHTML = '<i class="bi bi-box-seam"></i> ' + products.length + ' total';
+            }
+        }
+        
+        if (kpiValor) {
+            kpiValor.textContent = '$' + Math.round(valorTotal).toLocaleString('es-CO');
+            var trendValor = document.getElementById('kpiTrendValor');
+            if (trendValor) {
+                var promedio = products.length > 0 ? Math.round(valorTotal / products.length) : 0;
+                trendValor.innerHTML = '<i class="bi bi-graph-up"></i> Promedio: $' + promedio.toLocaleString('es-CO');
+            }
+        }
+        
+        if (kpiStock) {
+            kpiStock.textContent = stockBajo;
+            var trendStock = document.getElementById('kpiTrendStock');
+            if (trendStock) {
+                if (stockBajo > 0) {
+                    trendStock.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Requiere atención';
+                    trendStock.className = 'kpi-trend negative';
+                } else {
+                    trendStock.innerHTML = '<i class="bi bi-check-circle"></i> Todo en orden';
+                    trendStock.className = 'kpi-trend positive';
+                }
+            }
+        }
+        
+        if (kpiMovimientos) {
+            // Por ahora, calcular movimientos basados en productos modificados hoy
+            var hoy = new Date().toISOString().split('T')[0];
+            var productosHoy = products.filter(function(p) {
+                return p.fechaCreacion === hoy;
+            }).length;
+            
+            kpiMovimientos.textContent = productosHoy;
+            var trendMov = document.getElementById('kpiTrendMovimientos');
+            if (trendMov) {
+                if (productosHoy > 0) {
+                    trendMov.textContent = productosHoy + ' productos agregados hoy';
+                } else {
+                    trendMov.textContent = 'Sin movimientos hoy';
+                }
+            }
+        }
+        
+        console.log('KPIs actualizados:', {
+            total: totalProductos,
+            valor: valorTotal,
+            stockBajo: stockBajo
+        });
+    }
 
 })();
