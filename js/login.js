@@ -1,385 +1,302 @@
-// login.js
-// Este archivo gestiona la l√≥gica de la p√°gina de inicio de sesi√≥n, incluyendo validaci√≥n de campos, almacenamiento del correo si el usuario lo solicita, notificaciones tipo toast y simulaci√≥n de autenticaci√≥n y login social.
-
+/**
+ * login.js
+ * MÛdulo de autenticaciÛn de MarketWorld
+ * Gestiona el inicio de sesiÛn, validaciÛn y redirecciÛn
+ */
 
 (function() {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('üîê M√≥dulo Login cargado');
+    // Usuarios de prueba para demostraciÛn
+    const VALID_USERS = [
+        { email: 'admin@marketworld.com', password: 'admin123', role: 'Administrador' },
+        { email: 'ventas@marketworld.com', password: 'ventas123', role: 'Vendedor' },
+        { email: 'user@marketworld.com', password: '123456', role: 'Usuario' }
+    ];
+
+    /**
+     * InicializaciÛn del mÛdulo
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('MÛdulo Login cargado');
         
         initLoginForm();
         initPasswordToggle();
         initRememberMe();
         initForgotPassword();
         initSocialLogin();
+        initRegisterLink();
     });
 
-    // Formulario de login
+    /**
+     * Inicializa el formulario de login
+     */
     function initLoginForm() {
-        const loginForm = document.querySelector('form');
+        const loginForm = document.getElementById('loginForm');
         
         if (loginForm) {
             loginForm.addEventListener('submit', handleLogin);
         }
     }
 
+    /**
+     * Maneja el envÌo del formulario de login
+     * @param {Event} e - Evento de submit
+     */
     function handleLogin(e) {
         e.preventDefault();
         
-        const email = document.querySelector('input[type="email"]').value.trim();
-        const password = document.querySelector('input[type="password"]').value;
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const btnLogin = document.querySelector('.btn-login-white');
+        
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = passwordInput ? passwordInput.value : '';
         
         // Validaciones
+        if (!email || !password) {
+            showNotification('Por favor completa todos los campos', 'warning');
+            return;
+        }
+        
         if (!validateEmail(email)) {
-            showError('Email', 'Por favor ingresa un email v√°lido');
+            showNotification('Por favor ingresa un email v·lido', 'error');
             return;
         }
         
         if (password.length < 6) {
-            showError('Contrase√±a', 'La contrase√±a debe tener al menos 6 caracteres');
+            showNotification('La contraseÒa debe tener al menos 6 caracteres', 'error');
             return;
         }
         
-        console.log('üîì Intentando login:', { email });
+        // Mostrar estado de carga
+        setLoadingState(btnLogin, true);
         
-        // autenticaci√≥n
-        authenticateUser(email, password);
-    }
-
-    function authenticateUser(email, password) {
-        // llamada API
-        console.log('üåê Autenticando usuario...');
-        
-        // Usuarios de prueba
-        const validUsers = [
-            { email: 'admin@marketworld.com', password: 'admin123', role: 'Administrador' },
-            { email: 'ventas@marketworld.com', password: 'ventas123', role: 'Vendedor' },
-            { email: 'user@marketworld.com', password: '123456', role: 'Usuario' }
-        ];
-        
-        const user = validUsers.find(u => u.email === email && u.password === password);
-        
-        setTimeout(() => {
-            if (user) {
-                console.log(' Login exitoso');
-                
-                // Guardar sesi√≥n
-                localStorage.setItem('marketworld_user', JSON.stringify({
-                    email: user.email,
-                    role: user.role,
-                    loginTime: new Date().toISOString()
-                }));
-                
-                // Redirigir al inicio
-                showSuccess(`¬°Bienvenido ${user.role}!`);
-                
-                setTimeout(() => {
-                    window.location.href = 'inicio.html';
-                }, 1500);
-            } else {
-                console.log(' Credenciales inv√°lidas');
-                showError('Error de autenticaci√≥n', 'Email o contrase√±a incorrectos');
-            }
+        // Simular autenticaciÛn
+        setTimeout(function() {
+            authenticateUser(email, password, btnLogin);
         }, 1000);
     }
 
+    /**
+     * Autentica al usuario contra la lista de usuarios v·lidos
+     * @param {string} email - Email del usuario
+     * @param {string} password - ContraseÒa del usuario
+     * @param {HTMLElement} btnLogin - BotÛn de login
+     */
+    function authenticateUser(email, password, btnLogin) {
+        const user = VALID_USERS.find(function(u) {
+            return u.email === email && u.password === password;
+        });
+        
+        if (user) {
+            // Guardar sesiÛn
+            localStorage.setItem('marketworld_user', JSON.stringify({
+                email: user.email,
+                role: user.role,
+                loginTime: new Date().toISOString()
+            }));
+            
+            // Guardar email si "recordarme" est· activo
+            const rememberMe = document.getElementById('rememberMe');
+            if (rememberMe && rememberMe.checked) {
+                localStorage.setItem('marketworld_remember_email', email);
+            }
+            
+            showNotification('Bienvenido ' + user.role, 'success');
+            
+            setTimeout(function() {
+                window.location.href = 'inicio.html';
+            }, 1500);
+        } else {
+            setLoadingState(btnLogin, false);
+            showNotification('Email o contraseÒa incorrectos', 'error');
+        }
+    }
+
+    /**
+     * Valida el formato de un email
+     * @param {string} email - Email a validar
+     * @returns {boolean} - True si el email es v·lido
+     */
     function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     }
 
-    // Toggle para mostrar/ocultar contrase√±a
+    /**
+     * Inicializa el toggle de visibilidad de contraseÒa
+     */
     function initPasswordToggle() {
-        const toggleButtons = document.querySelectorAll('.password-toggle');
+        var toggleBtn = document.getElementById('togglePassword');
+        var passwordInput = document.getElementById('passwordInput');
         
-        toggleButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const input = btn.previousElementSibling;
-                const icon = btn.querySelector('i');
+        if (toggleBtn && passwordInput) {
+            toggleBtn.addEventListener('click', function() {
+                var type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
                 
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('bi-eye-slash');
-                    icon.classList.add('bi-eye');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('bi-eye');
-                    icon.classList.add('bi-eye-slash');
+                var icon = this.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('bi-eye');
+                    icon.classList.toggle('bi-eye-slash');
                 }
             });
-        });
+        }
     }
 
-    // Recordar usuario
+    /**
+     * Inicializa la funciÛn de recordar usuario
+     */
     function initRememberMe() {
-        const rememberCheckbox = document.getElementById('rememberMe');
-        const emailInput = document.querySelector('input[type="email"]');
+        var rememberCheckbox = document.getElementById('rememberMe');
+        var emailInput = document.getElementById('emailInput');
         
         if (rememberCheckbox && emailInput) {
             // Cargar email guardado
-            const savedEmail = localStorage.getItem('marketworld_remember_email');
+            var savedEmail = localStorage.getItem('marketworld_remember_email');
             if (savedEmail) {
                 emailInput.value = savedEmail;
                 rememberCheckbox.checked = true;
             }
-            
-            rememberCheckbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    localStorage.setItem('marketworld_remember_email', emailInput.value);
-                    console.log('üíæ Email guardado');
-                } else {
-                    localStorage.removeItem('marketworld_remember_email');
-                    console.log('üóëÔ∏è Email eliminado');
-                }
-            });
         }
     }
 
-    // Recuperaci√≥n de contrase√±a
+    /**
+     * Inicializa el enlace de recuperaciÛn de contraseÒa
+     */
     function initForgotPassword() {
-        const forgotLink = document.querySelector('a[href*="forgot"]');
+        var forgotLink = document.getElementById('forgotPasswordLink');
         
         if (forgotLink) {
-            forgotLink.addEventListener('click', (e) => {
+            forgotLink.addEventListener('click', function(e) {
                 e.preventDefault();
                 handleForgotPassword();
             });
         }
     }
 
+    /**
+     * Maneja la solicitud de recuperaciÛn de contraseÒa
+     */
     function handleForgotPassword() {
-        const email = prompt('Ingresa tu email para recuperar tu contrase√±a:');
+        var email = prompt('Ingresa tu email para recuperar tu contraseÒa:');
         
         if (email && validateEmail(email)) {
-            console.log(`üìß Enviando email de recuperaci√≥n a: ${email}`);
-            
-            setTimeout(() => {
-                alert(`‚úÖ Email de recuperaci√≥n enviado a ${email}\n\nRevisa tu bandeja de entrada y spam.`);
-            }, 1000);
+            showNotification('Email de recuperaciÛn enviado a ' + email, 'success');
         } else if (email) {
-            alert('‚ùå Email inv√°lido');
+            showNotification('Email inv·lido', 'error');
         }
     }
 
-    // Login con redes sociales
+    /**
+     * Inicializa los botones de login social
+     */
     function initSocialLogin() {
-        const socialButtons = document.querySelectorAll('.btn-floating');
-        
-        socialButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const platform = btn.querySelector('i').className;
-                
-                let socialNetwork = 'desconocida';
-                if (platform.includes('facebook')) socialNetwork = 'Facebook';
-                else if (platform.includes('google')) socialNetwork = 'Google';
-                else if (platform.includes('twitter')) socialNetwork = 'Twitter';
-                
-                console.log(`üîó Intentando login con ${socialNetwork}`);
-                alert(`Login con ${socialNetwork} no disponible en esta demo`);
-            });
-        });
-    }
-
-    // Mensajes de error y √©xito
-    function showError(title, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            <strong>${title}:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(alertDiv);
-        
-        setTimeout(() => alertDiv.remove(), 5000);
-    }
-
-    function showSuccess(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            <strong>‚úÖ √âxito:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(alertDiv);
-        
-        setTimeout(() => alertDiv.remove(), 3000);
-    }
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log(' Login iniciado');
-        
-        // ===========================
-        // 1. BOT√ìN TOGGLE PASSWORD
-        // ===========================
-        const togglePasswordBtn = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('passwordInput');
-        
-        if (togglePasswordBtn && passwordInput) {
-            togglePasswordBtn.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                const icon = this.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('bi-eye');
-                    icon.classList.toggle('bi-eye-slash');
-                }
-            });
-        }
-        
-        // ===========================
-        // 2. BOT√ìN LOGIN (SUBMIT)
-        // ===========================
-        const loginForm = document.getElementById('loginForm');
-        const btnLogin = document.querySelector('.btn-login-white');
-        
-        if (loginForm) {
-            loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('emailInput').value;
-                const password = passwordInput.value;
-                
-                if (!email || !password) {
-                    alert('‚ö†Ô∏è Completa todos los campos');
-                    return;
-                }
-                
-                console.log('üîê Bot√≥n Login clickeado');
-                
-                // Mostrar loader
-                if (btnLogin) {
-                    const btnText = btnLogin.querySelector('.btn-text');
-                    const btnLoader = btnLogin.querySelector('.btn-loader');
-                    
-                    if (btnText && btnLoader) {
-                        btnText.classList.add('d-none');
-                        btnLoader.classList.remove('d-none');
-                        btnLogin.disabled = true;
-                    }
-                }
-                
-                // Simular login
-                setTimeout(() => {
-                    const rememberMe = document.getElementById('rememberMe');
-                    if (rememberMe && rememberMe.checked) {
-                        localStorage.setItem('rememberUser', email);
-                    }
-                    
-                    window.location.href = 'inicio.html';
-                }, 1500);
-            });
-        }
-        
-        // ===========================
-        // 3. BOTONES SOCIAL LOGIN
-        // ===========================
-        const btnGoogle = document.querySelector('.btn-google');
-        const btnMicrosoft = document.querySelector('.btn-microsoft');
-        const btnApple = document.querySelector('.btn-apple');
+        var btnGoogle = document.querySelector('.btn-google');
+        var btnMicrosoft = document.querySelector('.btn-microsoft');
+        var btnApple = document.querySelector('.btn-apple');
         
         if (btnGoogle) {
             btnGoogle.addEventListener('click', function() {
-                console.log('üîµ Bot√≥n Google clickeado');
-                alert('Iniciando sesi√≥n con Google...\n(Funcionalidad en desarrollo)');
+                showNotification('Login con Google no disponible en esta versiÛn', 'info');
             });
         }
         
         if (btnMicrosoft) {
             btnMicrosoft.addEventListener('click', function() {
-                console.log('üî∑ Bot√≥n Microsoft clickeado');
-                alert('Iniciando sesi√≥n con Microsoft...\n(Funcionalidad en desarrollo)');
+                showNotification('Login con Microsoft no disponible en esta versiÛn', 'info');
             });
         }
         
         if (btnApple) {
             btnApple.addEventListener('click', function() {
-                console.log('üçé Bot√≥n Apple clickeado');
-                alert('Iniciando sesi√≥n con Apple...\n(Funcionalidad en desarrollo)');
+                showNotification('Login con Apple no disponible en esta versiÛn', 'info');
             });
         }
-        
-        // ===========================
-        // 4. LINK FORGOT PASSWORD
-        // ===========================
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        
-        if (forgotPasswordLink) {
-            forgotPasswordLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('‚ùì Link olvide contrase√±a clickeado');
-                
-                const email = prompt('Ingresa tu correo electr√≥nico:');
-                
-                if (email && email.includes('@')) {
-                    alert(`‚úÖ Se ha enviado un correo de recuperaci√≥n a: ${email}`);
-                } else if (email) {
-                    alert('‚ö†Ô∏è Correo inv√°lido');
-                }
-            });
-        }
-        
-        // ===========================
-        // 5. LINK REGISTRARSE
-        // ===========================
-        const registerLink = document.querySelector('.register-link-white');
+    }
+
+    /**
+     * Inicializa el enlace de registro
+     */
+    function initRegisterLink() {
+        var registerLink = document.querySelector('.register-link-white');
         
         if (registerLink) {
             registerLink.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log('üìù Link registrarse clickeado');
                 window.location.href = 'nuevo_usuario.html';
             });
         }
-    });
+    }
 
+    /**
+     * Establece el estado de carga del botÛn
+     * @param {HTMLElement} button - BotÛn a modificar
+     * @param {boolean} isLoading - Estado de carga
+     */
+    function setLoadingState(button, isLoading) {
+        if (!button) return;
+        
+        var btnText = button.querySelector('.btn-text');
+        var btnLoader = button.querySelector('.btn-loader');
+        
+        if (btnText && btnLoader) {
+            if (isLoading) {
+                btnText.classList.add('d-none');
+                btnLoader.classList.remove('d-none');
+                button.disabled = true;
+            } else {
+                btnText.classList.remove('d-none');
+                btnLoader.classList.add('d-none');
+                button.disabled = false;
+            }
+        }
+    }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log(' Login iniciado');
-        
-        const togglePasswordBtn = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('passwordInput');
-        
-        if (togglePasswordBtn && passwordInput) {
-            togglePasswordBtn.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                const icon = this.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('bi-eye');
-                    icon.classList.toggle('bi-eye-slash');
-                }
-            });
+    /**
+     * Muestra una notificaciÛn al usuario
+     * @param {string} message - Mensaje a mostrar
+     * @param {string} type - Tipo: success, error, warning, info
+     */
+    function showNotification(message, type) {
+        // Remover notificaciÛn anterior
+        var existing = document.querySelector('.login-notification');
+        if (existing) {
+            existing.remove();
         }
         
-        const loginForm = document.getElementById('loginForm');
+        var alertClass = 'alert-info';
+        var icon = 'bi-info-circle';
         
-        if (loginForm) {
-            loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('emailInput')?.value;
-                const password = passwordInput?.value;
-                
-                if (!email || !password) {
-                    alert('‚ö†Ô∏è Completa todos los campos');
-                    return;
-                }
-                
-                setTimeout(() => {
-                    window.location.href = 'inicio.html';
-                }, 1000);
-            });
+        switch(type) {
+            case 'success':
+                alertClass = 'alert-success';
+                icon = 'bi-check-circle';
+                break;
+            case 'error':
+                alertClass = 'alert-danger';
+                icon = 'bi-x-circle';
+                break;
+            case 'warning':
+                alertClass = 'alert-warning';
+                icon = 'bi-exclamation-triangle';
+                break;
         }
-    });
+        
+        var alertDiv = document.createElement('div');
+        alertDiv.className = 'alert ' + alertClass + ' alert-dismissible fade show position-fixed login-notification';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;';
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = '<i class="bi ' + icon + ' me-2"></i>' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>';
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(function() {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
 
 })();
-

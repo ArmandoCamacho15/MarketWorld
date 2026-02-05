@@ -1,0 +1,41 @@
+# EditorConfig ayuda a mantener estilos de código consistentes
+# https://editorconfig.org
+
+root = true
+
+# Configuración para todos los archivos
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Archivos HTML
+[*.html]
+indent_size = 4
+
+# Archivos CSS
+[*.css]
+indent_size = 4
+
+# Archivos JavaScript
+[*.js]
+indent_size = 4
+
+# Archivos JSON
+[*.json]
+indent_size = 2
+
+# Archivos Markdown
+[*.md]
+trim_trailing_whitespace = false
+
+# Archivos SQL
+[*.sql]
+indent_size = 4
+
+# Archivos YAML
+[*.{yml,yaml}]
+indent_size = 2
