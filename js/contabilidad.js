@@ -8,6 +8,11 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log('💰 Módulo Contabilidad cargado');
         
+        // Inicializar notificaciones
+        if (MarketWorld.notifications && MarketWorld.notifications.init) {
+            MarketWorld.notifications.init();
+        }
+        
         initAccountTree();
         initJournalEntries();
         initLedgers();
@@ -252,9 +257,7 @@
         
         cargarAsientosContables();
         
-        // ===========================
-        // AGREGAR NUEVO ASIENTO
-        // ===========================
+        // Agregar nuevo asiento
         const btnNuevoAsiento = document.querySelector('button[data-bs-toggle="modal"]');
         if (btnNuevoAsiento) {
             btnNuevoAsiento.addEventListener('click', function() {
@@ -262,9 +265,7 @@
             });
         }
         
-        // ===========================
-        // BOTÓN FILTRAR LIBRO DIARIO
-        // ===========================
+        // Filtrar libro diario
         const btnFiltrarDiario = document.querySelector('#diario .btn-primary');
         if (btnFiltrarDiario) {
             btnFiltrarDiario.addEventListener('click', function() {
@@ -273,9 +274,7 @@
             });
         }
         
-        // ===========================
-        // BOTÓN FILTRAR LIBRO MAYOR
-        // ===========================
+        // Filtrar libro mayor
         const btnFiltrarMayor = document.querySelector('#mayor .btn-primary');
         if (btnFiltrarMayor) {
             btnFiltrarMayor.addEventListener('click', function() {
@@ -284,9 +283,7 @@
             });
         }
         
-        // ===========================
-        // BOTÓN REALIZAR CONCILIACIÓN
-        // ===========================
+        // Realizar conciliación
         const btnConciliar = document.querySelector('#conciliacion .btn-primary');
         if (btnConciliar) {
             btnConciliar.addEventListener('click', function() {
@@ -304,9 +301,7 @@
             });
         }
         
-        // ===========================
-        // BOTÓN REGISTRAR AJUSTE
-        // ===========================
+        // Registrar ajuste
         const btnRegistrarAjuste = document.querySelector('#conciliacion .d-grid button');
         if (btnRegistrarAjuste) {
             btnRegistrarAjuste.addEventListener('click', function() {
@@ -315,9 +310,7 @@
             });
         }
         
-        // ===========================
-        // INICIALIZAR GRÁFICOS DE ESTADOS FINANCIEROS
-        // ===========================
+        // Inicializar gráficos
         inicializarGraficosContables();
     });
 

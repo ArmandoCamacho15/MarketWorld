@@ -629,7 +629,7 @@ html, body {
 #productModal .btn-close {
     filter: brightness(0) invert(1);
 }
-/* ==================== TARJETAS DE PRODUCTOS ==================== */
+/* Product cards */
 .product-card {
     border-radius: 12px;
     transition: all 0.3s ease;

@@ -1,8 +1,11 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log(' Sistema de reportes iniciado');
-    
-    inicializarGraficos();
+        // Inicializar notificaciones
+    if (MarketWorld.notifications && MarketWorld.notifications.init) {
+        MarketWorld.notifications.init();
+    }
+        inicializarGraficos();
     
     const btnExportPDF = document.getElementById('btnExportarPDF');
     const btnExportExcel = document.getElementById('btnExportarExcel');

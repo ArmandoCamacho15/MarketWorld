@@ -9,7 +9,9 @@
         CURRENT_USER: 'marketworld_current_user',
         PRODUCTS: 'marketworld_products',
         CATEGORIES: 'marketworld_categories',
-        NOTIFICATIONS: 'marketworld_notifications'
+        NOTIFICATIONS: 'marketworld_notifications',
+        CUSTOMERS: 'marketworld_customers',
+        INVOICES: 'marketworld_invoices'
     };
 
     // Usuarios por defecto
@@ -104,6 +106,46 @@
         }
     ];
 
+    // Clientes por defecto
+    var DEFAULT_CUSTOMERS = [
+        {
+            id: 1,
+            documento: '900123456-1',
+            tipoDocumento: 'NIT',
+            nombre: 'Distribuidora El Sol S.A.S',
+            direccion: 'Calle 50 #20-30',
+            telefono: '3001234567',
+            email: 'contacto@elsol.com',
+            fechaCreacion: '2025-01-10',
+            activo: true
+        },
+        {
+            id: 2,
+            documento: '1098765432',
+            tipoDocumento: 'CC',
+            nombre: 'María Rodríguez',
+            direccion: 'Carrera 15 #45-67',
+            telefono: '3109876543',
+            email: 'maria.rodriguez@email.com',
+            fechaCreacion: '2025-01-15',
+            activo: true
+        },
+        {
+            id: 3,
+            documento: '890456789-2',
+            tipoDocumento: 'NIT',
+            nombre: 'Supermercado La Plaza Ltda',
+            direccion: 'Avenida 80 #100-25',
+            telefono: '3205551234',
+            email: 'gerencia@laplaza.com',
+            fechaCreacion: '2025-02-01',
+            activo: true
+        }
+    ];
+
+    // Facturas por defecto
+    var DEFAULT_INVOICES = [];
+
     // Inicializar datos
     function initializeData() {
         if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
@@ -116,31 +158,17 @@
         if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) {
             localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(DEFAULT_PRODUCTS));
         }
+        if (!localStorage.getItem(STORAGE_KEYS.CUSTOMERS)) {
+            localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(DEFAULT_CUSTOMERS));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.INVOICES)) {
+            localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(DEFAULT_INVOICES));
+        }
         
-        // Crear notificaciones de ejemplo si no existen
+        // Inicializar notificaciones vacías si no existen
         if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
-            var exampleNotifications = [
-                {
-                    id: Date.now() - 3600000,
-                    tipo: 'warning',
-                    titulo: 'Stock Bajo: Teclado Mecánico',
-                    mensaje: 'Quedan 2 unidades. Stock mínimo: 5',
-                    enlace: 'inventario.html',
-                    leida: false,
-                    fechaCreacion: new Date(Date.now() - 3600000).toISOString()
-                },
-                {
-                    id: Date.now() - 7200000,
-                    tipo: 'success',
-                    titulo: 'Sistema Iniciado',
-                    mensaje: 'Bienvenido a MarketWorld ERP',
-                    enlace: 'inicio.html',
-                    leida: false,
-                    fechaCreacion: new Date(Date.now() - 7200000).toISOString()
-                }
-            ];
-            localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(exampleNotifications));
-            console.log('Notificaciones de ejemplo cargadas');
+            localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
+            console.log('Sistema de notificaciones inicializado');
         }
     }
 
@@ -324,7 +352,7 @@
         return updateUser(id, { estado: newEstado });
     }
 
-    // ==================== PRODUCTOS ====================
+    // Products
 
     // Obtener productos
     function getProducts() {
@@ -504,7 +532,7 @@
         });
     }
 
-    // ==================== CATEGORÍAS ====================
+    // Categories
 
     // Obtener categorías
     function getCategories() {
@@ -535,7 +563,7 @@
         };
     }
 
-    // ==================== NOTIFICACIONES ====================
+    // Notifications
 
     /**
      * Obtiene todas las notificaciones ordenadas por fecha (más recientes primero)
@@ -613,6 +641,25 @@
     }
 
     /**
+     * Elimina todas las notificaciones leídas
+     */
+    function deleteReadNotifications() {
+        var notifications = getNotifications();
+        notifications = notifications.filter(function(n) {
+            return !n.leida;
+        });
+        localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+        return notifications.length;
+    }
+
+    /**
+     * Elimina todas las notificaciones
+     */
+    function deleteAllNotifications() {
+        localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
+    }
+
+    /**
      * Obtiene el conteo de notificaciones no leídas
      */
     function getUnreadCount() {
@@ -620,6 +667,311 @@
         return notifications.filter(function(n) {
             return !n.leida;
         }).length;
+    }
+
+    // Customers
+    
+    /**
+     * Obtiene todos los clientes
+     */
+    function getCustomers() {
+        var customers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+        return customers ? JSON.parse(customers) : [];
+    }
+
+    /**
+     * Busca un cliente por ID
+     */
+    function findCustomerById(customerId) {
+        var customers = getCustomers();
+        return customers.find(function(c) {
+            return c.id === customerId;
+        });
+    }
+
+    /**
+     * Busca un cliente por documento
+     */
+    function findCustomerByDocument(documento) {
+        var customers = getCustomers();
+        return customers.find(function(c) {
+            return c.documento === documento;
+        });
+    }
+
+    /**
+     * Crea un nuevo cliente
+     */
+    function createCustomer(customerData) {
+        var customers = getCustomers();
+        
+        // Validar documento único
+        var existingCustomer = findCustomerByDocument(customerData.documento);
+        if (existingCustomer) {
+            throw new Error('Ya existe un cliente con este documento');
+        }
+        
+        var maxId = customers.length > 0 
+            ? Math.max.apply(Math, customers.map(function(c) { return c.id; })) 
+            : 0;
+        
+        var newCustomer = {
+            id: maxId + 1,
+            documento: customerData.documento,
+            tipoDocumento: customerData.tipoDocumento || 'CC',
+            nombre: customerData.nombre,
+            direccion: customerData.direccion || '',
+            telefono: customerData.telefono || '',
+            email: customerData.email || '',
+            fechaCreacion: new Date().toISOString().split('T')[0],
+            activo: true
+        };
+        
+        customers.push(newCustomer);
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+        
+        return newCustomer;
+    }
+
+    /**
+     * Actualiza un cliente existente
+     */
+    function updateCustomer(customerId, customerData) {
+        var customers = getCustomers();
+        var index = customers.findIndex(function(c) {
+            return c.id === customerId;
+        });
+        
+        if (index === -1) {
+            throw new Error('Cliente no encontrado');
+        }
+        
+        // Validar documento único (excepto el mismo cliente)
+        var existingCustomer = findCustomerByDocument(customerData.documento);
+        if (existingCustomer && existingCustomer.id !== customerId) {
+            throw new Error('Ya existe otro cliente con este documento');
+        }
+        
+        customers[index] = Object.assign({}, customers[index], customerData);
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+        
+        return customers[index];
+    }
+
+    /**
+     * Elimina un cliente
+     */
+    function deleteCustomer(customerId) {
+        var customers = getCustomers();
+        customers = customers.filter(function(c) {
+            return c.id !== customerId;
+        });
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+    }
+
+    /**
+     * Alterna el estado activo/inactivo de un cliente
+     */
+    function toggleCustomerStatus(customerId) {
+        var customers = getCustomers();
+        var customer = customers.find(function(c) {
+            return c.id === customerId;
+        });
+        
+        if (customer) {
+            customer.activo = !customer.activo;
+            localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+        }
+        
+        return customer;
+    }
+
+    // Invoices
+    
+    /**
+     * Obtiene todas las facturas
+     */
+    function getInvoices() {
+        var invoices = localStorage.getItem(STORAGE_KEYS.INVOICES);
+        return invoices ? JSON.parse(invoices) : [];
+    }
+
+    /**
+     * Busca una factura por ID
+     */
+    function findInvoiceById(invoiceId) {
+        var invoices = getInvoices();
+        return invoices.find(function(i) {
+            return i.id === invoiceId;
+        });
+    }
+
+    /**
+     * Busca una factura por número
+     */
+    function findInvoiceByNumber(numeroFactura) {
+        var invoices = getInvoices();
+        return invoices.find(function(i) {
+            return i.numeroFactura === numeroFactura;
+        });
+    }
+
+    /**
+     * Genera el siguiente número de factura consecutivo
+     */
+    function generateInvoiceNumber() {
+        var invoices = getInvoices();
+        if (invoices.length === 0) {
+            return 'FAC-00001';
+        }
+        
+        var maxNumber = Math.max.apply(Math, invoices.map(function(i) {
+            var num = parseInt(i.numeroFactura.split('-')[1]);
+            return isNaN(num) ? 0 : num;
+        }));
+        
+        var nextNumber = maxNumber + 1;
+        return 'FAC-' + String(nextNumber).padStart(5, '0');
+    }
+
+    /**
+     * Crea una nueva factura
+     */
+    function createInvoice(invoiceData) {
+        var invoices = getInvoices();
+        
+        var maxId = invoices.length > 0 
+            ? Math.max.apply(Math, invoices.map(function(i) { return i.id; })) 
+            : 0;
+        
+        var newInvoice = {
+            id: maxId + 1,
+            numeroFactura: generateInvoiceNumber(),
+            clienteId: invoiceData.clienteId,
+            clienteNombre: invoiceData.clienteNombre,
+            clienteDocumento: invoiceData.clienteDocumento,
+            items: invoiceData.items,
+            subtotal: invoiceData.subtotal,
+            iva: invoiceData.iva,
+            descuento: invoiceData.descuento || 0,
+            total: invoiceData.total,
+            metodoPago: invoiceData.metodoPago || 'efectivo',
+            estado: invoiceData.estado || 'Pagada', // Pagada, Pendiente, Cancelada
+            observaciones: invoiceData.observaciones || '',
+            fechaCreacion: new Date().toISOString(),
+            fechaVencimiento: invoiceData.fechaVencimiento || null,
+            vendedor: invoiceData.vendedor || ''
+        };
+        
+        invoices.push(newInvoice);
+        localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
+        
+        // Actualizar stock de productos
+        if (newInvoice.estado === 'Pagada') {
+            newInvoice.items.forEach(function(item) {
+                var product = findProductById(item.productoId);
+                if (product) {
+                    updateStock(item.productoId, product.stock - item.cantidad);
+                }
+            });
+        }
+        
+        return newInvoice;
+    }
+
+    /**
+     * Actualiza una factura existente
+     */
+    function updateInvoice(invoiceId, invoiceData) {
+        var invoices = getInvoices();
+        var index = invoices.findIndex(function(i) {
+            return i.id === invoiceId;
+        });
+        
+        if (index === -1) {
+            throw new Error('Factura no encontrada');
+        }
+        
+        var oldInvoice = invoices[index];
+        
+        // Si cambia el estado de Pendiente a Pagada, actualizar stock
+        if (oldInvoice.estado === 'Pendiente' && invoiceData.estado === 'Pagada') {
+            invoiceData.items.forEach(function(item) {
+                var product = findProductById(item.productoId);
+                if (product) {
+                    updateStock(item.productoId, product.stock - item.cantidad);
+                }
+            });
+        }
+        
+        // Si cambia de Pagada a Cancelada, devolver stock
+        if (oldInvoice.estado === 'Pagada' && invoiceData.estado === 'Cancelada') {
+            oldInvoice.items.forEach(function(item) {
+                var product = findProductById(item.productoId);
+                if (product) {
+                    updateStock(item.productoId, product.stock + item.cantidad);
+                }
+            });
+        }
+        
+        invoices[index] = Object.assign({}, oldInvoice, invoiceData);
+        localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
+        
+        return invoices[index];
+    }
+
+    /**
+     * Elimina una factura
+     */
+    function deleteInvoice(invoiceId) {
+        var invoices = getInvoices();
+        var invoice = findInvoiceById(invoiceId);
+        
+        // Si la factura está pagada, devolver stock
+        if (invoice && invoice.estado === 'Pagada') {
+            invoice.items.forEach(function(item) {
+                var product = findProductById(item.productoId);
+                if (product) {
+                    updateStock(item.productoId, product.stock + item.cantidad);
+                }
+            });
+        }
+        
+        invoices = invoices.filter(function(i) {
+            return i.id !== invoiceId;
+        });
+        localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
+    }
+
+    /**
+     * Obtiene facturas de un cliente específico
+     */
+    function getInvoicesByCustomer(customerId) {
+        var invoices = getInvoices();
+        return invoices.filter(function(i) {
+            return i.clienteId === customerId;
+        });
+    }
+
+    /**
+     * Obtiene facturas por rango de fechas
+     */
+    function getInvoicesByDateRange(startDate, endDate) {
+        var invoices = getInvoices();
+        return invoices.filter(function(i) {
+            var invoiceDate = i.fechaCreacion.split('T')[0];
+            return invoiceDate >= startDate && invoiceDate <= endDate;
+        });
+    }
+
+    /**
+     * Obtiene facturas por estado
+     */
+    function getInvoicesByStatus(estado) {
+        var invoices = getInvoices();
+        return invoices.filter(function(i) {
+            return i.estado === estado;
+        });
     }
 
     // Iniciar
@@ -659,7 +1011,28 @@
         markNotificationAsRead: markNotificationAsRead,
         markAllNotificationsAsRead: markAllNotificationsAsRead,
         deleteNotification: deleteNotification,
-        getUnreadCount: getUnreadCount
+        deleteReadNotifications: deleteReadNotifications,
+        deleteAllNotifications: deleteAllNotifications,
+        getUnreadCount: getUnreadCount,
+        // Clientes
+        getCustomers: getCustomers,
+        findCustomerById: findCustomerById,
+        findCustomerByDocument: findCustomerByDocument,
+        createCustomer: createCustomer,
+        updateCustomer: updateCustomer,
+        deleteCustomer: deleteCustomer,
+        toggleCustomerStatus: toggleCustomerStatus,
+        // Facturas
+        getInvoices: getInvoices,
+        findInvoiceById: findInvoiceById,
+        findInvoiceByNumber: findInvoiceByNumber,
+        generateInvoiceNumber: generateInvoiceNumber,
+        createInvoice: createInvoice,
+        updateInvoice: updateInvoice,
+        deleteInvoice: deleteInvoice,
+        getInvoicesByCustomer: getInvoicesByCustomer,
+        getInvoicesByDateRange: getInvoicesByDateRange,
+        getInvoicesByStatus: getInvoicesByStatus
     };
 
     console.log('Modulo de datos cargado');

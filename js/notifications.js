@@ -8,7 +8,7 @@
     var notificationDropdown = null;
     var notificationsList = null;
 
-    // ==================== INICIALIZACIÓN ====================
+    // Init
 
     function init() {
         // Buscar elementos del DOM
@@ -44,7 +44,7 @@
         console.log('Sistema de notificaciones inicializado');
     }
 
-    // ==================== UI ====================
+    // UI functions
 
     function toggleDropdown() {
         if (notificationDropdown.style.display === 'block') {
@@ -64,6 +64,8 @@
     }
 
     function updateBadge() {
+        if (!notificationBadge) return;
+        
         var count = MarketWorld.data.getUnreadCount();
         
         if (count > 0) {
@@ -86,9 +88,17 @@
         header.className = 'notification-header';
         header.innerHTML = `
             <h6 class="mb-0">Notificaciones</h6>
-            <button class="btn btn-link btn-sm p-0" onclick="MarketWorld.notifications.markAllAsRead()">
-                Marcar todas como leídas
-            </button>
+            <div>
+                <button class="btn btn-link btn-sm p-0 me-2" onclick="MarketWorld.notifications.markAllAsRead()" title="Marcar todas como leídas">
+                    <i class="bi bi-check2-all"></i>
+                </button>
+                <button class="btn btn-link btn-sm p-0 text-danger me-2" onclick="MarketWorld.notifications.deleteAllRead()" title="Eliminar leídas">
+                    <i class="bi bi-trash3"></i>
+                </button>
+                <button class="btn btn-link btn-sm p-0 text-danger" onclick="MarketWorld.notifications.deleteAll()" title="Eliminar todas">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+            </div>
         `;
         notificationsList.appendChild(header);
 
@@ -188,7 +198,7 @@
         return fecha.toLocaleDateString('es-CO');
     }
 
-    // ==================== ACCIONES PÚBLICAS ====================
+    // Public actions
 
     function markAsRead(notificationId) {
         MarketWorld.data.markNotificationAsRead(notificationId);
@@ -210,6 +220,37 @@
         }
     }
 
+    function deleteAllRead() {
+        var notifications = MarketWorld.data.getNotifications();
+        var readCount = notifications.filter(function(n) { return n.leida; }).length;
+        
+        if (readCount === 0) {
+            alert('No hay notificaciones leídas para eliminar');
+            return;
+        }
+        
+        if (confirm('¿Eliminar ' + readCount + ' notificación' + (readCount > 1 ? 'es' : '') + ' leída' + (readCount > 1 ? 's' : '') + '?')) {
+            MarketWorld.data.deleteReadNotifications();
+            updateNotifications();
+            updateBadge();
+        }
+    }
+
+    function deleteAll() {
+        var notifications = MarketWorld.data.getNotifications();
+        
+        if (notifications.length === 0) {
+            alert('No hay notificaciones para eliminar');
+            return;
+        }
+        
+        if (confirm('¿Eliminar TODAS las ' + notifications.length + ' notificaciones?')) {
+            MarketWorld.data.deleteAllNotifications();
+            updateNotifications();
+            updateBadge();
+        }
+    }
+
     function createNotification(tipo, titulo, mensaje, enlace) {
         MarketWorld.data.createNotification({
             tipo: tipo,
@@ -225,7 +266,7 @@
         }
     }
 
-    // ==================== NOTIFICACIONES AUTOMÁTICAS ====================
+    // Auto notifications
 
     function checkLowStock() {
         var lowStockProducts = MarketWorld.data.getLowStockProducts();
@@ -291,7 +332,7 @@
         );
     }
 
-    // ==================== EXPOSICIÓN ====================
+    // Public API
 
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.notifications = {
@@ -299,6 +340,8 @@
         markAsRead: markAsRead,
         markAllAsRead: markAllAsRead,
         deleteNotif: deleteNotif,
+        deleteAllRead: deleteAllRead,
+        deleteAll: deleteAll,
         create: createNotification,
         checkLowStock: checkLowStock,
         notifyNewUser: notifyNewUser,

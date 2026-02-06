@@ -72,10 +72,6 @@
                             <div id="notificationsList"></div>
                         </div>
                     </div>
-                    <div class="me-4 position-relative">
-                        <i class="bi bi-envelope fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
-                    </div>
                     <div class="dropdown">
                         <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
@@ -146,9 +142,9 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-8">
-                                                    <label for="buscarProducto" class="form-label fw-semibold">SKU o Nombre del Producto</label>
+                                                    <label for="buscarProducto" class="form-label fw-semibold">Código o Nombre del Producto</label>
                                                     <div style="position: relative;">
-                                                        <input type="text" class="form-control form-control-lg" id="buscarProducto" placeholder="Ej: ELEC-1001 o Laptop" autocomplete="off">
+                                                        <input type="text" class="form-control form-control-lg" id="buscarProducto" placeholder="Ej: PROD-001 o Laptop" autocomplete="off">
                                                         <div id="suggestions" class="suggestions-container" style="display: none;"></div>
                                                     </div>
                                                 </div>
@@ -233,15 +229,15 @@
                                             <div class="row mb-3">
                                                 <div class="col-md-4">
                                                     <label for="numeroFacturaCompleta" class="form-label fw-semibold">Número de Factura</label>
-                                                    <input type="text" class="form-control" id="numeroFacturaCompleta" value="FAC-2025-00129" readonly>
+                                                    <input type="text" class="form-control" id="numeroFacturaCompleta" readonly>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label for="fechaFacturaCompleta" class="form-label fw-semibold">Fecha de Emisión</label>
-                                                    <input type="date" class="form-control" id="fechaFacturaCompleta" value="2025-06-28">
+                                                    <input type="date" class="form-control" id="fechaFacturaCompleta">
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label for="fechaVencimientoCompleta" class="form-label fw-semibold">Fecha de Vencimiento</label>
-                                                    <input type="date" class="form-control" id="fechaVencimientoCompleta" value="2025-07-28">
+                                                    <input type="date" class="form-control" id="fechaVencimientoCompleta">
                                                 </div>
                                             </div>
 
@@ -249,11 +245,14 @@
                                             <div class="row mb-3">
                                                 <div class="col-md-8">
                                                     <label for="buscarProductoCompleto" class="form-label fw-semibold">Buscar Producto</label>
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control" id="buscarProductoCompleto" placeholder="SKU o nombre del producto">
-                                                        <button class="btn btn-primary" type="button">
-                                                            <i class="bi bi-search"></i> Buscar
-                                                        </button>
+                                                    <div style="position: relative;">
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control" id="buscarProductoCompleto" placeholder="Código o nombre del producto" autocomplete="off">
+                                                            <button class="btn btn-primary" type="button" id="btnBuscarProductoCompleto">
+                                                                <i class="bi bi-search"></i> Buscar
+                                                            </button>
+                                                        </div>
+                                                        <div id="suggestionsCompleto" class="suggestions-container" style="display: none;"></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-4">
@@ -267,6 +266,19 @@
                                                 <label for="observacionesFactura" class="form-label fw-semibold">Observaciones / Notas</label>
                                                 <textarea class="form-control" id="observacionesFactura" rows="3" placeholder="Observaciones adicionales..."></textarea>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- PRODUCTOS DESTACADOS (Modo Completo) -->
+                                    <div class="card mb-4 featured-card">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-fire text-danger me-2"></i>Productos Destacados
+                                            </h5>
+                                            <span class="badge bg-danger">Top Ventas</span>
+                                        </div>
+                                        <div class="card-body" id="productosDisponiblesCompleto">
+                                            <!-- Los productos se cargan dinámicamente desde JS -->
                                         </div>
                                     </div>
                                 </div>
@@ -368,15 +380,19 @@
                                             <span class="fw-bold" id="subtotalFactura">$0</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2 summary-item">
-                                            <span>IVA (19%):</span>
+                                            <span>IVA (19% inc.):</span>
                                             <span class="fw-bold" id="ivaFactura">$0</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-3 summary-item">
                                             <label for="descuentoInput" class="mb-0 small">Descuento:</label>
                                             <div class="input-group input-group-sm" style="max-width: 120px;">
-                                                <span class="input-group-text">$</span>
-                                                <input type="number" class="form-control" id="descuentoInput" value="0" min="0">
+                                                <span class="input-group-text">%</span>
+                                                <input type="number" class="form-control" id="descuentoInput" value="0" min="0" max="100">
                                             </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 summary-item">
+                                            <span class="small text-muted">Desc. aplicado:</span>
+                                            <span class="fw-bold text-danger" id="descuentoAplicado">-$0</span>
                                         </div>
                                         <hr class="my-3">
                                         <div class="d-flex justify-content-between total-amount">
@@ -418,30 +434,29 @@
                                 <div class="row g-3">
                                     <div class="col-md-3">
                                         <label for="filtroFechaInicio" class="form-label">Fecha Inicio</label>
-                                        <input type="date" class="form-control" id="filtroFechaInicio" value="2025-06-01">
+                                        <input type="date" class="form-control" id="filtroFechaInicio">
                                     </div>
                                     <div class="col-md-3">
                                         <label for="filtroFechaFin" class="form-label">Fecha Fin</label>
-                                        <input type="date" class="form-control" id="filtroFechaFin" value="2025-06-28">
+                                        <input type="date" class="form-control" id="filtroFechaFin">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label for="filtroEstado" class="form-label">Estado</label>
                                         <select class="form-select" id="filtroEstado">
                                             <option value="todos">Todos</option>
-                                            <option value="pagada">Pagada</option>
-                                            <option value="pendiente">Pendiente</option>
-                                            <option value="vencida">Vencida</option>
-                                            <option value="anulada">Anulada</option>
+                                            <option value="Pagada">Pagada</option>
+                                            <option value="Pendiente">Pendiente</option>
+                                            <option value="Cancelada">Cancelada</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="filtroCliente" class="form-label">Cliente</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="filtroCliente" placeholder="Nombre o documento">
-                                            <button class="btn btn-outline-primary" type="button">
-                                                <i class="bi bi-search"></i> Buscar
-                                            </button>
-                                        </div>
+                                        <input type="text" class="form-control" id="filtroCliente" placeholder="Nombre o documento">
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" id="btnFiltrarHistorial">
+                                            <i class="bi bi-search"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -453,8 +468,7 @@
                                 <div class="card text-center">
                                     <div class="card-body">
                                         <h6 class="text-muted">Total Facturado</h6>
-                                        <h3 class="text-primary">$85,450,250</h3>
-                                        <small class="text-success"><i class="bi bi-arrow-up"></i> +12.5%</small>
+                                        <h3 class="text-primary" id="kpiTotalFacturado">$0</h3>
                                     </div>
                                 </div>
                             </div>
@@ -462,8 +476,7 @@
                                 <div class="card text-center">
                                     <div class="card-body">
                                         <h6 class="text-muted">Facturas Pagadas</h6>
-                                        <h3 class="text-success">142</h3>
-                                        <small class="text-muted">84% del total</small>
+                                        <h3 class="text-success" id="kpiFacturasPagadas">0</h3>
                                     </div>
                                 </div>
                             </div>
@@ -471,17 +484,15 @@
                                 <div class="card text-center">
                                     <div class="card-body">
                                         <h6 class="text-muted">Pendientes</h6>
-                                        <h3 class="text-warning">23</h3>
-                                        <small class="text-muted">$5,250,000</small>
+                                        <h3 class="text-warning" id="kpiFacturasPendientes">0</h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h6 class="text-muted">Vencidas</h6>
-                                        <h3 class="text-danger">5</h3>
-                                        <small class="text-muted">$1,150,000</small>
+                                        <h6 class="text-muted">Canceladas</h6>
+                                        <h3 class="text-danger" id="kpiFacturasCanceladas">0</h3>
                                     </div>
                                 </div>
                             </div>
@@ -497,148 +508,45 @@
                                         <th>Cliente</th>
                                         <th>Total</th>
                                         <th>Estado</th>
-                                        <th>Vencimiento</th>
                                         <th>Método Pago</th>
+                                        <th>Vendedor</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><strong>FAC-2025-00128</strong></td>
-                                        <td>20/06/2025</td>
-                                        <td>
-                                            <div>Juan Pérez García</div>
-                                            <div class="text-muted small">CC 1234567890</div>
-                                        </td>
-                                        <td class="fw-bold">$1,513,480</td>
-                                        <td><span class="badge bg-success">Pagada</span></td>
-                                        <td>20/07/2025</td>
-                                        <td><i class="bi bi-cash-coin me-1"></i> Efectivo</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
-                                                <i class="bi bi-printer"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
-                                                <i class="bi bi-file-pdf"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>FAC-2025-00127</strong></td>
-                                        <td>18/06/2025</td>
-                                        <td>
-                                            <div>María Rodríguez S.A.S.</div>
-                                            <div class="text-muted small">NIT 900123456-1</div>
-                                        </td>
-                                        <td class="fw-bold">$5,450,250</td>
-                                        <td><span class="badge bg-warning text-dark">Pendiente</span></td>
-                                        <td>18/07/2025</td>
-                                        <td><i class="bi bi-credit-card me-1"></i> Crédito 30d</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-1" title="Registrar pago">
-                                                <i class="bi bi-cash"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" title="Enviar recordatorio">
-                                                <i class="bi bi-envelope"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>FAC-2025-00126</strong></td>
-                                        <td>15/06/2025</td>
-                                        <td>
-                                            <div>Carlos Mendoza Ltda.</div>
-                                            <div class="text-muted small">NIT 800654321-2</div>
-                                        </td>
-                                        <td class="fw-bold">$2,350,780</td>
-                                        <td><span class="badge bg-danger">Vencida</span></td>
-                                        <td>15/06/2025</td>
-                                        <td><i class="bi bi-bank me-1"></i> Transferencia</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-1" title="Registrar pago">
-                                                <i class="bi bi-cash"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-warning" title="Enviar cobro">
-                                                <i class="bi bi-exclamation-triangle"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>FAC-2025-00125</strong></td>
-                                        <td>10/06/2025</td>
-                                        <td>
-                                            <div>Ana López Martínez</div>
-                                            <div class="text-muted small">CC 9876543210</div>
-                                        </td>
-                                        <td class="fw-bold">$850,500</td>
-                                        <td><span class="badge bg-success">Pagada</span></td>
-                                        <td>10/07/2025</td>
-                                        <td><i class="bi bi-credit-card me-1"></i> Tarjeta</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
-                                                <i class="bi bi-printer"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
-                                                <i class="bi bi-file-pdf"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>FAC-2025-00124</strong></td>
-                                        <td>05/06/2025</td>
-                                        <td>
-                                            <div>Roberto Sánchez Inc.</div>
-                                            <div class="text-muted small">NIT 700987654-3</div>
-                                        </td>
-                                        <td class="fw-bold">$12,350,980</td>
-                                        <td><span class="badge bg-success">Pagada</span></td>
-                                        <td>05/07/2025</td>
-                                        <td><i class="bi bi-bank me-1"></i> Transferencia</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir">
-                                                <i class="bi bi-printer"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" title="Descargar PDF">
-                                                <i class="bi bi-file-pdf"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                <tbody id="tablaHistorial">
+                                    <!-- Se llena dinámicamente -->
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Paginación -->
-                        <nav class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item disabled">
-                                    <a class="page-link" href="#" tabindex="-1">Anterior</a>
-                                </li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item"><a class="page-link" href="#">4</a></li>
-                                <li class="page-item"><a class="page-link" href="#">5</a></li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">Siguiente</a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <!-- Sin resultados -->
+                        <div id="sinFacturas" class="text-center py-5" style="display:none;">
+                            <i class="bi bi-receipt-cutoff fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No hay facturas registradas</p>
+                        </div>
+
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Detalle Factura -->
+    <div class="modal fade" id="modalDetalleFactura" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalDetalleTitle">Detalle Factura</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleBody">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="imprimirFactura()">
+                        <i class="bi bi-printer me-1"></i> Imprimir
+                    </button>
                 </div>
             </div>
         </div>

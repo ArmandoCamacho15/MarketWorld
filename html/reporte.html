@@ -76,12 +76,14 @@
                 </div>
                 
                 <div class="user-info">
-                    <button class="btn btn-link position-relative me-3" aria-label="Notificaciones">
-                        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
-                    </button>
-                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
-                        <div id="notificationsList"></div>
+                    <div class="notification-container position-relative me-3">
+                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                            <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                            <div id="notificationsList"></div>
+                        </div>
                     </div>
                     <div class="dropdown">
                         <button class="btn btn-link text-decoration-none d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">

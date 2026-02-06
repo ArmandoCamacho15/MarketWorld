@@ -1,6 +1,6 @@
-/* notifications.css - Estilos para el sistema de notificaciones */
+/* notifications.css - Notification styles */
 
-/* ==================== CONTENEDOR DE NOTIFICACIONES ==================== */
+/* Container */
 
 .notification-container {
     position: relative;
@@ -16,7 +16,7 @@
     color: #0d6efd;
 }
 
-/* ==================== BADGE DE NOTIFICACIONES ==================== */
+/* Badge */
 
 #notificationBadge {
     font-size: 0.65rem;
@@ -28,7 +28,7 @@
     justify-content: center;
 }
 
-/* ==================== DROPDOWN DE NOTIFICACIONES ==================== */
+/* Dropdown */
 
 .notification-dropdown {
     position: absolute;
@@ -57,7 +57,7 @@
     }
 }
 
-/* ==================== HEADER Y FOOTER ==================== */
+/* Header & Footer */
 
 .notification-header {
     display: flex;
@@ -96,7 +96,7 @@
     font-weight: 500;
 }
 
-/* ==================== ITEMS DE NOTIFICACIONES ==================== */
+/* Notification items */
 
 .notification-item {
     display: flex;
@@ -130,7 +130,7 @@
     background-color: #0d6efd;
 }
 
-/* ==================== ICONO DE NOTIFICACIÓN ==================== */
+/* Icon styles */
 
 .notification-icon {
     flex-shrink: 0;
@@ -163,7 +163,7 @@
     color: #dc3545;
 }
 
-/* ==================== CONTENIDO DE NOTIFICACIÓN ==================== */
+/* Content */
 
 .notification-content {
     flex: 1;
@@ -194,7 +194,7 @@
     color: #adb5bd;
 }
 
-/* ==================== ACCIONES DE NOTIFICACIÓN ==================== */
+/* Actions */
 
 .notification-actions {
     display: flex;
@@ -219,7 +219,7 @@
     color: #0d6efd;
 }
 
-/* ==================== ESTADO VACÍO ==================== */
+/* Empty state */
 
 .notification-item.text-center {
     display: block;
@@ -230,7 +230,7 @@
     opacity: 0.5;
 }
 
-/* ==================== RESPONSIVE ==================== */
+/* Responsive */
 
 @media (max-width: 576px) {
     .notification-dropdown {
@@ -249,7 +249,7 @@
     }
 }
 
-/* ==================== SCROLLBAR ==================== */
+/* Scrollbar */
 
 .notification-dropdown::-webkit-scrollbar {
     width: 6px;
@@ -268,7 +268,7 @@
     background: #6c757d;
 }
 
-/* ==================== ANIMACIONES ADICIONALES ==================== */
+/* Animations */
 
 .notification-item {
     animation: notificationSlideIn 0.3s ease-out;

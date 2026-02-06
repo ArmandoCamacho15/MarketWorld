@@ -7,8 +7,11 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log(' Módulo CRM cargado');
-        
-        initClientCards();
+                // Inicializar notificaciones
+        if (MarketWorld.notifications && MarketWorld.notifications.init) {
+            MarketWorld.notifications.init();
+        }
+                initClientCards();
         initClientFilters();
         initOpportunityManagement();
         initSegmentation();

@@ -5,8 +5,11 @@ let nextOrdenId = 128;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log(' Sistema de compras iniciado');
-    
-    const btnRegistrarCompra = document.getElementById('btnRegistrarCompra');
+        // Inicializar notificaciones
+    if (MarketWorld.notifications && MarketWorld.notifications.init) {
+        MarketWorld.notifications.init();
+    }
+        const btnRegistrarCompra = document.getElementById('btnRegistrarCompra');
     
     if (btnRegistrarCompra) {
         btnRegistrarCompra.addEventListener('click', function() {

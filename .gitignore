@@ -20,6 +20,9 @@ vendor/
 config.local.js
 config.local.php
 
+# Documentación privada de desarrollo
+DEVELOPMENT_LOG.md
+
 # Editores de código
 .vscode/
 . idea/
