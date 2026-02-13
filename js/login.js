@@ -3,11 +3,11 @@
 (function() {
     'use strict';
 
-    // Iniciar cuando cargue la pagina
+    // --- Iniciar cuando cargue la página ---
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Login cargado');
         
-        // Si ya hay sesion, ir al inicio
+        // --- Sesión ya iniciada ---
         if (MarketWorld.data.isLoggedIn()) {
             window.location.href = 'inicio.html';
             return;
@@ -20,7 +20,7 @@
         initRegisterLink();
     });
 
-    // Configurar el formulario
+    // --- Configurar formulario ---
     function initLoginForm() {
         var loginForm = document.getElementById('loginForm');
         
@@ -41,7 +41,7 @@
         
         clearErrors();
         
-        // Validar campos
+        // --- Validar campos ---
         var hasErrors = false;
         
         if (!email) {
@@ -62,7 +62,7 @@
         
         if (hasErrors) return;
         
-        // Iniciar sesion
+        // --- Iniciar sesión ---
         setLoadingState(btnLogin, true);
         
         setTimeout(function() {
@@ -72,7 +72,7 @@
                 console.log('Login exitoso:', user.email);
                 MarketWorld.data.setCurrentUser(user);
                 
-                // Recordar email si esta marcado
+                // --- Recordar email ---
                 var rememberMe = document.getElementById('rememberMe');
                 if (rememberMe && rememberMe.checked) {
                     localStorage.setItem('marketworld_remember_email', email);
@@ -94,12 +94,12 @@
         }, 1000);
     }
 
-    // Validar email
+    // --- Validar email ---
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    // Mostrar error en campo
+    // --- Mostrar error en campo ---
     function showFieldError(input, message) {
         if (!input) return;
         input.classList.add('is-invalid');
@@ -114,7 +114,7 @@
         errorDiv.style.display = 'block';
     }
 
-    // Limpiar errores
+    // --- Limpiar errores ---
     function clearErrors() {
         var invalidInputs = document.querySelectorAll('.is-invalid');
         for (var i = 0; i < invalidInputs.length; i++) {
@@ -127,7 +127,7 @@
         }
     }
 
-    // Mostrar/ocultar contrasena
+    // --- Mostrar/ocultar contraseña ---
     function initPasswordToggle() {
         var toggleBtn = document.getElementById('togglePassword');
         var passwordInput = document.getElementById('passwordInput');
@@ -145,7 +145,7 @@
         }
     }
 
-    // Cargar email guardado
+    // --- Cargar email guardado ---
     function initRememberMe() {
         var emailInput = document.getElementById('emailInput');
         var rememberCheckbox = document.getElementById('rememberMe');
@@ -157,7 +157,7 @@
         }
     }
 
-    // Recuperar contrasena
+    // --- Recuperar contraseña ---
     function initForgotPassword() {
         var forgotLink = document.getElementById('forgotPasswordLink');
         if (!forgotLink) return;
@@ -179,7 +179,7 @@
         });
     }
 
-    // Ir a registro
+    // --- Ir a registro ---
     function initRegisterLink() {
         var registerLink = document.querySelector('.register-link-white');
         if (!registerLink) return;
@@ -190,7 +190,7 @@
         });
     }
 
-    // Estado de carga del boton
+    // --- Estado de carga del botón ---
     function setLoadingState(button, isLoading) {
         if (!button) return;
         var btnText = button.querySelector('.btn-text');
@@ -207,7 +207,7 @@
         }
     }
 
-    // Mostrar notificacion
+    // --- Mostrar notificación ---
     function showNotification(message, type) {
         var existing = document.querySelector('.login-notification');
         if (existing) existing.remove();
@@ -229,7 +229,7 @@
         }, 5000);
     }
 
-    // Animar error
+    // --- Animar error ---
     function shakeElement(element) {
         if (!element) return;
         element.style.animation = 'shake 0.5s';

@@ -15,15 +15,15 @@
         initTransactions();
         animateKPIs();
         
-        // Inicializar sistema de notificaciones
+        // --- Inicializar sistema de notificaciones ---
         if (typeof MarketWorld.notifications !== 'undefined') {
             MarketWorld.notifications.init();
         }
     });
 
-    // Inicializar gráficos con Chart.js
+    // --- Inicializar gráficos con Chart.js ---
     function initCharts() {
-        // Gráfico de ventas mensuales
+        // --- Gráfico de ventas mensuales ---
         const salesCtx = document.getElementById('salesChart');
         if (salesCtx) {
             salesChart = new Chart(salesCtx, {
@@ -66,7 +66,7 @@
             });
         }
 
-        // Gráfico de categorías más vendidas
+        // ======= GRÁFICO DE CATEGORÍAS MÁS VENDIDAS =======
         const categoriesCtx = document.getElementById('categoriesChart');
         if (categoriesCtx) {
             categoriesChart = new Chart(categoriesCtx, {
@@ -91,7 +91,7 @@
         console.log(' Gráficos inicializados');
     }
 
-    // Filtros de fecha interactivos
+    // ======= FILTROS DE FECHA INTERACTIVOS =======
     function initDateFilters() {
         const quickButtons = document.querySelectorAll('.quick-date-btn');
         
@@ -100,7 +100,7 @@
                 e.preventDefault();
                 const period = btn.textContent.trim();
                 
-                // Remover clase active de todos
+                // ======= REMOVER CLASE ACTIVE DE TODOS =======
                 quickButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
@@ -111,7 +111,7 @@
     }
 
     function applyDateFilter(period) {
-        // Simular actualización de datos
+        // ======= SIMULAR ACTUALIZACIÓN DE DATOS =======
         const startDate = document.querySelector('.date-filter input[type="date"]');
         const endDate = document.querySelectorAll('.date-filter input[type="date"]')[1];
         
@@ -129,7 +129,7 @@
         if (startDate) startDate.value = start.toISOString().split('T')[0];
         if (endDate) endDate.value = today.toISOString().split('T')[0];
         
-        // Actualizar gráficos
+        // ======= ACTUALIZAR GRÁFICOS =======
         updateCharts();
     }
 
@@ -170,7 +170,7 @@
         });
     }
 
-    // KPIs interactivos
+    // ======= KPIS INTERACTIVOS =======
     function initKPIs() {
         const kpiCards = document.querySelectorAll('.kpi-card');
         
@@ -180,7 +180,7 @@
                 const label = card.querySelector('.kpi-label').textContent;
                 console.log(`📈 KPI clickeado: ${label}`);
                 
-                // Redirigir según el KPI
+                // ======= REDIRIGIR SEGÚN EL KPI =======
                 if (label.includes('Ventas')) {
                     window.location.href = 'facturacion.html';
                 } else if (label.includes('Compras')) {
@@ -194,7 +194,7 @@
         });
     }
 
-    // Calendario con FullCalendar
+    // ======= CALENDARIO CON FULLCALENDAR =======
     function initCalendar() {
         const calendarEl = document.getElementById('calendar');
         
@@ -222,7 +222,7 @@
         }
     }
 
-    // Transacciones interactivas
+    // ======= TRANSACCIONES INTERACTIVAS =======
     function initTransactions() {
         const transactionRows = document.querySelectorAll('.transaction-table tbody tr');
         

@@ -1,8 +1,9 @@
-// data.js - Base de datos con localStorage
+// --- data.js - Base de datos con localStorage ---
 
 (function(global) {
     'use strict';
 
+    // --- Storage keys ---
     var STORAGE_KEYS = {
         USERS: 'marketworld_users',
         CURRENT_USER: 'marketworld_current_user',
@@ -18,6 +19,7 @@
         JOURNAL_ENTRIES: 'marketworld_journal_entries'
     };
 
+    // --- Default users ---
     var DEFAULT_USERS = [
         {
             id: 1,
@@ -51,6 +53,7 @@
         }
     ];
 
+    // --- Default categories ---
     var DEFAULT_CATEGORIES = [
         { id: 1, nombre: 'Electrónica', descripcion: 'Dispositivos y accesorios electrónicos', activa: true },
         { id: 2, nombre: 'Ropa', descripcion: 'Prendas de vestir y accesorios', activa: true },
@@ -1013,7 +1016,7 @@
         return { success: true, supplier: supplier };
     }
 
-    // ==================== ÓRDENES DE COMPRA ====================
+    // ======= ÓRDENES DE COMPRA =======
     function getPurchases() {
         var data = localStorage.getItem(STORAGE_KEYS.PURCHASES);
         return data ? JSON.parse(data) : [];
@@ -1107,7 +1110,7 @@
         });
     }
 
-    // ==================== PAGOS A PROVEEDORES ====================
+    // ======= PAGOS A PROVEEDORES =======
     function getPayments() {
         var data = localStorage.getItem(STORAGE_KEYS.PAYMENTS);
         return data ? JSON.parse(data) : [];
@@ -1148,7 +1151,7 @@
         return getPayments().filter(function(p) { return p.compraId === parseInt(compraId); });
     }
 
-    // ==================== CONTABILIDAD ====================
+    // ======= CONTABILIDAD =======
     
     // Cuentas Contables
     function getAccounts() {

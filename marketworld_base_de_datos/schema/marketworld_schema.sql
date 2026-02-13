@@ -1,35 +1,45 @@
--- MarketWorld - Sistema de Gestión de Ventas
+
+-- =========================================================
 -- SENA - Tecnólogo en Análisis y Desarrollo de Software
 -- Armando Camacho | Dic 2025
+-- Proyecto: MarketWorld (Gestión de Ventas)
+-- =========================================================
 
 DROP DATABASE IF EXISTS marketworld_sena;
-CREATE DATABASE marketworld_sena CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE marketworld_sena 
+    CHARACTER SET utf8mb4 
+    COLLATE utf8mb4_unicode_ci;
+
 USE marketworld_sena;
 
--- Tabla de usuarios
--- Guarda los datos del personal que usa el sistema
--- Email único, roles para permisos
+-- ---------------------------------------------------------
+-- Tabla: Usuarios
+-- Propósito: Gestión de personal y permisos de acceso
+-- ---------------------------------------------------------
 CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    rol ENUM('Administrador', 'Gerente', 'Vendedor', 'Soporte') DEFAULT 'Vendedor',
-    departamento VARCHAR(100),
-    telefono VARCHAR(20),
-    estado ENUM('Activo', 'Inactivo', 'Pendiente') DEFAULT 'Activo',
-    ultimo_acceso DATETIME,
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_rol (rol),
-    INDEX idx_estado (estado)
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        nombre      VARCHAR(100) NOT NULL,
+        apellido    VARCHAR(100) NOT NULL,
+        email       VARCHAR(150) UNIQUE NOT NULL,
+        password    VARCHAR(255) NOT NULL,
+        rol         ENUM('Administrador', 'Gerente', 'Vendedor', 'Soporte') DEFAULT 'Vendedor',
+        departamento VARCHAR(100),
+        telefono    VARCHAR(20),
+        estado      ENUM('Activo', 'Inactivo', 'Pendiente') DEFAULT 'Activo',
+        ultimo_acceso     DATETIME,
+        fecha_creacion    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+        -- Índices para optimizar búsquedas
+        INDEX idx_email (email),
+        INDEX idx_rol (rol),
+        INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Tabla de productos
--- Todos los artículos que vendemos
--- SKU es el código único, precio_compra y venta para ver margen
+-- ---------------------------------------------------------
+-- Tabla: Productos
+-- Propósito: Registro de artículos, precios y stock
+-- ---------------------------------------------------------
 CREATE TABLE productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sku VARCHAR(50) UNIQUE NOT NULL,
@@ -50,9 +60,10 @@ CREATE TABLE productos (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Tabla de clientes
--- Los que compran, personas o empresas
--- Segmento para clasificarlos (nuevo, frecuente, premium, corporativo)
+-- ---------------------------------------------------------
+-- Tabla: Clientes
+-- Propósito: Registro de compradores y segmentación
+-- ---------------------------------------------------------
 CREATE TABLE clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(200) NOT NULL,
@@ -74,9 +85,10 @@ CREATE TABLE clientes (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Tabla de proveedores
--- De donde compramos los productos
--- NIT es el número de identificación fiscal
+-- ---------------------------------------------------------
+-- Tabla: Proveedores
+-- Propósito: Registro de proveedores y condiciones
+-- ---------------------------------------------------------
 CREATE TABLE proveedores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(200) NOT NULL,
@@ -95,9 +107,10 @@ CREATE TABLE proveedores (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Tabla de facturas
--- Documentos de venta que se emiten a los clientes
--- Guarda cliente, usuario que vendió, fecha, monto total y estado de pago
+-- ---------------------------------------------------------
+-- Tabla: Facturas
+-- Propósito: Documentos de venta y estado de pago
+-- ---------------------------------------------------------
 CREATE TABLE facturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_factura VARCHAR(50) UNIQUE NOT NULL,
@@ -122,9 +135,10 @@ CREATE TABLE facturas (
     INDEX idx_fecha_emision (fecha_emision)
 ) ENGINE=InnoDB;
 
--- Detalle de las facturas
--- Los productos dentro de cada factura
--- Guarda cantidad, precio y subtotal de cada item
+-- ---------------------------------------------------------
+-- Tabla: Detalle Facturas
+-- Propósito: Registro de productos por factura
+-- ---------------------------------------------------------
 CREATE TABLE detalle_facturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     factura_id INT NOT NULL,
@@ -140,9 +154,10 @@ CREATE TABLE detalle_facturas (
     INDEX idx_producto (producto_id)
 ) ENGINE=InnoDB;
 
--- Tabla de órdenes de compra
--- Cuando compramos a proveedores
--- Tiene estados: Pendiente, Recibido, Pagado, Cancelado
+-- ---------------------------------------------------------
+-- Tabla: Órdenes de Compra
+-- Propósito: Registro de compras a proveedores
+-- ---------------------------------------------------------
 CREATE TABLE ordenes_compra (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_orden VARCHAR(50) UNIQUE NOT NULL,
@@ -166,9 +181,10 @@ CREATE TABLE ordenes_compra (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Detalle de órdenes de compra
--- Los productos que compramos en cada orden
--- Similar a detalle de facturas pero para compras
+-- ---------------------------------------------------------
+-- Tabla: Detalle Órdenes de Compra
+-- Propósito: Registro de productos por orden de compra
+-- ---------------------------------------------------------
 CREATE TABLE detalle_ordenes_compra (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orden_compra_id INT NOT NULL,
@@ -182,9 +198,10 @@ CREATE TABLE detalle_ordenes_compra (
     INDEX idx_producto (producto_id)
 ) ENGINE=InnoDB;
 
--- Movimientos de inventario
--- Registro de cambios de stock: entrada, salida o ajuste
--- Sirve para saber qué pasó con cada producto
+-- ---------------------------------------------------------
+-- Tabla: Movimientos de Inventario
+-- Propósito: Registro de entradas, salidas y ajustes de stock
+-- ---------------------------------------------------------
 CREATE TABLE movimientos_inventario (
     id INT AUTO_INCREMENT PRIMARY KEY,
     producto_id INT NOT NULL,
@@ -201,9 +218,10 @@ CREATE TABLE movimientos_inventario (
     INDEX idx_fecha (fecha_movimiento)
 ) ENGINE=InnoDB;
 
--- Tabla de asientos contables
--- Registros de contabilidad (debe y haber)
--- Manual o automático según el tipo
+-- ---------------------------------------------------------
+-- Tabla: Asientos Contables
+-- Propósito: Registro de movimientos contables
+-- ---------------------------------------------------------
 CREATE TABLE asientos_contables (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_asiento VARCHAR(50) UNIQUE NOT NULL,
@@ -219,9 +237,10 @@ CREATE TABLE asientos_contables (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Detalle de asientos contables
--- Cada línea de debe y haber de un asiento
--- Suma de débitos = suma de créditos
+-- ---------------------------------------------------------
+-- Tabla: Detalle Asientos Contables
+-- Propósito: Registro de partidas de cada asiento
+-- ---------------------------------------------------------
 CREATE TABLE detalle_asientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asiento_id INT NOT NULL,
@@ -232,9 +251,10 @@ CREATE TABLE detalle_asientos (
     INDEX idx_asiento (asiento_id)
 ) ENGINE=InnoDB;
 
--- Tabla CRM - interacciones con clientes
--- Llamadas, emails, reuniones, seguimientos con cada cliente
--- Para saber qué pasó con cada cliente y cuándo contactarlo de nuevo
+-- ---------------------------------------------------------
+-- Tabla: Interacciones CRM
+-- Propósito: Registro de contactos y seguimientos con clientes
+-- ---------------------------------------------------------
 CREATE TABLE interacciones_crm (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id INT NOT NULL,
@@ -255,9 +275,10 @@ CREATE TABLE interacciones_crm (
     INDEX idx_fecha (fecha_seguimiento)
 ) ENGINE=InnoDB;
 
--- Tabla de configuración
--- Parámetros del sistema (IVA, moneda, descuentos máximos, etc)
--- Se consultan desde la aplicación para obtener valores
+-- ---------------------------------------------------------
+-- Tabla: Configuración del Sistema
+-- Propósito: Parámetros globales y valores de sistema
+-- ---------------------------------------------------------
 CREATE TABLE configuracion_sistema (
     id INT AUTO_INCREMENT PRIMARY KEY,
     clave VARCHAR(100) UNIQUE NOT NULL,
@@ -270,9 +291,10 @@ CREATE TABLE configuracion_sistema (
     INDEX idx_categoria (categoria)
 ) ENGINE=InnoDB;
 
--- Tabla de auditoría
--- Log de cambios en el sistema
--- Guarda quién hizo qué, cuándo y en qué tabla
+-- ---------------------------------------------------------
+-- Tabla: Auditoría del Sistema
+-- Propósito: Registro de cambios y operaciones
+-- ---------------------------------------------------------
 CREATE TABLE auditoria_sistema (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT,
@@ -291,9 +313,10 @@ CREATE TABLE auditoria_sistema (
     INDEX idx_tipo_operacion (tipo_operacion)
 ) ENGINE=InnoDB;
 
--- Tabla de términos de pago
--- Las diferentes formas de pago: contado, 30 días, 60 días, etc
--- Se usa en ordenes de compra y facturación
+-- ---------------------------------------------------------
+-- Tabla: Términos de Pago
+-- Propósito: Registro de condiciones de pago
+-- ---------------------------------------------------------
 CREATE TABLE terminos_pago (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -305,9 +328,10 @@ CREATE TABLE terminos_pago (
     INDEX idx_estado (estado)
 ) ENGINE=InnoDB;
 
--- Condiciones especiales por proveedor
--- Descuentos, plazo de entrega, cantidad mínima de compra
--- Datos específicos de cada proveedor
+-- ---------------------------------------------------------
+-- Tabla: Condiciones por Proveedor
+-- Propósito: Registro de condiciones especiales por proveedor
+-- ---------------------------------------------------------
 CREATE TABLE condiciones_proveedor (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proveedor_id INT NOT NULL,

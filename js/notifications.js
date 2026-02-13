@@ -11,7 +11,7 @@
     // Init
 
     function init() {
-        // Buscar elementos del DOM
+        // --- Buscar elementos del DOM ---
         notificationBell = document.getElementById('notificationBell');
         notificationBadge = document.getElementById('notificationBadge');
         notificationDropdown = document.getElementById('notificationDropdown');
@@ -25,18 +25,18 @@
         // Eventos
         notificationBell.addEventListener('click', toggleDropdown);
         
-        // Cerrar dropdown al hacer clic fuera
+        // --- Cerrar dropdown al hacer clic fuera ---
         document.addEventListener('click', function(e) {
             if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target)) {
                 closeDropdown();
             }
         });
 
-        // Cargar notificaciones
+        // --- Cargar notificaciones ---
         updateNotifications();
         updateBadge();
 
-        // Verificar notificaciones cada 30 segundos
+        // --- Verificar notificaciones cada 30 segundos ---
         setInterval(function() {
             updateBadge();
         }, 30000);
@@ -44,7 +44,7 @@
         console.log('Sistema de notificaciones inicializado');
     }
 
-    // UI functions
+    // --- UI Functions ---
 
     function toggleDropdown() {
         if (notificationDropdown.style.display === 'block') {
@@ -83,7 +83,7 @@
 
         notificationsList.innerHTML = '';
 
-        // Header con acciones
+        // ======= HEADER CON ACCIONES =======
         var header = document.createElement('div');
         header.className = 'notification-header';
         header.innerHTML = `
@@ -110,13 +110,13 @@
             return;
         }
 
-        // Mostrar últimas 10 notificaciones
+        // ======= MOSTRAR ÚLTIMAS 10 NOTIFICACIONES =======
         notifications.slice(0, 10).forEach(function(notif) {
             var item = createNotificationItem(notif);
             notificationsList.appendChild(item);
         });
 
-        // Footer con link a ver todas
+        // ======= FOOTER CON LINK A VER TODAS =======
         if (notifications.length > 10) {
             var footer = document.createElement('div');
             footer.className = 'notification-footer';
@@ -152,7 +152,7 @@
             </div>
         `;
 
-        // Si tiene enlace, hacer clickeable
+        // ======= ENLACE CLICKEABLE =======
         if (notif.enlace) {
             item.style.cursor = 'pointer';
             item.addEventListener('click', function(e) {
@@ -198,7 +198,7 @@
         return fecha.toLocaleDateString('es-CO');
     }
 
-    // Public actions
+    // ======= PUBLIC ACTIONS =======
 
     function markAsRead(notificationId) {
         MarketWorld.data.markNotificationAsRead(notificationId);
@@ -260,25 +260,25 @@
         });
         updateBadge();
         
-        // Si el dropdown está abierto, actualizar
+        // ======= ACTUALIZAR DROPDOWN ABIERTO =======
         if (notificationDropdown && notificationDropdown.style.display === 'block') {
             updateNotifications();
         }
     }
 
-    // Auto notifications
+    // ======= AUTO NOTIFICATIONS =======
 
     function checkLowStock() {
         var lowStockProducts = MarketWorld.data.getLowStockProducts();
         
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(function(product) {
-                // Verificar si ya existe notificación similar reciente
+                // ======= VERIFICAR NOTIFICACIÓN SIMILAR RECIENTE =======
                 var notifications = MarketWorld.data.getNotifications();
                 var exists = notifications.some(function(n) {
                     return n.titulo.includes(product.nombre) && 
                            n.tipo === 'warning' &&
-                           new Date(n.fechaCreacion) > new Date(Date.now() - 24 * 60 * 60 * 1000); // Últimas 24h
+                           // ======= ÚLTIMAS 24H =======
                 });
 
                 if (!exists) {
@@ -332,7 +332,7 @@
         );
     }
 
-    // Public API
+    // ======= PUBLIC API =======
 
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.notifications = {

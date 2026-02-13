@@ -3,12 +3,12 @@
 (function() {
     'use strict';
 
-    // ==================== ESTADO ====================
+    // --- Estado ---
     let carrito = [];
     let productoSeleccionado = null;
     let metodoPagoSeleccionado = 'Transferencia';
 
-    // ==================== INICIALIZACIÓN ====================
+    // --- Inicialización ---
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
             MarketWorld.notifications.init();
@@ -28,7 +28,7 @@
         console.log('Compras.js inicializado. Pagos en localStorage:', MarketWorld.data.getPayments().length);
     });
 
-    // ==================== USUARIO ====================
+    // --- Usuario ---
     function cargarUsuarioActual() {
         const user = MarketWorld.data.getCurrentUser();
         if (!user) return;
@@ -40,7 +40,7 @@
         }
     }
 
-    // ==================== FECHAS E INICIALIZACIÓN ====================
+    // --- Fechas e inicialización ---
     function initFechas() {
         const hoy = new Date().toISOString().split('T')[0];
         const el = (id) => document.getElementById(id);
@@ -63,7 +63,7 @@
         if (el) el.value = MarketWorld.data.generatePurchaseNumber();
     }
 
-    // ==================== SELECT DE PROVEEDORES ====================
+    // --- Select de proveedores ---
     function cargarSelectProveedores() {
         const suppliers = MarketWorld.data.getSuppliers().filter(s => s.activo);
         const selects = ['selectProveedor', 'selectProveedorPago', 'filtrarProveedorPago', 'proveedorFiltro'];
@@ -90,7 +90,7 @@
         });
     }
 
-    // ==================== KPIS ====================
+    // --- KPIs ---
     function actualizarKPIs() {
         const purchases = MarketWorld.data.getPurchases();
         const payments = MarketWorld.data.getPayments();
@@ -115,7 +115,7 @@
         setTextSafe('kpiProveedoresActivos', suppliers.length);
     }
 
-    // ==================== BUSCAR PRODUCTOS (AUTOCOMPLETE) ====================
+    // --- Buscar productos (autocomplete) ---
     function buscarProductos(query) {
         if (!query || query.length < 2) {
             document.getElementById('autocompleteProductos').style.display = 'none';
@@ -193,7 +193,7 @@
         calcularTotales();
     }
 
-    // ==================== CARRITO ====================
+    // --- Carrito ---
     function renderCarrito() {
         const tbody = document.getElementById('productosTbody');
         if (!tbody) return;
@@ -273,7 +273,7 @@
         calcularTotales();
     };
 
-    // ==================== CÁLCULOS ====================
+    // --- Cálculos ---
     function calcularTotales() {
         const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
         const iva = subtotal * 0.19;
@@ -288,7 +288,7 @@
         setTextSafe('totalVal', formatMoney(total));
     }
 
-    // ==================== REGISTRAR COMPRA ====================
+    // --- Registrar compra ---
     function registrarCompra() {
         // Validaciones
         const proveedorId = parseInt(document.getElementById('selectProveedor')?.value);
@@ -399,7 +399,7 @@
         initFechas();
     }
 
-    // ==================== HISTORIAL DE COMPRAS ====================
+    // --- Historial de compras ---
     function cargarHistorial() {
         let purchases = MarketWorld.data.getPurchases();
         console.log('Cargando historial. Total compras:', purchases.length);
@@ -675,7 +675,7 @@
         mostrarAlerta('Orden cancelada. Stock restaurado.', 'warning');
     };
 
-    // ==================== PROVEEDORES ====================
+    // --- Proveedores ---
     function cargarProveedores(filtro) {
         let suppliers = MarketWorld.data.getSuppliers();
 
@@ -899,7 +899,7 @@
         mostrarAlerta('Proveedor eliminado', 'success');
     };
 
-    // ==================== PAGOS ====================
+    // --- Pagos ---
     function cargarComprasPendientesPago(proveedorId) {
         const container = document.getElementById('listaComprasPendientes');
         if (!container) return;
@@ -1081,7 +1081,7 @@
         setTextSafe('totalPagadoFiltro', formatMoney(totalPagado));
     }
 
-    // ==================== ESTADO DE CUENTA DEL PROVEEDOR ====================
+    // --- Estado de cuenta del proveedor ---
     function mostrarEstadoCuenta(proveedorId) {
         const alert = document.getElementById('alertEstadoCuenta');
         const texto = document.getElementById('estadoCuentaTexto');
@@ -1109,7 +1109,7 @@
         alert.style.display = 'block';
     }
 
-    // ==================== EVENT LISTENERS ====================
+    // --- Event listeners ---
     function initEventListeners() {
         // Buscar producto (autocomplete)
         const buscarInput = document.getElementById('buscarProducto');
@@ -1293,7 +1293,7 @@
         });
     }
 
-    // ==================== UTILIDADES ====================
+    // --- Utilidades ---
     function formatMoney(amount) {
         return '$' + (amount || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }

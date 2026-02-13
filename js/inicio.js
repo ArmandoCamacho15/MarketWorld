@@ -2,7 +2,7 @@
 (function() {
     'use strict';
 
-    // Estado del módulo
+    // --- Estado del módulo ---
     const moduleState = {
         initialized: false,
         notificationPanelOpen: false,
@@ -13,7 +13,7 @@
         console.log('✅ Módulo Inicio cargado correctamente');
         console.log('🔍 Verificando disponibilidad de MarketWorld.data...');
         
-        // Verificar que MarketWorld.data existe
+        // --- Verificar MarketWorld.data ---
         if (typeof MarketWorld === 'undefined') {
             console.error('❌ MarketWorld no está definido. Verifica que data.js se cargue antes que inicio.js');
             return;
@@ -27,20 +27,20 @@
         console.log('✅ MarketWorld.data disponible');
         
         try {
-            // Verificar sesión
+            // --- Verificar sesión ---
             if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.isLoggedIn === 'function') {
                 checkSession();
             }
             
-            // Cargar información del usuario
+            // --- Cargar información del usuario ---
             loadUserInfo();
             
-            // Inicializar componentes con validación
+            // --- Inicializar componentes con validación ---
             initLogout();
             initSearch();
             initQuickAccess();
             
-            // Cargar datos dinámicos
+            // --- Cargar datos dinámicos ---
             console.log('🚀 Iniciando carga de componentes dinámicos...');
             loadRealAlerts();
             loadRealTasks();
@@ -48,7 +48,7 @@
             
             initKeyboardNavigation();
             
-            // Inicializar sistema estándar de notificaciones (diseño unificado)
+            // --- Inicializar sistema de notificaciones ---
             if (typeof MarketWorld !== 'undefined' && typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.init();
             }
@@ -62,7 +62,7 @@
         }
     });
 
-    // Verificar sesión activa
+    // ======= VERIFICAR SESIÓN ACTIVA =======
     function checkSession() {
         try {
             if (!MarketWorld.data.isLoggedIn()) {
@@ -75,7 +75,7 @@
         }
     }
 
-    // Cargar información del usuario con sanitización
+    // ======= CARGAR INFORMACIÓN DEL USUARIO (SANITIZACIÓN) =======
     function loadUserInfo() {
         try {
             const user = MarketWorld.data.getCurrentUser();
@@ -97,7 +97,7 @@
                 userRole.textContent = user.rol || 'Sin rol';
             }
             
-            // Actualizar avatar con iniciales
+            // ======= ACTUALIZAR AVATAR CON INICIALES =======
             if (userAvatar && user.nombre && user.apellido) {
                 const initials = `${user.nombre.charAt(0)}${user.apellido.charAt(0)}`;
                 userAvatar.alt = `Avatar de ${user.nombre} ${user.apellido}`;
@@ -110,7 +110,7 @@
         }
     }
 
-    // Cerrar sesión con confirmación mejorada
+    // ======= CERRAR SESIÓN (CONFIRMACIÓN MEJORADA) =======
     function initLogout() {
         const logoutButtons = [
             document.getElementById('logoutBtn'),
@@ -120,11 +120,11 @@
         logoutButtons.forEach(btn => {
             if (btn) {
                 btn.addEventListener('click', handleLogout);
-                // Mejorar accesibilidad
+                // ======= MEJORAR ACCESIBILIDAD =======
                 btn.setAttribute('role', 'button');
                 btn.setAttribute('tabindex', '0');
                 
-                // Soporte para teclado
+                // ======= SOPORTE PARA TECLADO =======
                 btn.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -139,20 +139,20 @@
         e.preventDefault();
         
         try {
-            // Usar modal personalizado en lugar de confirm
+            // ======= MODAL PERSONALIZADO EN LUGAR DE CONFIRM =======
             if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
                 console.log('🚪 Cerrando sesión...');
                 
-                // Limpiar estado local
+                // ======= LIMPIAR ESTADO LOCAL =======
                 moduleState.initialized = false;
                 
-                // Cerrar sesión
+                // ======= CERRAR SESIÓN =======
                 MarketWorld.data.logout();
                 
-                // Mostrar feedback
+                // ======= MOSTRAR FEEDBACK =======
                 showSuccessNotification('Sesión cerrada correctamente');
                 
-                // Redirigir después de un breve delay
+                // ======= REDIRIGIR DESPUÉS DE DELAY =======
                 setTimeout(() => {
                     window.location.href = 'Login.html';
                 }, 500);
@@ -160,14 +160,14 @@
         } catch (error) {
             console.error('❌ Error al cerrar sesión:', error);
             showErrorNotification('Error al cerrar sesión. Intentando de nuevo...');
-            // Intentar cerrar sesión de todos modos
+            // ======= INTENTAR CERRAR SESIÓN =======
             setTimeout(() => {
                 window.location.href = 'Login.html';
             }, 1000);
         }
     }
 
-    // Búsqueda global en el sistema con validación mejorada
+    // ======= BÚSQUEDA GLOBAL (VALIDACIÓN MEJORADA) =======
     function initSearch() {
         const searchInput = document.getElementById('globalSearch');
         
@@ -177,7 +177,7 @@
         }
         
         try {
-            // Búsqueda con debounce
+            // ======= BÚSQUEDA CON DEBOUNCE =======
             searchInput.addEventListener('input', debounce((e) => {
                 const query = sanitizeSearchQuery(e.target.value);
                 

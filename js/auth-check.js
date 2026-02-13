@@ -3,14 +3,14 @@
 (function(global) {
     'use strict';
 
-    // Verificar sesion activa
+    // --- Verificar sesión activa ---
     function checkSession() {
         if (typeof MarketWorld === 'undefined' || !MarketWorld.data || !MarketWorld.data.isLoggedIn()) {
             window.location.href = 'Login.html';
         }
     }
 
-    // Cargar info del usuario
+    // --- Cargar info del usuario ---
     function loadUserInfo() {
         if (typeof MarketWorld === 'undefined' || !MarketWorld.data) return;
         
@@ -24,7 +24,7 @@
         }
     }
 
-    // Configurar logout
+    // --- Configurar logout ---
     function initLogout() {
         var logoutBtn = document.getElementById('logoutBtn');
         var logoutBtnTop = document.getElementById('logoutBtnTop');
@@ -38,7 +38,7 @@
         }
     }
 
-    // Manejar logout
+    // --- Manejar logout ---
     function handleLogout(e) {
         e.preventDefault();
         
@@ -50,14 +50,14 @@
         }
     }
 
-    // Inicializar automaticamente
+    // --- Inicializar automáticamente ---
     document.addEventListener('DOMContentLoaded', function() {
         checkSession();
         loadUserInfo();
         initLogout();
     });
 
-    // Exponer funciones
+    // --- Exponer funciones ---
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.auth = {
         checkSession: checkSession,

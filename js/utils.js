@@ -1,17 +1,10 @@
-/**
- * utils.js
- * Funciones utilitarias compartidas en todo el proyecto MarketWorld
- */
+// --- utils.js ---
+// --- Funciones utilitarias compartidas en todo el proyecto MarketWorld ---
 
 (function(global) {
     'use strict';
 
-    /**
-     * Función debounce para limitar la frecuencia de ejecución
-     * @param {Function} func - Función a ejecutar
-     * @param {number} wait - Tiempo de espera en milisegundos
-     * @returns {Function} - Función con debounce aplicado
-     */
+    // --- Función debounce para limitar la frecuencia de ejecución ---
     function debounce(func, wait) {
         var timeout;
         return function() {
@@ -24,40 +17,24 @@
         };
     }
 
-    /**
-     * Formatea un número como moneda colombiana
-     * @param {number} value - Valor a formatear
-     * @returns {string} - Valor formateado
-     */
+    // --- Formatea un número como moneda colombiana ---
     function formatCurrency(value) {
         return '$' + Number(value).toLocaleString('es-CO');
     }
 
-    /**
-     * Formatea una fecha en formato local
-     * @param {string|Date} date - Fecha a formatear
-     * @returns {string} - Fecha formateada
-     */
+    // --- Formatea una fecha en formato local ---
     function formatDate(date) {
         var d = new Date(date);
         return d.toLocaleDateString('es-CO');
     }
 
-    /**
-     * Formatea fecha y hora
-     * @param {string|Date} date - Fecha a formatear
-     * @returns {string} - Fecha y hora formateada
-     */
+    // --- Formatea fecha y hora ---
     function formatDateTime(date) {
         var d = new Date(date);
         return d.toLocaleString('es-CO');
     }
 
-    /**
-     * Valida el formato de un email
-     * @param {string} email - Email a validar
-     * @returns {boolean} - True si es válido
-     */
+    // --- Valida el formato de un email ---
     function validateEmail(email) {
         var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(String(email).toLowerCase());
@@ -84,7 +61,7 @@
         type = type || 'info';
         duration = duration || 4000;
 
-        // Remover notificación anterior
+        // ======= REMOVER NOTIFICACIÓN ANTERIOR =======
         var existing = document.querySelector('.mw-notification');
         if (existing) {
             existing.remove();
@@ -186,7 +163,7 @@
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 
-    // Exponer funciones globalmente
+    // ======= EXPONER FUNCIONES GLOBALMENTE =======
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.utils = {
         debounce: debounce,
@@ -204,7 +181,7 @@
         capitalize: capitalize
     };
 
-    // También exponer debounce globalmente para compatibilidad
+    // ======= DEBOUNCE GLOBAL =======
     global.debounce = debounce;
 
 })(typeof window !== 'undefined' ? window : this);

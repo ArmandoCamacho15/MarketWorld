@@ -1,6 +1,6 @@
-/* Contabilidad */
+/* --- Contabilidad --- */
 
-/* Variables globales para colores y tipos de cuenta */
+/* --- Variables globales para colores y tipos de cuenta --- */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -20,14 +20,14 @@
     --expense: #3498db;      /* Azul para gastos */
 }
 
-/* Estilos base para el body */
+/* --- Estilos base para el body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--dark-text);
 }
 
-/* Contenedor principal de la aplicación */
+/* --- Contenedor principal de la aplicación --- */
 .app-container {
     display: flex;
     min-height: 100vh;

@@ -1,7 +1,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log(' Sistema de reportes iniciado');
-        // Inicializar notificaciones
+        // --- Inicializar notificaciones ---
     if (MarketWorld.notifications && MarketWorld.notifications.init) {
         MarketWorld.notifications.init();
     }

@@ -1,5 +1,5 @@
-/* login */
-/* Estilos para la línea divisoria en formularios */
+/* --- Login --- */
+/* --- Estilos para la línea divisoria en formularios --- */
 .divider:after,
 .divider:before {
     content: "";           /* Elemento vacío para crear la línea */
@@ -8,12 +8,12 @@
     background: #eee;      /* Color de la línea */
 }
 
-/* Clase para ajustar la altura personalizada del contenedor principal */
+/* --- Clase para ajustar la altura personalizada del contenedor principal --- */
 .h-custom {
     height: calc(100% - 73px); /* Calcula la altura restando 73px */
 }
 
-/* Estilos para la imagen del logo */
+/* --- Estilos para la imagen del logo --- */
 .logo-image {
     width: 100%;           /* Ocupa todo el ancho disponible */
     max-width: 400px;      /* Máximo ancho de 400px */
@@ -23,7 +23,7 @@
     margin: 0 auto;        /* Centra la imagen horizontalmente */
 }
 
-/* Estilos responsivos para pantallas pequeñas */
+/* --- Estilos responsivos para pantallas pequeñas --- */
 @media (max-width: 450px) {
     .h-custom {
         height: 100%;          /* Usa toda la altura disponible */
@@ -33,7 +33,7 @@
     }
 }
 
-/* Login Moderno - Paleta Azul MarketWorld y Gris Cálido */
+/* --- Login Moderno - Paleta Azul MarketWorld y Gris Cálido --- */
 
 :root {
     --primary: #0d6ef0;

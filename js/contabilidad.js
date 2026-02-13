@@ -33,7 +33,7 @@
         }
     }
 
-    // ==================== DASHBOARD Y GRÁFICOS ====================
+    // --- Dashboard y gráficos ---
 
     function actualizarDashboard() {
         const summary = MarketWorld.data.getFinancialSummary();
@@ -112,7 +112,7 @@
         }
     }
 
-    // ==================== PLAN CONTABLE ====================
+    // ======= PLAN CONTABLE =======
 
     function renderizarPlanContable() {
         const container = document.getElementById('accountTreeContainer');
@@ -254,7 +254,7 @@
         }
     }
 
-    // ==================== ASIENTOS CONTABLES ====================
+    // ======= ASIENTOS CONTABLES =======
 
     function setupFormListeners() {
         // Botón Nuevo Asiento (en el tab de Asientos)
@@ -592,7 +592,7 @@
         }
     }
 
-    // ==================== LIBROS CONTABLES ====================
+    // ======= LIBROS CONTABLES =======
 
     function inicializarLibros() {
         cargarLibroDiario();
@@ -748,7 +748,7 @@
         console.log('📝 Registrando ajustes de conciliación bancaria');
     }
 
-    // ==================== IMPUESTOS ====================
+    // ======= IMPUESTOS =======
 
     function inicializarImpuestos() {
         const btnCalc = document.querySelector('#impuestos .btn-primary');

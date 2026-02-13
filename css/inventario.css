@@ -1,6 +1,6 @@
-/* Inventario */
+/* --- Inventario --- */
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Color principal del tema */
     --secondary: #0a58ca;    /* Color secundario */
@@ -13,20 +13,20 @@
     --danger: #e74c3c;       /* Color para errores */
 }
 
-/* Body */
+/* --- Body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
     color: var(--dark-text);   /* Color de texto principal */
 }
 
-/* Contenedor principal */
+/* --- Contenedor principal --- */
 .app-container {
     display: flex;
     min-height: 100vh; /* Ocupa toda la altura de la ventana */
 }
 
-/* Barra lateral de navegación */
+/* --- Barra lateral de navegación --- */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: var(--primary); /* Color de fondo */
@@ -37,25 +37,25 @@ body {
     z-index: 1000;              /* Prioridad de apilamiento */
 }
 
-/* Encabezado de la barra lateral */
+/* --- Encabezado de la barra lateral --- */
 .sidebar-header {
     padding: 0 20px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.1); /* Línea divisoria */
 }
 
-/* Marca o logo en la barra lateral */
+/* --- Marca o logo en la barra lateral --- */
 .brand {
     font-size: 24px;
     font-weight: 700;
     color: white;
 }
 
-/* Color de acento en la marca */
+/* --- Color de acento en la marca --- */
 .brand span {
     color: var(--accent);
 }
 
-/* Elementos de navegación */
+/* --- Elementos de navegación --- */
 .nav-item {
     margin-bottom: 5px;
 }

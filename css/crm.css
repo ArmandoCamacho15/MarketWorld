@@ -1,6 +1,6 @@
-/* CRM */
+/* --- CRM --- */
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -17,20 +17,20 @@
     --opportunity: #3498db;  /* Azul para oportunidades */
 }
 
-/* Estilos base para el body */
+/* --- Estilos base para el body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--dark-text);
 }
 
-/* Contenedor principal de la aplicación */
+/* --- Contenedor principal de la aplicación --- */
 .app-container {
     display: flex;
     min-height: 100vh;
 }
 
-/* Barra de navegación lateral */
+/* --- Barra de navegación lateral --- */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);

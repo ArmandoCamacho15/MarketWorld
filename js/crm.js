@@ -7,7 +7,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log(' Módulo CRM cargado');
-                // Inicializar notificaciones
+                // --- Inicializar notificaciones ---
         if (MarketWorld.notifications && MarketWorld.notifications.init) {
             MarketWorld.notifications.init();
         }
@@ -19,7 +19,7 @@
         initClientSearch();
     });
 
-    // Tarjetas de clientes
+    // --- Tarjetas de clientes ---
     function initClientCards() {
         const clientCards = document.querySelectorAll('.client-card');
         
@@ -33,7 +33,7 @@
                 }
             });
             
-            // Botones de acción
+            // --- Botones de acción ---
             const btnView = card.querySelector('.btn-outline-primary');
             const btnContact = card.querySelector('.btn-outline-success');
             
@@ -57,15 +57,15 @@
         selectedClient = clientName;
         console.log(`👤 Cliente seleccionado: ${clientName}`);
         
-        // Remover selección anterior
+        // --- Remover selección anterior ---
         document.querySelectorAll('.client-card').forEach(c => {
             c.style.borderLeft = '4px solid #9b59b6';
         });
         
-        // Marcar como seleccionado
+        // ======= MARCAR COMO SELECCIONADO =======
         card.style.borderLeft = '4px solid #0d6ef0';
         
-        // Mostrar ficha completa
+        // ======= MOSTRAR FICHA COMPLETA =======
         showClientSheet(clientName);
     }
 
@@ -73,7 +73,7 @@
         const clientName = card.querySelector('h5').textContent;
         console.log(`👁️ Ver detalles de: ${clientName}`);
         
-        // Crear modal de detalles
+        // ======= CREAR MODAL DE DETALLES =======
         const modal = document.createElement('div');
         modal.className = 'modal fade show';
         modal.style.display = 'block';
@@ -126,10 +126,10 @@
 
     function showClientSheet(clientName) {
         console.log(`📄 Mostrando ficha completa de: ${clientName}`);
-        // Aquí se cargarían los datos completos del cliente
+        // ======= CARGAR DATOS COMPLETOS DEL CLIENTE =======
     }
 
-    // Filtros de clientes
+    // ======= FILTROS DE CLIENTES =======
     function initClientFilters() {
         const btnFilter = document.querySelector('.btn-primary');
         
@@ -149,7 +149,7 @@
         alert(`Filtros aplicados:\n- Tipo: ${tipo}\n- Ciudad: ${ciudad}\n- Segmento: ${segmento}`);
     }
 
-    // Gestión de oportunidades
+    // ======= GESTIÓN DE OPORTUNIDADES =======
     function initOpportunityManagement() {
         const opportunityRows = document.querySelectorAll('.data-table tbody tr');
         
@@ -162,7 +162,7 @@
             });
         });
         
-        // Botones del embudo
+        // ======= BOTONES DEL EMBUDO =======
         const funnelSteps = document.querySelectorAll('.funnel-step');
         funnelSteps.forEach(step => {
             step.style.cursor = 'pointer';
@@ -178,19 +178,19 @@
         selectedOpportunity = oppName;
         console.log(`💼 Oportunidad seleccionada: ${oppName}`);
         
-        // Resaltar fila
+        // ======= RESALTAR FILA =======
         document.querySelectorAll('.data-table tbody tr').forEach(r => {
             r.style.backgroundColor = '';
         });
         row.style.backgroundColor = '#f0f6ff';
         
-        // Mostrar seguimiento
+        // ======= MOSTRAR SEGUIMIENTO =======
         showOpportunityTracking(oppName);
     }
 
     function showOpportunityTracking(oppName) {
         console.log(`📈 Mostrando seguimiento de: ${oppName}`);
-        // Aquí se mostraría el seguimiento detallado
+        // ======= MOSTRAR SEGUIMIENTO DETALLADO =======
     }
 
     function filterOpportunitiesByStage(stage) {
@@ -198,7 +198,7 @@
         alert(`Mostrando oportunidades en etapa: ${stage}`);
     }
 
-    // Segmentación de clientes
+    // ======= SEGMENTACIÓN DE CLIENTES =======
     function initSegmentation() {
         const btnNewSegment = document.querySelector('.btn-primary');
         
@@ -206,7 +206,7 @@
             btnNewSegment.addEventListener('click', createNewSegment);
         }
         
-        // Botones de editar/eliminar segmentos
+        // ======= BOTONES EDITAR/ELIMINAR SEGMENTOS =======
         const editButtons = document.querySelectorAll('.btn-outline-warning');
         editButtons.forEach(btn => {
             if (btn.textContent.includes('Editar')) {
@@ -233,7 +233,7 @@
         alert(`Editando segmento: ${segmentName}`);
     }
 
-    // Campañas de marketing
+    // ======= CAMPAÑAS DE MARKETING =======
     function initCampaigns() {
         const btnNewCampaign = document.querySelector('.btn-primary');
         
@@ -241,7 +241,7 @@
             btnNewCampaign.addEventListener('click', createCampaign);
         }
         
-        // Checkboxes de canales
+        // ======= CHECKBOXES DE CANALES =======
         const channelCheckboxes = document.querySelectorAll('input[type="checkbox"]');
         channelCheckboxes.forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -260,7 +260,7 @@
         }
     }
 
-    // Búsqueda de clientes
+    // ======= BÚSQUEDA DE CLIENTES =======
     function initClientSearch() {
         const searchInput = document.querySelector('.search-bar input');
         

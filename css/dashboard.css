@@ -1,6 +1,6 @@
-/* Dashboard */
+/* --- Dashboard --- */
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -13,14 +13,14 @@
     --danger: #e74c3c;       /* Rojo error */
 }
 
-/* Estilos base para el body */
+/* --- Estilos base para el body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--dark-text);
 }
 
-/* UNIFICACIÓN PANTALLA COMPLETA */
+/* --- Unificación pantalla completa --- */
 html, body {
     height: 100%;
     margin: 0;

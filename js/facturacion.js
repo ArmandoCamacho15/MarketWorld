@@ -1,5 +1,5 @@
 
-// Carrito de productos
+// --- Carrito de productos ---
 let carrito = [];
 let nextInvoiceId = 128;
 let metodoPagoSeleccionado = 'efectivo';
@@ -7,12 +7,12 @@ let metodoPagoSeleccionado = 'efectivo';
 document.addEventListener('DOMContentLoaded', function() {
     console.log(' Sistema de facturación iniciado');
     
-    // Inicializar notificaciones
+    // --- Inicializar notificaciones ---
     if (MarketWorld.notifications && MarketWorld.notifications.init) {
         MarketWorld.notifications.init();
     }
     
-    // Modo rapido vs completo
+    // --- Modo rápido vs completo ---
     const modoRapido = document.getElementById('modoRapido');
     const modoCompleto = document.getElementById('modoCompleto');
     const contenidoRapido = document.getElementById('contenidoRapido');
@@ -38,10 +38,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Mostrar productos disponibles
+    // --- Mostrar productos disponibles ---
     mostrarProductosDisponibles();
     
-    // Buscar y agregar productos
+    // --- Buscar y agregar productos ---
     const btnBuscarProducto = document.getElementById('btnBuscarProducto');
     const inputBuscarProducto = document.getElementById('buscarProducto');
     const inputCantidadProducto = document.getElementById('cantidadProducto');
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Buscar producto en la base de datos
+        // ======= BUSCAR PRODUCTO EN BASE DE DATOS =======
         const productos = MarketWorld.data.getProducts();
         const producto = productos.find(p => 
             p.codigo.toLowerCase().includes(termino) || 
@@ -96,10 +96,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Agregar al carrito
+        // ======= AGREGAR AL CARRITO =======
         agregarAlCarrito(producto, cantidad);
         
-        // Limpiar campos
+        // ======= LIMPIAR CAMPOS =======
         inputBuscarProducto.value = '';
         inputCantidadProducto.value = 1;
         inputBuscarProducto.focus();
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(' Producto agregado:', producto.nombre);
     }
     
-    // Agregar producto al carrito
+    // ======= AGREGAR PRODUCTO AL CARRITO =======
     function agregarAlCarrito(producto, cantidad) {
         const itemExistente = carrito.find(item => item.id === producto.id);
         
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
             itemExistente.cantidad = nuevaCantidad;
             console.log('📦 Cantidad actualizada:', itemExistente.nombre, '->', nuevaCantidad);
         } else {
-            // IVA 19% incluido en el precio del producto
+            // ======= IVA 19% INCLUIDO EN PRECIO =======
             const ivaRate = 19;
             
             carrito.push({
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarNotificacion(`✅ ${producto.nombre} agregado al carrito`, 'success');
     }
     
-    // Renderizar carrito
+    // ======= RENDERIZAR CARRITO =======
     window.renderizarCarrito = function() {
         const tbody = document.querySelector('#tablaCarrito tbody');
         
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔄 Carrito renderizado. Items:', carrito.length);
     };
     
-    // Cambiar cantidad
+    // ======= CAMBIAR CANTIDAD =======
     window.cambiarCantidad = function(index, cambio) {
         const item = carrito[index];
         const nuevaCantidad = item.cantidad + cambio;
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         calcularTotales();
     };
     
-    // Actualizar cantidad
+    // ======= ACTUALIZAR CANTIDAD =======
     window.actualizarCantidad = function(index, nuevaCantidad) {
         nuevaCantidad = parseInt(nuevaCantidad);
         
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         calcularTotales();
     };
     
-    // Eliminar del carrito
+    // ======= ELIMINAR DEL CARRITO =======
     window.eliminarDelCarrito = function(index) {
         const item = carrito[index];
         const confirmar = confirm(`¿Eliminar ${item.nombre} del carrito?`);
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Calcular totales (IVA 19% incluido en el precio)
+    // ======= CALCULAR TOTALES (IVA 19% INCLUIDO) =======
     function calcularTotales() {
         let totalConIVA = 0;
         let subtotalBase = 0;
@@ -302,13 +302,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('💰 Totales - Base:', subtotalBase, 'IVA incluido:', totalIVA, 'Total:', total);
     }
     
-    // Aplicar descuento
+    // ======= APLICAR DESCUENTO =======
     const inputDescuento = document.getElementById('descuentoInput');
     if (inputDescuento) {
         inputDescuento.addEventListener('input', calcularTotales);
     }
     
-    // Vaciar carrito
+    // ======= VACIAR CARRITO =======
     const btnVaciarCarrito = document.getElementById('btnVaciarCarrito');
     if (btnVaciarCarrito) {
         btnVaciarCarrito.addEventListener('click', function() {
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Generar factura
+    // ======= GENERAR FACTURA =======
     const btnGenerarFactura = document.getElementById('btnGenerarFactura');
     if (btnGenerarFactura) {
         btnGenerarFactura.addEventListener('click', function() {
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Obtener datos del cliente (modo rápido o completo)
+            // ======= OBTENER DATOS DEL CLIENTE =======
             const clienteNombreRapido = document.getElementById('clienteNombre');
             const clienteDocumentoRapido = document.getElementById('clienteDocumento');
             const clienteNombreCompleto = document.getElementById('clienteNombreCompleto');
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Calcular totales (IVA 19% incluido en precio)
+            // ======= CALCULAR TOTALES (IVA 19% INCLUIDO EN PRECIO) =======
             let totalConIVA = 0;
             let subtotalBase = 0;
             let totalIVA = 0;
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const descuentoMonto = totalConIVA * (descuentoPct / 100);
             const total = totalConIVA - descuentoMonto;
             
-            // Obtener usuario actual
+            // ======= OBTENER USUARIO ACTUAL =======
             const currentUser = MarketWorld.data.getCurrentUser();
             
             // Obtener observaciones del modo completo

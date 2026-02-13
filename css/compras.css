@@ -1,6 +1,6 @@
-/* Compras */
+/* --- Compras --- */
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -14,14 +14,14 @@
     --purchase: #16a085;     /* Verde para compras */
 }
 
-/* Estilos base para el body */
+/* --- Estilos base para el body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--dark-text);
 }
 
-/* UNIFICACIÓN PANTALLA COMPLETA */
+/* --- Unificación pantalla completa --- */
 html, body {
     height: 100%;
     margin: 0;
@@ -105,7 +105,7 @@ html, body {
     }
 }
 
-/* Barra de navegación lateral */
+/* --- Barra de navegación lateral --- */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);
@@ -145,7 +145,7 @@ html, body {
     text-align: center;
 }
 
-/* Contenido principal */
+/* --- Contenido principal --- */
 .top-bar {
     background: white;
     border-radius: 10px;
@@ -171,7 +171,7 @@ html, body {
     border-bottom: 1px solid #eee;
 }
 
-/* Navegación de pestañas */
+/* --- Navegación de pestañas --- */
 .nav-tabs .nav-link {
     color: #6c757d;
     font-weight: 600;
@@ -184,9 +184,9 @@ html, body {
     border-bottom: 3px solid var(--primary);
 }
 
-/* Estilos específicos para Compras */
+/* --- Estilos específicos para Compras --- */
 
-/* Tabla de compras */
+/* --- Tabla de compras --- */
 .purchase-table th {
     background-color: #f8f9fa;
     color: var(--primary);
@@ -196,7 +196,7 @@ html, body {
     background-color: #f0f6ff;
 }
 
-/* Estados de compra */
+/* --- Estados de compra --- */
 .status-approved {
     background-color: #e8f7ff; /* azul claro */
     color: var(--primary);
@@ -210,7 +210,7 @@ html, body {
     color: var(--danger);
 }
 
-/* Tarjeta de proveedor */
+/* --- Tarjeta de proveedor --- */
 .supplier-card {
     border-left: 4px solid var(--primary);
     transition: all 0.3s;
@@ -220,7 +220,7 @@ html, body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-/* Historial de pagos */
+/* --- Historial de pagos --- */
 .payment-history-item {
     padding: 12px;
     border: 1px solid #e9ecef;
@@ -236,14 +236,14 @@ html, body {
     border-left-color: #ffc107;
 }
 
-/* Monto pendiente */
+/* --- Monto pendiente --- */
 .amount-due {
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--primary);
 }
 
-/* Métodos de pago */
+/* --- Métodos de pago --- */
 .payment-methods {
     display: flex;
     gap: 10px;
@@ -275,7 +275,7 @@ html, body {
     margin-bottom: 4px;
 }
 
-/* Etiqueta de proveedor */
+/* --- Etiqueta de proveedor --- */
 .supplier-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -287,7 +287,7 @@ html, body {
     margin-top: 8px;
 }
 
-/* Barra de búsqueda */
+/* --- Barra de búsqueda --- */
 .search-bar {
     width: 400px;
     position: relative;
@@ -305,7 +305,7 @@ html, body {
     color: #7f8c8d;
 }
 
-/* Información de usuario */
+/* --- Información de usuario --- */
 .user-info {
     display: flex;
     align-items: center;
@@ -318,7 +318,7 @@ html, body {
     object-fit: cover;
 }
 
-/* Sección de tarjetas dashboard */
+/* --- Sección de tarjetas dashboard --- */
 .dashboard-cards {
     display: flex;
     flex-wrap: wrap;
@@ -332,7 +332,7 @@ html, body {
     flex: 0 0 25%;
 }
 
-/* Tarjeta de balance */
+/* --- Tarjeta de balance --- */
 .balance-card {
     background: linear-gradient(135deg, #3498db, #0d6ef0);
     color: white;
@@ -363,7 +363,7 @@ html, body {
     margin: 0;
 }
 
-/* Autocomplete de productos */
+/* --- Autocomplete de productos --- */
 .autocomplete-list {
     position: absolute;
     top: 100%;
@@ -394,7 +394,7 @@ html, body {
     border-bottom: none;
 }
 
-/* Alert auto-dismiss */
+/* --- Alert auto-dismiss --- */
 .alert-auto {
     position: relative;
     z-index: 100;

@@ -10,6 +10,7 @@
         initNavLinks();
     });
 
+    // --- Inicializar sidebar toggle ---
     function initSidebarToggle() {
         const menuToggle = document.getElementById('menuToggle');
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -34,6 +35,7 @@
         }
     }
 
+    // --- Inicializar click fuera ---
     function initClickOutside() {
         const sidebar = document.getElementById('sidebar');
         
@@ -49,6 +51,7 @@
         }
     }
 
+    // --- Inicializar enlaces de navegación ---
     function initNavLinks() {
         const navLinks = document.querySelectorAll('.sidebar .nav-link');
         

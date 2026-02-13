@@ -1,6 +1,6 @@
-/* Inicio */
+/* --- Inicio --- */
 
-/* Skip Link Accesible */
+/* --- Skip Link Accesible --- */
 .skip-link {
     position: absolute;
     top: -40px;
@@ -19,7 +19,7 @@
     outline-offset: 2px;
 }
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Color principal del tema */
     --secondary: #0a58ca;    /* Color secundario */
@@ -32,20 +32,20 @@
     --gold: #ffd700;         /* Color dorado */
 }
 
-/* Body */
+/* --- Body --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Tipografía */
     color: var(--dark-text);   /* Color de texto principal */
 }
 
-/* Contenedor principal */
+/* --- Contenedor principal --- */
 .app-container {
     display: flex;
     min-height: 100vh; /* Ocupa toda la altura de la ventana */
 }
 
-/* Barra lateral de navegación */
+/* --- Barra lateral de navegación --- */
 .sidebar {
     width: 260px; /* Ancho fijo */
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%); /* Degradado vertical */
@@ -56,7 +56,7 @@ body {
     transition: all 0.3s; /* Transición suave para cambios */
 }
 
-/* Encabezado de la barra lateral */
+/* --- Encabezado de la barra lateral --- */
 .sidebar-header {
     padding: 0 20px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.1); /* Línea divisoria */

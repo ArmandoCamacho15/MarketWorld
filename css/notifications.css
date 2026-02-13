@@ -1,6 +1,6 @@
-/* notifications.css - Notification styles */
+/* --- notifications.css - Notification styles --- */
 
-/* Container */
+/* --- Container --- */
 
 .notification-container {
     position: relative;
@@ -16,7 +16,7 @@
     color: #0d6efd;
 }
 
-/* Badge */
+/* --- Badge --- */
 
 #notificationBadge {
     font-size: 0.65rem;
@@ -28,7 +28,7 @@
     justify-content: center;
 }
 
-/* Dropdown */
+/* --- Dropdown --- */
 
 .notification-dropdown {
     position: absolute;
@@ -57,7 +57,7 @@
     }
 }
 
-/* Header & Footer */
+/* --- Header & Footer --- */
 
 .notification-header {
     display: flex;

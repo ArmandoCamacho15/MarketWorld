@@ -8,7 +8,7 @@
         initInventory();
     });
 
-    // Inicializar inventario
+    // --- Inicializar inventario ---
     function initInventory() {
         loadProducts();
         loadCategories();
@@ -25,20 +25,20 @@
         showLowStockAlerts();
         updateDashboardKPIs();
         
-        // Inicializar sistema de notificaciones
+        // ======= INICIALIZAR SISTEMA DE NOTIFICACIONES =======
         if (typeof MarketWorld.notifications !== 'undefined') {
             MarketWorld.notifications.init();
             MarketWorld.notifications.checkLowStock();
         }
     }
 
-    // Cargar productos
+    // --- Cargar productos ---
     function loadProducts() {
         var products = MarketWorld.data.getProducts();
         displayProducts(products);
     }
 
-    // Mostrar productos
+    // --- Mostrar productos ---
     function displayProducts(products) {
         var container = document.getElementById('productsList');
         if (!container) return;
@@ -56,7 +56,7 @@
         });
     }
 
-    // Crear tarjeta de producto
+    // --- Crear tarjeta de producto ---
     function createProductCard(product) {
         var col = document.createElement('div');
         col.className = 'col-md-4 mb-3';
@@ -127,12 +127,12 @@
         return col;
     }
 
-    // Formatear moneda
+    // ======= FORMATEAR MONEDA =======
     function formatCurrency(value) {
         return new Intl.NumberFormat('es-CO').format(value);
     }
 
-    // Botón nuevo producto
+    // ======= BOTÓN NUEVO PRODUCTO =======
     function initNewProductButton() {
         var btnNew = document.querySelector('[data-bs-target="#productModal"]');
         if (btnNew) {
@@ -144,7 +144,7 @@
         }
     }
 
-    // Formulario de producto
+    // ======= FORMULARIO DE PRODUCTO =======
     function initProductForm() {
         var form = document.getElementById('productForm');
         if (!form) return;
@@ -154,7 +154,7 @@
             saveProduct();
         });
         
-        // Calcular margen automáticamente
+        // ======= CALCULAR MARGEN AUTOMÁTICAMENTE =======
         var precioInput = document.getElementById('productPrecio');
         var costoInput = document.getElementById('productCosto');
         
@@ -175,7 +175,7 @@
         }
     }
 
-    // Inicializar acciones de productos
+    // ======= INICIALIZAR ACCIONES DE PRODUCTOS =======
     function initProductActions() {
         var container = document.getElementById('productsList');
         if (!container) return;
@@ -197,7 +197,7 @@
         });
     }
 
-    // Guardar producto
+    // ======= GUARDAR PRODUCTO =======
     function saveProduct() {
         var productId = document.getElementById('productId').value;
         var codigo = document.getElementById('productCodigo').value.trim();
@@ -236,7 +236,7 @@
             result = MarketWorld.data.updateProduct(productId, productData);
         } else {
             result = MarketWorld.data.createProduct(productData);
-            // Notificar creación de producto
+            // ======= NOTIFICAR CREACIÓN DE PRODUCTO =======
             if (result.success && typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.notifyProductCreated(nombre);
             }
@@ -248,7 +248,7 @@
             showLowStockAlerts();
             updateDashboardKPIs();
             
-            // Verificar stock bajo después de guardar
+            // ======= VERIFICAR STOCK BAJO =======
             if (typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.checkLowStock();
             }
@@ -260,7 +260,7 @@
         }
     }
 
-    // Editar producto
+    // ======= EDITAR PRODUCTO =======
     function editProduct(id) {
         var product = MarketWorld.data.findProductById(id);
         if (!product) {
@@ -283,7 +283,7 @@
         
         document.getElementById('productModalLabel').textContent = 'Editar Producto';
         
-        // Calcular margen
+        // ======= CALCULAR MARGEN =======
         var margen = product.precio > 0 ? ((product.precio - product.costo) / product.precio * 100).toFixed(1) : 0;
         var margenSpan = document.getElementById('margenCalculado');
         if (margenSpan) {
@@ -294,7 +294,7 @@
         modal.show();
     }
 
-    // Eliminar producto
+    // ======= ELIMINAR PRODUCTO =======
     function deleteProductConfirm(id) {
         var product = MarketWorld.data.findProductById(id);
         if (!product) return;
@@ -308,7 +308,7 @@
                 showLowStockAlerts();
                 updateDashboardKPIs();
                 
-                // Notificar eliminación de producto
+                // ======= NOTIFICAR ELIMINACIÓN DE PRODUCTO =======
                 if (typeof MarketWorld.notifications !== 'undefined') {
                     MarketWorld.notifications.notifyProductDeleted(productName);
                 }
@@ -318,7 +318,7 @@
         }
     }
 
-    // Mostrar modal de ajuste de stock
+    // ======= MOSTRAR MODAL DE AJUSTE DE STOCK =======
     function showStockModal(id) {
         var product = MarketWorld.data.findProductById(id);
         if (!product) return;
@@ -362,7 +362,7 @@
             showLowStockAlerts();
             updateDashboardKPIs();
             
-            // Notificar cambio de stock
+            // ======= NOTIFICAR CAMBIO DE STOCK =======
             if (typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
                 MarketWorld.notifications.checkLowStock();
@@ -372,7 +372,7 @@
         }
     }
 
-    // Limpiar formulario
+    // ======= LIMPIAR FORMULARIO =======
     function resetProductForm() {
         document.getElementById('productId').value = '';
         document.getElementById('productCodigo').value = '';
@@ -391,7 +391,7 @@
         if (margenSpan) margenSpan.textContent = '0%';
     }
 
-    // Cargar categorías en select
+    // ======= CARGAR CATEGORÍAS EN SELECT =======
     function loadCategories() {
         var categories = MarketWorld.data.getCategories();
         var select = document.getElementById('productCategoria');

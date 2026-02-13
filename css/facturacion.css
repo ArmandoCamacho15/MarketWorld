@@ -1,6 +1,6 @@
-/* Facturación */
+/* --- Facturación --- */
 
-/* Colores */
+/* --- Colores --- */
 :root {
     --primary: #0d6ef0;      /* Azul principal MarketWorld */
     --secondary: #0a58ca;    /* Azul secundario */
@@ -13,7 +13,7 @@
     --gold: #ffd700;         /* Dorado para clientes frecuentes */
 }
 
-/* Estilos base para el body y contenedor principal */
+/* --- Estilos base para el body y contenedor principal --- */
 body {
     background-color: #f5f7fa; /* Fondo general */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,7 +24,7 @@ body {
     min-height: 100vh;
 }
 
-/* Barra de navegación lateral */
+/* --- Barra de navegación lateral --- */
 .sidebar {
     width: 260px;
     background: linear-gradient(180deg, var(--primary) 0%, #0b5ed7 100%);

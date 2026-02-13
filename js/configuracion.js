@@ -8,7 +8,7 @@
         initUserManagement();
     });
 
-    // Gestion de usuarios
+    // --- Gestión de usuarios ---
     function initUserManagement() {
         loadUsers();
         initNewUserButton();
@@ -22,7 +22,7 @@
         }
     }
 
-    // Cargar lista de usuarios
+    // --- Cargar lista de usuarios ---
     function loadUsers() {
         var users = MarketWorld.data.getUsers();
         var container = document.getElementById('usersList');
@@ -42,7 +42,7 @@
         });
     }
 
-    // Crear tarjeta de usuario
+    // --- Crear tarjeta de usuario ---
     function createUserCard(user) {
         var col = document.createElement('div');
         col.className = 'col-md-4 mb-3';

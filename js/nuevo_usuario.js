@@ -3,7 +3,7 @@
 (function() {
     'use strict';
 
-    // Iniciar cuando cargue la pagina
+    // --- Iniciar cuando cargue la página ---
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Registro cargado');
         initRegisterForm();
@@ -11,7 +11,7 @@
         initPasswordToggle();
     });
 
-    // Configurar formulario
+    // --- Configurar formulario ---
     function initRegisterForm() {
         var form = document.getElementById('registerForm');
         if (!form) return;
@@ -19,7 +19,7 @@
         form.addEventListener('submit', handleRegister);
     }
 
-    // Manejar el registro
+    // --- Manejar el registro ---
     function handleRegister(e) {
         e.preventDefault();
         
@@ -34,7 +34,7 @@
         
         clearErrors();
         
-        // Validar campos
+        // --- Validar campos ---
         var hasErrors = false;
         
         if (!firstName.value.trim()) {
@@ -74,14 +74,14 @@
         
         if (hasErrors) return;
         
-        // Verificar si el email ya existe
+        // --- Verificar email existente ---
         if (MarketWorld.data.findUserByEmail(email.value.trim())) {
             showNotification('Este email ya esta registrado', 'error');
             showFieldError(email, 'Email ya registrado');
             return;
         }
         
-        // Registrar usuario
+        // --- Registrar usuario ---
         setLoadingState(btnRegister, true);
         
         setTimeout(function() {
@@ -104,17 +104,17 @@
         }, 1000);
     }
 
-    // Validar email
+    // --- Validar email ---
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    // Validar telefono
+    // --- Validar teléfono ---
     function isValidPhone(phone) {
         return /^[0-9]{10}$/.test(phone);
     }
 
-    // Mostrar error en campo
+    // --- Mostrar error en campo ---
     function showFieldError(input, message) {
         if (!input) return;
         input.classList.add('is-invalid');
@@ -129,7 +129,7 @@
         errorDiv.style.display = 'block';
     }
 
-    // Limpiar errores
+    // --- Limpiar errores ---
     function clearErrors() {
         var invalidInputs = document.querySelectorAll('.is-invalid');
         for (var i = 0; i < invalidInputs.length; i++) {
@@ -137,7 +137,7 @@
         }
     }
 
-    // Medidor de fortaleza de contrasena
+    // --- Medidor de fortaleza de contraseña ---
     function initPasswordStrength() {
         var passwordInput = document.getElementById('password');
         var strengthBar = document.getElementById('strengthBar');
@@ -155,7 +155,7 @@
         });
     }
 
-    // Calcular fortaleza
+    // --- Calcular fortaleza ---
     function calculateStrength(password) {
         if (password.length === 0) {
             return { percent: 0, class: '', text: 'Ingresa una contrasena' };
@@ -178,7 +178,7 @@
         }
     }
 
-    // Mostrar/ocultar contrasenas
+    // --- Mostrar/ocultar contraseñas ---
     function initPasswordToggle() {
         var togglePassword = document.getElementById('togglePassword');
         var toggleConfirm = document.getElementById('toggleConfirmPassword');
@@ -208,7 +208,7 @@
         }
     }
 
-    // Estado de carga del boton
+    // --- Estado de carga del botón ---
     function setLoadingState(button, isLoading) {
         if (!button) return;
         var btnText = button.querySelector('.btn-text');
@@ -225,7 +225,7 @@
         }
     }
 
-    // Mostrar notificacion
+    // --- Mostrar notificación ---
     function showNotification(message, type) {
         var existing = document.querySelector('.register-notification');
         if (existing) existing.remove();
