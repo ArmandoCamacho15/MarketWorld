@@ -540,12 +540,22 @@ html, body {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    height: 400px; /* Altura fija para evitar crecimiento infinito */
+    display: flex;
+    flex-direction: column;
 }
 
 .chart-card h5 {
     color: var(--primary);
     margin-bottom: 15px;
     font-weight: 600;
+    flex-shrink: 0;
+}
+
+.chart-card canvas {
+    max-height: 320px !important;
+    flex: 1;
+    min-height: 0;
 }
 
 /* Top productos */

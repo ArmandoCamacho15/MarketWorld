@@ -147,29 +147,29 @@
 
                 <!-- Pestañas -->
                 <nav aria-label="Pestañas de inventario">
-                    <ul class="nav nav-tabs mb-4">
+                    <ul class="nav nav-tabs mb-4" style="background: white; padding: 10px; border-radius: 10px;">
                         <li class="nav-item">
-                            <a class="nav-link active" data-bs-toggle="tab" href="#productos" role="tab">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#productos" role="tab" style="color: #495057;">
                                 <i class="bi bi-grid" aria-hidden="true"></i> Productos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#categorias" role="tab">
+                            <a class="nav-link" data-bs-toggle="tab" href="#categorias" role="tab" style="color: #495057;">
                                 <i class="bi bi-folder" aria-hidden="true"></i> Categorías
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#movimientos" role="tab">
+                            <a class="nav-link" data-bs-toggle="tab" href="#movimientos" role="tab" style="color: #495057;">
                                 <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Movimientos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#ajustes" role="tab">
+                            <a class="nav-link" data-bs-toggle="tab" href="#ajustes" role="tab" style="color: #495057;">
                                 <i class="bi bi-sliders" aria-hidden="true"></i> Ajustes
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#reportes" role="tab">
+                            <a class="nav-link" data-bs-toggle="tab" href="#reportes" role="tab" style="color: #495057;">
                                 <i class="bi bi-graph-up" aria-hidden="true"></i> Reportes
                             </a>
                         </li>
@@ -183,10 +183,10 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h2 class="section-title mb-0">Gestión de Productos</h2>
                                 <div class="btn-group">
-                                    <button class="btn btn-outline-success" aria-label="Importar desde Excel">
+                                    <button class="btn btn-outline-success" id="btnImportExcel" aria-label="Importar desde Excel">
                                         <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Importar Excel
                                     </button>
-                                    <button class="btn btn-outline-secondary" aria-label="Exportar a Excel">
+                                    <button class="btn btn-outline-secondary" id="btnExportExcel" aria-label="Exportar a Excel">
                                         <i class="bi bi-download me-2" aria-hidden="true"></i> Exportar
                                     </button>
                                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" aria-label="Agregar nuevo producto">
@@ -454,22 +454,133 @@
                         </div>
                     </section>
 
-                    <!-- Pestaña Categorías (CONTENIDO ORIGINAL) -->
+                    <!-- Pestaña Categorías -->
                     <section class="tab-pane fade" id="categorias" role="tabpanel">
                         <div class="content-container">
-                            <h2 class="section-title">Gestión de Categorías</h2>
-                            <p class="text-muted">Organiza tus productos por categorías y subcategorías</p>
-                            <button class="btn btn-primary mb-3" aria-label="Agregar nueva categoría">
-                                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nueva Categoría
-                            </button>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2 class="section-title mb-0">Gestión de Categorías</h2>
+                                <button class="btn btn-primary" id="btnNuevaCategoria" data-bs-toggle="modal" data-bs-target="#categoryModal" aria-label="Agregar nueva categoría">
+                                    <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nueva Categoría
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Organiza tus productos:</strong> Crea categorías para clasificar y encontrar productos más fácilmente.
+                            </div>
+
+                            <!-- Lista de categorías -->
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Productos</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categoriesList">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </section>
 
-                    <!-- Pestaña Movimientos (CONTENIDO ORIGINAL) -->
+                    <!-- Pestaña Movimientos -->
                     <section class="tab-pane fade" id="movimientos" role="tabpanel">
                         <div class="content-container">
-                            <h2 class="section-title">Movimientos de Inventario</h2>
-                            <p class="text-muted">Historial de entradas y salidas de productos</p>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2 class="section-title mb-0">Movimientos de Inventario</h2>
+                                <button class="btn btn-primary" id="btnNuevoMovimiento" data-bs-toggle="modal" data-bs-target="#movementModal">
+                                    <i class="bi bi-plus-circle me-2"></i> Registrar Movimiento
+                                </button>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Historial completo:</strong> Consulta todas las entradas y salidas de productos.
+                            </div>
+
+                            <!-- Filtros de movimientos -->
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <label for="filterMovTipo" class="form-label">Tipo</label>
+                                    <select id="filterMovTipo" class="form-select">
+                                        <option value="">Todos</option>
+                                        <option value="entrada">Entrada</option>
+                                        <option value="salida">Salida</option>
+                                        <option value="ajuste">Ajuste</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filterMovFechaDesde" class="form-label">Desde</label>
+                                    <input type="date" id="filterMovFechaDesde" class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filterMovFechaHasta" class="form-label">Hasta</label>
+                                    <input type="date" id="filterMovFechaHasta" class="form-control">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" id="btnFiltrarMovimientos">
+                                        <i class="bi bi-funnel me-2"></i> Filtrar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de movimientos -->
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Producto</th>
+                                            <th>Cantidad</th>
+                                            <th>Stock Anterior</th>
+                                            <th>Stock Nuevo</th>
+                                            <th>Usuario</th>
+                                            <th>Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movementsList">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Resumen de movimientos -->
+                            <div class="row mt-4">
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="text-success">Entradas</h5>
+                                            <h2 id="totalEntradas">0</h2>
+                                            <p class="text-muted">unidades</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="text-danger">Salidas</h5>
+                                            <h2 id="totalSalidas">0</h2>
+                                            <p class="text-muted">unidades</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="text-primary">Total Movimientos</h5>
+                                            <h2 id="totalMovimientos">0</h2>
+                                            <p class="text-muted">registros</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -571,6 +682,82 @@
                         <div class="text-end">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar/editar categoría -->
+    <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalLabel">Nueva Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label for="categoryNombre" class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" id="categoryNombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="categoryDescripcion" rows="3"></textarea>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="categoryActiva" checked>
+                            <label class="form-check-label" for="categoryActiva">Categoría Activa</label>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Categoría</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para registrar movimiento -->
+    <div class="modal fade" id="movementModal" tabindex="-1" aria-labelledby="movementModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="movementModalLabel">Registrar Movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="movementForm">
+                        <div class="mb-3">
+                            <label for="movementTipo" class="form-label">Tipo de Movimiento *</label>
+                            <select class="form-select" id="movementTipo" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="salida">Salida</option>
+                                <option value="ajuste">Ajuste</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="movementProducto" class="form-label">Producto *</label>
+                            <select class="form-select" id="movementProducto" required>
+                                <option value="">Seleccionar producto...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="movementCantidad" class="form-label">Cantidad *</label>
+                            <input type="number" class="form-control" id="movementCantidad" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="movementMotivo" class="form-label">Motivo</label>
+                            <textarea class="form-control" id="movementMotivo" rows="2" placeholder="Describe el motivo del movimiento..."></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Registrar</button>
                         </div>
                     </form>
                 </div>

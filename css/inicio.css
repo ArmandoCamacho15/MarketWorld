@@ -257,6 +257,24 @@ body {
     color: #6c757d;
 }
 
+/* Tarea de alta prioridad */
+.task-item.priority-high {
+    background-color: #fff5f5;
+    border-left: 3px solid var(--danger);
+    padding-left: 12px;
+    margin-left: -15px;
+    padding-right: 15px;
+}
+
+.task-item.priority-high .task-title {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.task-item.priority-high i {
+    color: var(--danger);
+}
+
 /* Menú destacado */
 
 /* Grid para menú destacado */
@@ -366,12 +384,37 @@ body {
     font-weight: 700;
     color: var(--primary);
     margin: 10px 0;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Spinner en stat-value */
+.stat-card .stat-value .spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.15em;
 }
 
 /* Título de estadística */
 .stat-card .stat-title {
     font-size: 14px;
     color: #6c757d;
+}
+
+/* Iconos de tendencia en estadísticas */
+.stat-card .stat-value i {
+    font-size: 0.7em;
+    margin-left: 5px;
+}
+
+/* Texto pequeño en estadísticas */
+.stat-card .stat-value small {
+    font-size: 0.5em;
+    display: block;
+    margin-top: 5px;
+    font-weight: 400;
 }
 
 /* Wrapper responsivo */

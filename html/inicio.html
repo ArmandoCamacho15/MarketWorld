@@ -141,24 +141,32 @@
                     <p class="mb-4">Sistema integral de gestión empresarial. Accede rápidamente a los módulos desde aquí.</p>
                     
                     <div class="stats-grid">
-                        <article class="stat-card">
+                        <article class="stat-card" data-stat="growth">
                             <i class="bi bi-graph-up-arrow fs-3 text-primary" aria-hidden="true"></i>
-                            <div class="stat-value">+24%</div>
+                            <div class="stat-value" id="statGrowth">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-label="Cargando"></span>
+                            </div>
                             <div class="stat-title">Crecimiento Mensual</div>
                         </article>
-                        <article class="stat-card">
+                        <article class="stat-card" data-stat="clients">
                             <i class="bi bi-people fs-3 text-success" aria-hidden="true"></i>
-                            <div class="stat-value">1,245</div>
+                            <div class="stat-value" id="statClients">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-label="Cargando"></span>
+                            </div>
                             <div class="stat-title">Clientes Activos</div>
                         </article>
-                        <article class="stat-card">
+                        <article class="stat-card" data-stat="products">
                             <i class="bi bi-box-seam fs-3 text-warning" aria-hidden="true"></i>
-                            <div class="stat-value">3,890</div>
+                            <div class="stat-value" id="statProducts">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-label="Cargando"></span>
+                            </div>
                             <div class="stat-title">Productos en Stock</div>
                         </article>
-                        <article class="stat-card">
+                        <article class="stat-card" data-stat="sales">
                             <i class="bi bi-currency-dollar fs-3 text-info" aria-hidden="true"></i>
-                            <div class="stat-value">$125K</div>
+                            <div class="stat-value" id="statSales">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-label="Cargando"></span>
+                            </div>
                             <div class="stat-title">Ventas del Mes</div>
                         </article>
                     </div>
@@ -218,38 +226,16 @@
                         <!-- Alertas -->
                         <section class="content-container" aria-labelledby="alertsTitle">
                             <h2 id="alertsTitle" class="section-title">Alertas</h2>
-                            <div class="alert-item warning" role="alert">
-                                <div class="alert-title">
-                                    <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
-                                    Stock bajo
-                                </div>
-                                <div class="alert-desc">5 productos requieren reabastecimiento</div>
-                            </div>
-                            <div class="alert-item info" role="status">
-                                <div class="alert-title">
-                                    <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
-                                    Facturas pendientes
-                                </div>
-                                <div class="alert-desc">3 facturas vencen esta semana</div>
+                            <div class="alerts-container">
+                                <!-- Las alertas se cargan dinámicamente desde datos reales -->
                             </div>
                         </section>
 
                         <!-- Tareas pendientes -->
                         <section class="content-container" aria-labelledby="tasksTitle">
                             <h2 id="tasksTitle" class="section-title">Tareas Pendientes</h2>
-                            <div class="task-item">
-                                <i class="bi bi-circle" aria-hidden="true"></i>
-                                <div class="task-content">
-                                    <div class="task-title">Revisar orden de compra #OC-125</div>
-                                    <div class="task-time">Vence hoy a las 15:00</div>
-                                </div>
-                            </div>
-                            <div class="task-item">
-                                <i class="bi bi-circle" aria-hidden="true"></i>
-                                <div class="task-content">
-                                    <div class="task-title">Seguimiento cliente ABC Corp</div>
-                                    <div class="task-time">Mañana 10:00</div>
-                                </div>
+                            <div class="tasks-container">
+                                <!-- Las tareas se cargan dinámicamente desde datos reales -->
                             </div>
                         </section>
                     </aside>

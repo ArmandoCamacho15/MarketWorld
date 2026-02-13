@@ -23,6 +23,10 @@ config.local.php
 # Documentación privada de desarrollo
 DEVELOPMENT_LOG.md
 
+# Archivos de migración y verificación (no subir)
+migration-plan.md
+VERIFICACION_INICIO.md
+
 # Editores de código
 .vscode/
 . idea/

@@ -99,7 +99,7 @@
                 <div class="col-md-3">
                     <div class="kpi-card">
                         <i class="bi bi-wallet2 fs-4 text-success"></i>
-                        <div class="kpi-value">$185,450</div>
+                        <div class="kpi-value" id="kpi-activos">$185,450</div>
                         <div class="kpi-title">Activos Totales</div>
                         <div class="kpi-growth positive">
                             <i class="bi bi-arrow-up"></i> 8.5% vs mes anterior
@@ -109,7 +109,7 @@
                 <div class="col-md-3">
                     <div class="kpi-card">
                         <i class="bi bi-credit-card fs-4 text-danger"></i>
-                        <div class="kpi-value">$72,800</div>
+                        <div class="kpi-value" id="kpi-pasivos">$72,800</div>
                         <div class="kpi-title">Pasivos Totales</div>
                         <div class="kpi-growth negative">
                             <i class="bi bi-arrow-down"></i> 3.2% vs mes anterior
@@ -119,7 +119,7 @@
                 <div class="col-md-3">
                     <div class="kpi-card">
                         <i class="bi bi-graph-up fs-4 text-warning"></i>
-                        <div class="kpi-value">$112,650</div>
+                        <div class="kpi-value" id="kpi-patrimonio">$112,650</div>
                         <div class="kpi-title">Patrimonio</div>
                         <div class="kpi-growth positive">
                             <i class="bi bi-arrow-up"></i> 12.8% vs mes anterior
@@ -129,7 +129,7 @@
                 <div class="col-md-3">
                     <div class="kpi-card">
                         <i class="bi bi-cash fs-4 text-primary"></i>
-                        <div class="kpi-value">$37,650</div>
+                        <div class="kpi-value" id="kpi-utilidad">$37,650</div>
                         <div class="kpi-title">Utilidad Neta</div>
                         <div class="kpi-growth positive">
                             <i class="bi bi-arrow-up"></i> 15.8% vs mes anterior
@@ -166,7 +166,7 @@
                                 <h4 class="section-title">Plan Contable</h4>
                                 <!-- Buscador de cuentas contables -->
                                 <div class="input-group mb-4">
-                                    <input type="text" class="form-control" placeholder="Buscar cuenta...">
+                                    <input type="text" class="form-control" id="searchAccount" placeholder="Buscar cuenta...">
                                     <button class="btn btn-outline-primary">
                                         <i class="bi bi-search"></i>
                                     </button>
@@ -174,49 +174,8 @@
                                 <!-- Estructura jerárquica del plan contable -->
                                 <div class="mb-4">
                                     <h5>Estructura Jerárquica</h5>
-                                    <ul class="account-tree">
-                                        <!-- Listado de cuentas principales y subcuentas -->
-                                        <li>
-                                            <span class="account-code">1</span> Activos
-                                            <span class="account-type type-asset">Activo</span>
-                                            <ul>
-                                                <li>
-                                                    <span class="account-code">1.1</span> Activo Corriente
-                                                    <ul>
-                                                        <li><span class="account-code">1.1.1</span> Caja y Bancos</li>
-                                                        <li><span class="account-code">1.1.2</span> Cuentas por Cobrar</li>
-                                                        <li><span class="account-code">1.1.3</span> Inventarios</li>
-                                                    </ul>
-                                                </li>
-                                                <li>
-                                                    <span class="account-code">1.2</span> Activo No Corriente
-                                                    <ul>
-                                                        <li><span class="account-code">1.2.1</span> Propiedades, Planta y Equipo</li>
-                                                        <li><span class="account-code">1.2.2</span> Activos Intangibles</li>
-                                                    </ul>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                        <li>
-                                            <span class="account-code">2</span> Pasivos
-                                            <span class="account-type type-liability">Pasivo</span>
-                                            <ul>
-                                                <li><span class="account-code">2.1</span> Pasivo Corriente</li>
-                                                <li><span class="account-code">2.2</span> Pasivo No Corriente</li>
-                                            </ul>
-                                        </li>
-                                        <li>
-                                            <span class="account-code">3</span> Patrimonio
-                                            <span class="account-type type-equity">Patrimonio</span>
-                                        </li>
-                                        <li>
-                                            <span class="account-code">4</span> Ingresos
-                                            <span class="account-type type-income">Ingreso</span>
-                                        </li>
-                                        <li>
-                                            <span class="account-code">5</span> Gastos
-                                            <span class="account-type type-expense">Gasto</span>
-                                        </li>
+                                    <ul class="account-tree" id="accountTreeContainer">
+                                        <!-- Se cargará dinámicamente desde data.js -->
                                     </ul>
                                 </div>
                             </div>
@@ -225,59 +184,59 @@
                             <div class="content-container">
                                 <h4 class="section-title">Detalle de Cuenta</h4>
                                 <!-- Formulario para editar o crear cuentas contables -->
-                                <div class="row mb-4">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Código de Cuenta</label>
-                                            <input type="text" class="form-control" value="1.1.1.01">
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Código de Cuenta</label>
+                                                <input id="account-code" type="text" class="form-control" value="1.1.1.01" placeholder="Código de Cuenta">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Nombre de Cuenta</label>
+                                                <input id="account-name" type="text" class="form-control" value="Caja General" placeholder="Nombre de Cuenta">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Tipo de Cuenta</label>
+                                                <select id="account-type" class="form-select">
+                                                    <option>Activo</option>
+                                                    <option>Pasivo</option>
+                                                    <option>Patrimonio</option>
+                                                    <option>Ingreso</option>
+                                                    <option selected>Gasto</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Nombre de Cuenta</label>
-                                            <input type="text" class="form-control" value="Caja General">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Tipo de Cuenta</label>
-                                            <select class="form-select">
-                                                <option>Activo</option>
-                                                <option>Pasivo</option>
-                                                <option>Patrimonio</option>
-                                                <option>Ingreso</option>
-                                                <option selected>Gasto</option>
-                                            </select>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nivel</label>
+                                                <input id="account-level" type="text" class="form-control" value="Subcuenta" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Cuenta Padre</label>
+                                                <select id="account-parent" class="form-select">
+                                                    <option selected>1.1.1 - Caja y Bancos</option>
+                                                    <option>1.1.2 - Cuentas por Cobrar</option>
+                                                    <option>1.1.3 - Inventarios</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Moneda</label>
+                                                <select id="account-currency" class="form-select">
+                                                    <option selected>Pesos Colombianos (COP)</option>
+                                                    <option>Dólares (USD)</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Nivel</label>
-                                            <input type="text" class="form-control" value="Subcuenta" readonly>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Cuenta Padre</label>
-                                            <select class="form-select">
-                                                <option selected>1.1.1 - Caja y Bancos</option>
-                                                <option>1.1.2 - Cuentas por Cobrar</option>
-                                                <option>1.1.3 - Inventarios</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Moneda</label>
-                                            <select class="form-select">
-                                                <option selected>Pesos Colombianos (COP)</option>
-                                                <option>Dólares (USD)</option>
-                                            </select>
-                                        </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Descripción</label>
+                                        <textarea id="account-desc" class="form-control" rows="3">Cuenta principal para registrar transacciones en efectivo</textarea>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" rows="3">Cuenta principal para registrar transacciones en efectivo</textarea>
-                                </div>
-                                <!-- Botones para cancelar o guardar cambios en la cuenta -->
+                                    <!-- Botones para cancelar o guardar cambios en la cuenta -->
                                 <div class="d-flex justify-content-end">
-                                    <button class="btn btn-outline-secondary me-2">
+                                    <button id="btn-cancel-account" class="btn btn-outline-secondary me-2">
                                         <i class="bi bi-x-circle me-2"></i> Cancelar
                                     </button>
-                                    <button class="btn btn-primary">
+                                    <button id="btn-save-account" class="btn btn-primary">
                                         <i class="bi bi-save me-2"></i> Guardar Cuenta
                                     </button>
                                 </div>
@@ -296,7 +255,7 @@
                                                 <th>Saldo</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="account-movements-body">
                                             <!-- Ejemplo de movimientos contables -->
                                             <tr>
                                                 <td>20/06/2025</td>
@@ -320,7 +279,7 @@
                                                 <td class="debit">$4,013,480</td>
                                             </tr>
                                         </tbody>
-                                        <tfoot>
+                                        <tfoot id="account-movements-foot">
                                             <tr class="fw-bold">
                                                 <td colspan="2">Total</td>
                                                 <td class="debit">$6,513,480</td>
@@ -349,8 +308,7 @@
                         </div>
                         <div class="row">
                             <div class="col-md-8">
-                                <!-- Listado de asientos contables registrados -->
-                                <div class="journal-entry">
+                                <!-- Listado de asientos contables registrados (se carga dinámicamente) -->
                                     <!-- Encabezado del asiento contable -->
                                     <div class="d-flex justify-content-between mb-2">
                                         <div>
@@ -400,15 +358,15 @@
                                     <h5>Nuevo Asiento Contable</h5>
                                     <div class="mb-3">
                                         <label class="form-label">Fecha</label>
-                                        <input type="date" class="form-control" value="2025-06-23">
+                                        <input id="entry-date" type="date" class="form-control" value="2025-06-23">
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Descripción</label>
-                                        <textarea class="form-control" rows="2" placeholder="Descripción del asiento"></textarea>
+                                        <textarea id="entry-desc" class="form-control" rows="2" placeholder="Descripción del asiento"></textarea>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Tipo</label>
-                                        <select class="form-select">
+                                        <select id="entry-type" class="form-select">
                                             <option selected>Manual</option>
                                             <option>Automático (Ventas)</option>
                                             <option>Automático (Compras)</option>
@@ -418,36 +376,32 @@
                                     <hr>
                                     <h6>Partidas del Asiento</h6>
                                     <!-- Campos para agregar partidas al asiento contable -->
-                                    <div class="mb-3">
-                                        <div class="input-group mb-2">
-                                            <select class="form-select">
-                                                <option>Seleccionar cuenta</option>
-                                                <option>1.1.1.01 Caja General</option>
-                                                <option>1.1.2.01 Cuentas por Cobrar Clientes</option>
-                                                <option>1.1.3.01 Inventario de Mercancías</option>
+                                    <div id="entry-lines" class="mb-3">
+                                        <div class="input-group mb-2 partida-row">
+                                            <select class="form-select account-select">
+                                                <option value="">Seleccionar cuenta</option>
                                             </select>
-                                            <input type="text" class="form-control" placeholder="Monto" style="max-width: 120px;">
-                                            <select class="form-select" style="max-width: 120px;">
-                                                <option>Debe</option>
-                                                <option>Haber</option>
+                                            <input type="number" class="form-control amount-input" placeholder="Monto" style="max-width: 120px;" min="0" step="0.01">
+                                            <select class="form-select type-select" style="max-width: 120px;">
+                                                <option value="debe">Debe</option>
+                                                <option value="haber">Haber</option>
                                             </select>
-                                            <button class="btn btn-outline-danger">
+                                            <button class="btn btn-outline-danger btn-remove">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
-                                        <!-- ...otras partidas... -->
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button id="btn-add-line" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-plus"></i> Agregar Partida
                                         </button>
                                     </div>
                                     <!-- Diferencia entre debe y haber para validar el asiento -->
                                     <div class="d-flex justify-content-between fw-bold mb-3">
                                         <span>Diferencia:</span>
-                                        <span class="text-danger">$1,000</span>
+                                        <span id="entry-diff" class="text-danger">$0</span>
                                     </div>
                                     <!-- Botón para registrar el asiento contable -->
                                     <div class="d-grid">
-                                        <button class="btn btn-primary" disabled>
+                                        <button id="btn-register-entry" class="btn btn-primary" disabled>
                                             <i class="bi bi-check-circle me-2"></i> Registrar Asiento (La suma debe ser 0)
                                         </button>
                                     </div>

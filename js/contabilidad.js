@@ -1,205 +1,86 @@
+// contabilidad.js - Módulo de Contabilidad Funcional
 
 (function() {
     'use strict';
 
+    // Estado local del módulo
     let currentAccount = null;
-    let journalEntries = [];
+    let balanceChart = null;
+    let incomeChart = null;
+    let partidasTemporales = [];
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('💰 Módulo Contabilidad cargado');
+        console.log('💰 Módulo Contabilidad - Inicializando interactividad completa');
         
-        // Inicializar notificaciones
-        if (MarketWorld.notifications && MarketWorld.notifications.init) {
-            MarketWorld.notifications.init();
-        }
+        // Inicializar componentes base
+        initApp();
         
-        initAccountTree();
-        initJournalEntries();
-        initLedgers();
-        initFinancialStatements();
-        initTaxManagement();
-        initCharts();
+        // Configurar listeners de formularios
+        setupFormListeners();
+        
+        // Cargar datos iniciales
+        actualizarDashboard();
+        renderizarPlanContable();
+        cargarAsientosContables();
+        inicializarLibros();
+        inicializarImpuestos();
     });
 
-    // Árbol de cuentas contables
-    function initAccountTree() {
-        const accountItems = document.querySelectorAll('.account-tree li');
-        
-        accountItems.forEach(item => {
-            item.style.cursor = 'pointer';
-            
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const accountCode = item.querySelector('.account-code')?.textContent;
-                if (accountCode) {
-                    selectAccount(accountCode, item);
-                }
-            });
-        });
-    }
-
-    function selectAccount(accountCode, item) {
-        currentAccount = accountCode;
-        console.log(`📖 Cuenta seleccionada: ${accountCode}`);
-        
-        // Resaltar cuenta
-        document.querySelectorAll('.account-tree li').forEach(li => {
-            li.style.backgroundColor = '';
-        });
-        item.style.backgroundColor = '#f0f6ff';
-        
-        // Cargar movimientos
-        loadAccountMovements(accountCode);
-    }
-
-    function loadAccountMovements(accountCode) {
-        console.log(`📊 Cargando movimientos de cuenta: ${accountCode}`);
-        // Aquí se cargarían los movimientos desde el backend
-    }
-
-    // Asientos contables
-    function initJournalEntries() {
-        const btnNewEntry = document.querySelector('.btn-primary');
-        
-        if (btnNewEntry && btnNewEntry.textContent.includes('Nuevo Asiento')) {
-            btnNewEntry.addEventListener('click', createJournalEntry);
-        }
-        
-        // Botones de editar/eliminar asientos
-        const editButtons = document.querySelectorAll('.btn-outline-primary');
-        editButtons.forEach(btn => {
-            if (btn.querySelector('.bi-pencil')) {
-                btn.addEventListener('click', () => {
-                    const entryNumber = btn.closest('.journal-entry').querySelector('.fw-bold').textContent;
-                    editJournalEntry(entryNumber);
-                });
-            }
-        });
-        
-        const deleteButtons = document.querySelectorAll('.btn-outline-danger');
-        deleteButtons.forEach(btn => {
-            if (btn.querySelector('.bi-trash')) {
-                btn.addEventListener('click', () => {
-                    const entryNumber = btn.closest('.journal-entry').querySelector('.fw-bold').textContent;
-                    deleteJournalEntry(entryNumber);
-                });
-            }
-        });
-    }
-
-    function createJournalEntry() {
-        console.log('📝 Creando nuevo asiento contable');
-        
-        const description = prompt('Descripción del asiento:');
-        if (description) {
-            const entryNumber = `AS-2025-${String(Math.floor(Math.random() * 1000)).padStart(5, '0')}`;
-            journalEntries.push({ number: entryNumber, description });
-            
-            console.log(`✅ Asiento creado: ${entryNumber}`);
-            alert(`Asiento ${entryNumber} creado correctamente`);
+    function initApp() {
+        // Notificaciones
+        if (window.MarketWorld && MarketWorld.notifications) {
+            MarketWorld.notifications.init();
         }
     }
 
-    function editJournalEntry(entryNumber) {
-        console.log(`✏️ Editando asiento: ${entryNumber}`);
-        alert(`Editando asiento: ${entryNumber}`);
-    }
+    // ==================== DASHBOARD Y GRÁFICOS ====================
 
-    function deleteJournalEntry(entryNumber) {
-        if (confirm(`¿Eliminar asiento ${entryNumber}?`)) {
-            console.log(`🗑️ Eliminando asiento: ${entryNumber}`);
-            alert(`Asiento ${entryNumber} eliminado`);
-        }
-    }
+    function actualizarDashboard() {
+        const summary = MarketWorld.data.getFinancialSummary();
+        const utils = MarketWorld.utils;
 
-    // Libros contables
-    function initLedgers() {
-        const btnFilter = document.querySelectorAll('.btn-primary').forEach(btn => {
-            if (btn.textContent.includes('Filtrar')) {
-                btn.addEventListener('click', applyLedgerFilters);
-            }
+        const mapping = {
+            'kpi-activos': summary.activos,
+            'kpi-pasivos': summary.pasivos,
+            'kpi-patrimonio': summary.patrimonio,
+            'kpi-utilidad': summary.utilidadNeta
+        };
+
+        Object.entries(mapping).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = utils.formatCurrency(value);
         });
+
+        actualizarGraficos(summary);
     }
 
-    function applyLedgerFilters() {
-        console.log(' Aplicando filtros en libros contables');
-        
-        const startDate = document.querySelector('input[type="date"]')?.value;
-        const endDate = document.querySelectorAll('input[type="date"]')[1]?.value;
-        
-        console.log(`📅 Período: ${startDate} a ${endDate}`);
-        alert(`Filtrando registros del ${startDate} al ${endDate}`);
-    }
+    function actualizarGraficos(summary) {
+        if (typeof Chart === 'undefined') return;
 
-    // Estados financieros
-    function initFinancialStatements() {
-        console.log('📈 Inicializando estados financieros');
-        // Los gráficos se inicializan en initCharts()
-    }
-
-    // Gestión de impuestos
-    function initTaxManagement() {
-        const btnCalculate = document.querySelectorAll('.btn-primary').forEach(btn => {
-            if (btn.textContent.includes('Calcular')) {
-                btn.addEventListener('click', calculateTaxes);
-            }
-        });
-        
-        const btnSubmit = document.querySelectorAll('.btn-danger').forEach(btn => {
-            if (btn.textContent.includes('Presentar')) {
-                btn.addEventListener('click', submitTaxDeclaration);
-            }
-        });
-    }
-
-    function calculateTaxes() {
-        console.log('🧮 Calculando impuestos');
-        
-        const profit = 37650000;
-        const taxRate = 0.20;
-        const calculatedTax = profit * taxRate;
-        
-        console.log(`💵 Impuesto calculado: $${calculatedTax.toLocaleString()}`);
-        alert(`Impuesto sobre la renta: $${calculatedTax.toLocaleString()}\n\nIVA a pagar: $5,500,000\nRetención a favor: $1,100,000`);
-    }
-
-    function submitTaxDeclaration() {
-        if (confirm('¿Deseas presentar la declaración a la DIAN?')) {
-            console.log('📤 Enviando declaración a la DIAN...');
-            
-            // envío
-            setTimeout(() => {
-                alert('✅ Declaración presentada exitosamente\n\nNúmero de radicado: DIAN-2025-12345');
-            }, 1500);
-        }
-    }
-
-    // Gráficos de estados financieros
-    function initCharts() {
         // Balance General
         const balanceCtx = document.getElementById('balanceChart');
-        if (balanceCtx && typeof Chart !== 'undefined') {
-            new Chart(balanceCtx, {
+        if (balanceCtx) {
+            if (balanceChart) balanceChart.destroy();
+            balanceChart = new Chart(balanceCtx, {
                 type: 'bar',
                 data: {
                     labels: ['Activos', 'Pasivos', 'Patrimonio'],
                     datasets: [{
-                        label: 'Balance General',
-                        data: [185450000, 72800000, 112650000],
-                        backgroundColor: ['#2ecc71', '#e74c3c', '#f39c12']
+                        label: 'Valor en COP',
+                        data: [summary.activos, summary.pasivos, summary.patrimonio],
+                        backgroundColor: ['#2ecc71', '#e74c3c', '#f39c12'],
+                        borderRadius: 5
                     }]
                 },
-                options: {
-                    responsive: true,
+                options: { 
+                    responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: (value) => `$${(value / 1000000).toFixed(1)}M`
+                                callback: (value) => '$' + (value / 1000000).toFixed(1) + 'M'
                             }
                         }
                     }
@@ -209,222 +90,711 @@
 
         // Estado de Resultados
         const incomeCtx = document.getElementById('incomeChart');
-        if (incomeCtx && typeof Chart !== 'undefined') {
-            new Chart(incomeCtx, {
-                type: 'pie',
+        if (incomeCtx) {
+            if (incomeChart) incomeChart.destroy();
+            incomeChart = new Chart(incomeCtx, {
+                type: 'doughnut',
                 data: {
-                    labels: ['Ventas', 'Costo Ventas', 'Gastos', 'Utilidad'],
+                    labels: ['Ingresos', 'Gastos', 'Utilidad Neta'],
                     datasets: [{
-                        data: [125450000, 72800000, 15000000, 37650000],
-                        backgroundColor: ['#9b59b6', '#e74c3c', '#3498db', '#2ecc71']
+                        data: [summary.ingresos, summary.gastos, Math.max(0, summary.utilidadNeta)],
+                        backgroundColor: ['#3498db', '#e67e22', '#2ecc71']
                     }]
                 },
-                options: {
-                    responsive: true,
+                options: { 
+                    responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: {
+                    plugins: { 
                         legend: { position: 'bottom' }
                     }
                 }
             });
         }
-
-        console.log(' Gráficos contables inicializados');
     }
 
+    // ==================== PLAN CONTABLE ====================
 
-    // Base de datos simulada
-    let asientosContables = [
-        {
-            id: 1,
-            numero: 'AS-2025-00128',
-            fecha: '2025-06-20',
-            descripcion: 'Registro de venta - FAC-2025-00128',
-            tipo: 'Automático',
-            partidas: [
-                { cuenta: '1.1.1.01 Caja General', debe: 1513480, haber: 0 },
-                { cuenta: '4.1.01 Ventas de Productos', debe: 0, haber: 1275980 },
-                { cuenta: '2.3.01 IVA por Pagar', debe: 0, haber: 237500 }
-            ],
-            estado: 'Registrado'
+    function renderizarPlanContable() {
+        const container = document.getElementById('accountTreeContainer');
+        if (!container) return;
+
+        const accounts = MarketWorld.data.getAccounts();
+        container.innerHTML = '';
+
+        const renderNode = (parentCode, level) => {
+            const children = accounts.filter(a => a.padre === parentCode);
+            if (children.length === 0) return null;
+
+            const ul = document.createElement('ul');
+            children.forEach(acc => {
+                const li = document.createElement('li');
+                li.className = 'account-item';
+                li.setAttribute('data-codigo', acc.codigo);
+                
+                let typeTag = '';
+                if (acc.nivel === 'Clase') {
+                    typeTag = `<span class="account-type type-${acc.tipo.toLowerCase()}">${acc.tipo}</span>`;
+                }
+                
+                li.innerHTML = `
+                    <span class="account-code">${acc.codigo}</span> ${acc.nombre}
+                    ${typeTag}
+                `;
+                
+                li.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const active = container.querySelector('.selected');
+                    if (active) active.classList.remove('selected');
+                    li.classList.add('selected');
+                    cargarDetalleCuenta(acc.codigo);
+                });
+
+                const childUl = renderNode(acc.codigo, level + 1);
+                if (childUl) li.appendChild(childUl);
+                ul.appendChild(li);
+            });
+            return ul;
+        };
+
+        const rootUl = renderNode(null, 0);
+        if (rootUl) container.appendChild(rootUl);
+    }
+
+    function cargarDetalleCuenta(codigo) {
+        const account = MarketWorld.data.findAccountByCode(codigo);
+        if (!account) return;
+
+        currentAccount = account;
+
+        // Cargar datos en el formulario de detalle (usando IDs robustos)
+        const inputs = {
+            codigo: document.getElementById('account-code'),
+            nombre: document.getElementById('account-name'),
+            tipo: document.getElementById('account-type'),
+            descripcion: document.getElementById('account-desc'),
+            nivel: document.getElementById('account-level'),
+            padre: document.getElementById('account-parent'),
+            moneda: document.getElementById('account-currency')
+        };
+
+        if (inputs.codigo) inputs.codigo.value = account.codigo;
+        if (inputs.nombre) inputs.nombre.value = account.nombre;
+        if (inputs.tipo) inputs.tipo.value = account.tipo;
+        if (inputs.descripcion) inputs.descripcion.value = account.descripcion || '';
+        if (inputs.nivel) inputs.nivel.value = account.nivel || '';
+        if (inputs.padre) inputs.padre.value = account.padre || '';
+        if (inputs.moneda) inputs.moneda.value = account.moneda || 'COP';
+        
+        // Cargar movimientos de esta cuenta
+        cargarMovimientosCuenta(codigo);
+
+        console.log(`📖 Cuenta cargada: ${account.codigo} - ${account.nombre}`);
+    }
+
+    function cargarMovimientosCuenta(codigo) {
+        const tableBody = document.getElementById('account-movements-body');
+        const tfoot = document.getElementById('account-movements-foot');
+        if (!tableBody) return;
+
+        const account = MarketWorld.data.findAccountByCode(codigo);
+        const result = MarketWorld.data.getAccountMovements(codigo, { limit: 100 });
+        const movements = result.movements || [];
+
+        if (movements.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No hay movimientos registrados para esta cuenta</td>
+                </tr>
+            `;
+            if (tfoot) tfoot.innerHTML = '';
+            return;
         }
-    ];
 
-    let nextAsientoId = 129;
+        let saldoAcumulado = 0;
+        let totalDebe = 0;
+        let totalHaber = 0;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log(' Sistema contable iniciado');
-        
-        cargarAsientosContables();
-        
-        // Agregar nuevo asiento
-        const btnNuevoAsiento = document.querySelector('button[data-bs-toggle="modal"]');
-        if (btnNuevoAsiento) {
-            btnNuevoAsiento.addEventListener('click', function() {
-                console.log('📝 Modal asiento contable');
+        const rows = movements.map(m => {
+            const debe = m.debe || 0;
+            const haber = m.haber || 0;
+            
+            totalDebe += debe;
+            totalHaber += haber;
+            
+            // Regla de saldo según tipo de cuenta
+            if (account.tipo === 'Activo' || account.tipo === 'Gasto') {
+                saldoAcumulado += (debe - haber);
+            } else {
+                saldoAcumulado += (haber - debe);
+            }
+
+            return `
+                <tr>
+                    <td>${MarketWorld.utils.formatDate(m.fecha)}</td>
+                    <td>${m.descripcion}</td>
+                    <td class="debit">${debe > 0 ? MarketWorld.utils.formatCurrency(debe) : ''}</td>
+                    <td class="credit">${haber > 0 ? MarketWorld.utils.formatCurrency(haber) : ''}</td>
+                    <td class="fw-bold ${saldoAcumulado >= 0 ? 'debit' : 'credit'}">${MarketWorld.utils.formatCurrency(Math.abs(saldoAcumulado))}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tableBody.innerHTML = rows;
+
+        // Agregar fila de total
+        if (tfoot) {
+            tfoot.innerHTML = `
+                <tr class="fw-bold">
+                    <td colspan="2">Total</td>
+                    <td class="debit">${MarketWorld.utils.formatCurrency(totalDebe)}</td>
+                    <td class="credit">${MarketWorld.utils.formatCurrency(totalHaber)}</td>
+                    <td class="${saldoAcumulado >= 0 ? 'debit' : 'credit'}">${MarketWorld.utils.formatCurrency(Math.abs(saldoAcumulado))}</td>
+                </tr>
+            `;
+        }
+    }
+
+    // ==================== ASIENTOS CONTABLES ====================
+
+    function setupFormListeners() {
+        // Botón Nuevo Asiento (en el tab de Asientos)
+        const btnNewEntry = document.getElementById('btn-new-entry');
+        if (btnNewEntry) btnNewEntry.addEventListener('click', mostrarFormularioAsiento);
+
+        // Botón Agregar Partida
+        const btnAddPartida = document.getElementById('btn-add-line');
+        if (btnAddPartida) btnAddPartida.addEventListener('click', agregarFilaPartida);
+
+        // Botón Registrar Asiento
+        const btnRegistrar = document.getElementById('btn-register-entry');
+        if (btnRegistrar) {
+            btnRegistrar.addEventListener('click', registrarNuevoAsiento);
+        }
+
+        // Buscador de Plan Contable
+        const searchInput = document.getElementById('searchAccount');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('#accountTreeContainer li').forEach(li => {
+                    const text = li.textContent.toLowerCase();
+                    li.style.display = text.includes(term) ? '' : 'none';
+                });
             });
         }
-        
-        // Filtrar libro diario
+
+        // Botón guardar cuenta (Plan Contable)
+        const btnGuardarCuenta = document.getElementById('btn-save-account');
+        if (btnGuardarCuenta) btnGuardarCuenta.addEventListener('click', guardarCuenta);
+
+        // Botones de filtro en Libro Diario
         const btnFiltrarDiario = document.querySelector('#diario .btn-primary');
         if (btnFiltrarDiario) {
-            btnFiltrarDiario.addEventListener('click', function() {
-                console.log(' Filtrando libro diario');
-                mostrarNotificacion('Filtros aplicados al libro diario', 'info');
-            });
+            btnFiltrarDiario.addEventListener('click', aplicarFiltrosDiario);
         }
-        
-        // Filtrar libro mayor
+
+        // Botones de filtro en Libro Mayor
         const btnFiltrarMayor = document.querySelector('#mayor .btn-primary');
         if (btnFiltrarMayor) {
-            btnFiltrarMayor.addEventListener('click', function() {
-                console.log(' Filtrando libro mayor');
-                mostrarNotificacion('Filtros aplicados al libro mayor', 'info');
-            });
+            btnFiltrarMayor.addEventListener('click', aplicarFiltrosMayor);
         }
-        
-        // Realizar conciliación
+
+        // Conciliación bancaria
         const btnConciliar = document.querySelector('#conciliacion .btn-primary');
         if (btnConciliar) {
-            btnConciliar.addEventListener('click', function() {
-                console.log('💰 Realizando conciliación bancaria');
-                
-                const saldoLibro = parseFloat(document.querySelector('#conciliacion input:nth-of-type(1)')?.value || 0);
-                const saldoBanco = parseFloat(document.querySelector('#conciliacion input:nth-of-type(2)')?.value || 0);
-                const diferencia = Math.abs(saldoLibro - saldoBanco);
-                
-                if (diferencia === 0) {
-                    mostrarNotificacion('✅ Conciliación exitosa. Los saldos coinciden.', 'success');
-                } else {
-                    mostrarNotificacion(`⚠️ Diferencia encontrada: $${diferencia.toLocaleString('es-CO')}`, 'warning');
-                }
-            });
+            btnConciliar.addEventListener('click', calcularConciliacion);
         }
-        
-        // Registrar ajuste
-        const btnRegistrarAjuste = document.querySelector('#conciliacion .d-grid button');
-        if (btnRegistrarAjuste) {
-            btnRegistrarAjuste.addEventListener('click', function() {
-                console.log('📝 Registrando ajuste de conciliación');
-                mostrarNotificacion('✅ Ajuste registrado correctamente', 'success');
-            });
+
+        const btnAjustes = document.querySelector('#conciliacion .btn-success');
+        if (btnAjustes) {
+            btnAjustes.addEventListener('click', registrarAjustesConciliacion);
         }
+    }
+
+    function mostrarFormularioAsiento() {
+        console.log('📝 Preparando formulario para nuevo asiento');
+        // El formulario ya está visible en el HTML, solo limpiar campos
+        limpiarFormularioAsiento();
+    }
+
+    function limpiarFormularioAsiento() {
+        const fecha = document.getElementById('entry-date');
+        const descripcion = document.getElementById('entry-desc');
+        const tipo = document.getElementById('entry-type');
+
+        if (fecha) fecha.value = new Date().toISOString().split('T')[0];
+        if (descripcion) descripcion.value = '';
+        if (tipo) tipo.value = 'Manual';
+
+        // Eliminar todas las filas de partidas excepto la primera
+        const partidas = document.querySelectorAll('#entry-lines .input-group');
+        partidas.forEach((p, i) => {
+            if (i > 0) p.remove();
+        });
+
+        // Limpiar la primera fila
+        if (partidas.length > 0) {
+            const selects = partidas[0].querySelectorAll('select');
+            const input = partidas[0].querySelector('input');
+            if (selects[0]) selects[0].value = '';
+            if (input) input.value = '';
+            if (selects[1]) selects[1].value = 'debe';
+        }
+
+        partidasTemporales = [];
+        calcularDiferenciaAsiento();
+    }
+
+    function agregarFilaPartida() {
+        const container = document.getElementById('entry-lines');
+        if (!container) return;
+
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2 partida-row';
         
-        // Inicializar gráficos
-        inicializarGraficosContables();
-    });
+        const accounts = MarketWorld.data.getAccounts().filter(a => a.nivel === 'Subcuenta' || a.nivel === 'Cuenta');
+        const options = accounts.map(a => `<option value="${a.codigo}">${a.codigo} - ${a.nombre}</option>`).join('');
+
+        div.innerHTML = `
+            <select class="form-select account-select">
+                <option value="">Seleccionar cuenta</option>
+                ${options}
+            </select>
+            <input type="number" class="form-control amount-input" placeholder="Monto" style="max-width: 120px;" min="0" step="0.01">
+            <select class="form-select type-select" style="max-width: 120px;">
+                <option value="debe">Debe</option>
+                <option value="haber">Haber</option>
+            </select>
+            <button class="btn btn-outline-danger btn-remove" type="button">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+
+        // Eventos para recalcular diferencia
+        div.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', calcularDiferenciaAsiento);
+            el.addEventListener('input', calcularDiferenciaAsiento);
+        });
+
+        div.querySelector('.btn-remove').addEventListener('click', () => {
+            div.remove();
+            calcularDiferenciaAsiento();
+        });
+
+        // Insertar antes del botón "Agregar Partida"
+        const btnAdd = document.getElementById('btn-add-line');
+        container.insertBefore(div, btnAdd);
+
+        calcularDiferenciaAsiento();
+    }
+
+    function calcularDiferenciaAsiento() {
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        document.querySelectorAll('#entry-lines .partida-row').forEach(group => {
+            const monto = parseFloat(group.querySelector('.amount-input')?.value || 0);
+            const tipo = group.querySelector('.type-select')?.value;
+
+            if (monto > 0) {
+                if (tipo === 'debe') totalDebe += monto;
+                else if (tipo === 'haber') totalHaber += monto;
+            }
+        });
+
+        const diferencia = totalDebe - totalHaber;
+        const diffSpan = document.getElementById('entry-diff');
+        const btnRegistrar = document.getElementById('btn-register-entry');
+
+        if (diffSpan) {
+            diffSpan.textContent = MarketWorld.utils.formatCurrency(Math.abs(diferencia));
+            diffSpan.className = diferencia === 0 ? 'text-success' : 'text-danger';
+        }
+
+        if (btnRegistrar) {
+            const estaBalanceado = Math.abs(diferencia) < 0.01;
+            btnRegistrar.disabled = !estaBalanceado || totalDebe === 0;
+            btnRegistrar.innerHTML = estaBalanceado && totalDebe > 0
+                ? '<i class="bi bi-check-circle me-2"></i> Registrar Asiento' 
+                : '<i class="bi bi-exclamation-triangle me-2"></i> Registrar Asiento (La suma debe ser 0)';
+        }
+    }
+
+    function registrarNuevoAsiento() {
+        const fecha = document.querySelector('#asientos input[type="date"]')?.value;
+        const descripcion = document.querySelector('#asientos textarea')?.value;
+        const tipoAsiento = document.querySelector('#asientos select.form-select')?.value;
+
+        if (!descripcion || descripcion.trim() === '') {
+            alert('Por favor ingresa una descripción para el asiento.');
+            return;
+        }
+
+        const partidas = [];
+        document.querySelectorAll('#entry-lines .partida-row').forEach(group => {
+            const cuentaCod = group.querySelector('.account-select')?.value;
+            const monto = parseFloat(group.querySelector('.amount-input')?.value || 0);
+            const tipo = group.querySelector('.type-select')?.value;
+
+            if (cuentaCod && monto > 0) {
+                const acc = MarketWorld.data.findAccountByCode(cuentaCod);
+                partidas.push({
+                    cuenta: cuentaCod,
+                    nombre: acc ? acc.nombre : '',
+                    debe: tipo === 'debe' ? monto : 0,
+                    haber: tipo === 'haber' ? monto : 0
+                });
+            }
+        });
+
+        if (partidas.length < 2) {
+            alert('Un asiento contable requiere al menos dos partidas (una en el Debe y otra en el Haber).');
+            return;
+        }
+
+        const result = MarketWorld.data.createJournalEntry({
+            fecha,
+            descripcion,
+            tipo: tipoAsiento,
+            partidas
+        });
+
+        if (result.success) {
+            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
+            
+            // Crear notificación en el sistema
+            MarketWorld.data.createNotification({
+                tipo: 'success',
+                titulo: 'Asiento Contable Registrado',
+                mensaje: `Asiento ${result.entry.numero} creado exitosamente`,
+                enlace: 'contabilidad.html'
+            });
+
+            actualizarDashboard();
+            cargarAsientosContables();
+            limpiarFormularioAsiento();
+            
+            console.log('✅ Asiento registrado:', result.entry);
+        } else {
+            alert('Error: ' + result.message);
+        }
+    }
 
     function cargarAsientosContables() {
-        console.log(' Asientos contables cargados:', asientosContables.length);
+        const container = document.querySelector('#asientos .col-md-8');
+        if (!container) return;
+
+        const entries = MarketWorld.data.getJournalEntries();
+        
+        // Limpiar contenedor manteniendo solo el encabezado
+        const header = container.querySelector('.d-flex.justify-content-between');
+        container.innerHTML = '';
+        if (header) container.appendChild(header);
+
+        if (entries.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'alert alert-info';
+            empty.textContent = 'No hay asientos contables registrados. Crea tu primer asiento usando el formulario de la derecha.';
+            container.appendChild(empty);
+            return;
+        }
+
+        entries.slice().reverse().forEach(entry => {
+            const div = document.createElement('div');
+            div.className = 'journal-entry mb-3 p-3 border rounded';
+            
+            const badgeClass = entry.tipo === 'Automático' ? 'bg-info' : 'bg-secondary';
+            
+            let partidasHTML = '';
+            entry.partidas.forEach(p => {
+                if (p.debe > 0) {
+                    partidasHTML += `
+                        <div class="row mb-1">
+                            <div class="col-md-8">${MarketWorld.utils.escapeHtml(p.cuenta)} ${MarketWorld.utils.escapeHtml(p.nombre)}</div>
+                            <div class="col-md-4 text-end debit">${MarketWorld.utils.formatCurrency(p.debe)}</div>
+                        </div>
+                    `;
+                } else {
+                    partidasHTML += `
+                        <div class="row mb-1">
+                            <div class="col-md-8 ps-4">${MarketWorld.utils.escapeHtml(p.cuenta)} ${MarketWorld.utils.escapeHtml(p.nombre)}</div>
+                            <div class="col-md-4 text-end credit">${MarketWorld.utils.formatCurrency(p.haber)}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="fw-bold">${MarketWorld.utils.escapeHtml(entry.numero)}</span>
+                        <span class="ms-3 text-muted">${MarketWorld.utils.formatDate(entry.fecha)}</span>
+                        <span class="ms-3 badge ${badgeClass}">${MarketWorld.utils.escapeHtml(entry.tipo)}</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarAsiento(${entry.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-2"><strong>Descripción:</strong> ${MarketWorld.utils.escapeHtml(entry.descripcion)}</div>
+            `;
+
+            container.appendChild(div);
+        });
+
+        // También actualizar el libro diario
+        cargarLibroDiario();
     }
 
-    function agregarAsiento(datosAsiento) {
-        const nuevoAsiento = {
-            id: nextAsientoId++,
-            numero: `AS-2025-${String(nextAsientoId).padStart(5, '0')}`,
-            ...datosAsiento,
-            estado: 'Registrado'
+    // Exponer función para eliminar asiento
+    window.eliminarAsiento = function(id) {
+        if (!confirm('¿Estás seguro de eliminar este asiento? Esta acción revertirá los movimientos en las cuentas.')) {
+            return;
+        }
+
+        const result = MarketWorld.data.deleteJournalEntry(id);
+        if (result.success) {
+            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
+            actualizarDashboard();
+            cargarAsientosContables();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    };
+
+    function guardarCuenta() {
+        if (!currentAccount) {
+            alert('Por favor selecciona una cuenta del árbol contable.');
+            return;
+        }
+
+        const inputs = {
+            codigo: document.getElementById('account-code'),
+            nombre: document.getElementById('account-name'),
+            tipo: document.getElementById('account-type'),
+            descripcion: document.getElementById('account-desc'),
+            padre: document.getElementById('account-parent'),
+            moneda: document.getElementById('account-currency')
         };
-        
-        asientosContables.push(nuevoAsiento);
-        cargarAsientosContables();
-        mostrarNotificacion('✅ Asiento contable registrado', 'success');
-        console.log('➕ Asiento agregado:', nuevoAsiento);
-    }
 
-    function inicializarGraficosContables() {
-        // Gráfico Balance General
-        const ctxBalance = document.getElementById('balanceChart');
-        if (ctxBalance) {
-            new Chart(ctxBalance, {
-                type: 'bar',
-                data: {
-                    labels: ['Activos', 'Pasivos', 'Patrimonio'],
-                    datasets: [{
-                        label: 'Balance General',
-                        data: [185450000, 72800000, 112650000],
-                        backgroundColor: ['#2ecc71', '#e74c3c', '#f39c12']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000000) + 'M';
-                            }
-                        }
-                    }
-                }
-            });
-            console.log(' Gráfico Balance inicializado');
-        }
-        
-        // Gráfico Estado de Resultados
-        const ctxIncome = document.getElementById('incomeChart');
-        if (ctxIncome) {
-            new Chart(ctxIncome, {
-                type: 'line',
-                data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                    datasets: [
-                        {
-                            label: 'Ingresos',
-                            data: [95000, 102000, 98000, 105000, 110000, 125450],
-                            borderColor: '#2ecc71',
-                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Gastos',
-                            data: [45000, 48000, 52000, 50000, 58000, 72800],
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000) + 'K';
-                            }
-                        }
-                    }
-                }
-            });
-            console.log(' Gráfico Estado de Resultados inicializado');
+        const result = MarketWorld.data.updateAccount(currentAccount.codigo, {
+            nombre: inputs.nombre?.value,
+            tipo: inputs.tipo?.value,
+            descripcion: inputs.descripcion?.value
+        });
+
+        if (result.success) {
+            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
+            renderizarPlanContable();
+        } else {
+            alert('Error: ' + result.message);
         }
     }
 
-    function mostrarNotificacion(mensaje, tipo = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${tipo} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${mensaje}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+    // ==================== LIBROS CONTABLES ====================
+
+    function inicializarLibros() {
+        cargarLibroDiario();
+    }
+
+    function cargarLibroDiario() {
+        const tableBody = document.querySelector('#diario tbody');
+        if (!tableBody) return;
+
+        const entries = MarketWorld.data.getJournalEntries();
         
-        document.body.appendChild(notification);
+        if (entries.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No hay asientos registrados</td></tr>';
+            return;
+        }
+
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        const rows = entries.map(entry => {
+            const subDebe = entry.partidas.reduce((sum, p) => sum + (p.debe || 0), 0);
+            const subHaber = entry.partidas.reduce((sum, p) => sum + (p.haber || 0), 0);
+            totalDebe += subDebe;
+            totalHaber += subHaber;
+
+            return `
+                <tr>
+                    <td>${entry.numero}</td>
+                    <td>${MarketWorld.utils.formatDate(entry.fecha)}</td>
+                    <td>${entry.descripcion}</td>
+                    <td><span class="badge ${entry.tipo === 'Automático' ? 'bg-info' : 'bg-secondary'}">${entry.tipo}</span></td>
+                    <td class="debit">${MarketWorld.utils.formatCurrency(subDebe)}</td>
+                    <td class="credit">${MarketWorld.utils.formatCurrency(subHaber)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="verDetalleAsiento(${entry.id})">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        tableBody.innerHTML = rows;
+
+        // Totales
+        const tfoot = document.querySelector('#diario tfoot');
+        if (tfoot) {
+            tfoot.innerHTML = `
+                <tr class="fw-bold">
+                    <td colspan="4">Total</td>
+                    <td class="debit">${MarketWorld.utils.formatCurrency(totalDebe)}</td>
+                    <td class="credit">${MarketWorld.utils.formatCurrency(totalHaber)}</td>
+                    <td></td>
+                </tr>
+            `;
+        }
+    }
+
+    window.verDetalleAsiento = function(id) {
+        const entry = MarketWorld.data.findJournalEntryById(id);
+        if (!entry) return;
+
+        let partidasHTML = entry.partidas.map(p => `
+            <tr>
+                <td>${p.cuenta} - ${p.nombre}</td>
+                <td class="debit">${p.debe > 0 ? MarketWorld.utils.formatCurrency(p.debe) : ''}</td>
+                <td class="credit">${p.haber > 0 ? MarketWorld.utils.formatCurrency(p.haber) : ''}</td>
+            </tr>
+        `).join('');
+
+        alert(`Asiento: ${entry.numero}\nFecha: ${entry.fecha}\nDescripción: ${entry.descripcion}\n\nVer consola para detalles completos.`);
+        console.log('Detalle del asiento:', entry);
+    };
+
+    function aplicarFiltrosDiario() {
+        const startDate = document.getElementById('diario-start')?.value || document.querySelector('#diario input[type="date"]')?.value;
+        const endDate = document.getElementById('diario-end')?.value || document.querySelectorAll('#diario input[type="date"]')[1]?.value;
+        const tipo = document.getElementById('diario-type')?.value || document.querySelector('#diario select')?.value;
+
+        console.log('📊 Filtros aplicados:', { startDate, endDate, tipo });
+        MarketWorld.utils.showNotification('Filtros aplicados correctamente', 'info');
+        
+        // Aquí se implementaría el filtrado real
+        cargarLibroDiario();
+    }
+
+    function aplicarFiltrosMayor() {
+        const cuenta = document.getElementById('mayor-account')?.value || document.querySelector('#mayor select')?.value;
+        const startDate = document.getElementById('mayor-start')?.value || document.querySelector('#mayor input[type="date"]')?.value;
+        const endDate = document.getElementById('mayor-end')?.value || document.querySelectorAll('#mayor input[type="date"]')[1]?.value;
+
+        console.log('📖 Filtros Libro Mayor:', { cuenta, startDate, endDate });
+        MarketWorld.utils.showNotification('Filtrando libro mayor...', 'info');
+        
+        if (cuenta) {
+            cargarLibroMayor(cuenta);
+        }
+    }
+
+    function cargarLibroMayor(codigo) {
+        const account = MarketWorld.data.findAccountByCode(codigo);
+        if (!account) return;
+
+        const movements = MarketWorld.data.getAccountMovements(codigo);
+        const tableBody = document.querySelector('#mayor tbody');
+        
+        if (!tableBody) return;
+
+        let saldo = 0;
+        const rows = movements.map(m => {
+            if (account.tipo === 'Activo' || account.tipo === 'Gasto') {
+                saldo += (m.debe - m.haber);
+            } else {
+                saldo += (m.haber - m.debe);
+            }
+
+            return `
+                <tr>
+                    <td>${MarketWorld.utils.formatDate(m.fecha)}</td>
+                    <td>${m.numero}</td>
+                    <td>${m.descripcion}</td>
+                    <td class="debit">${m.debe > 0 ? MarketWorld.utils.formatCurrency(m.debe) : ''}</td>
+                    <td class="credit">${m.haber > 0 ? MarketWorld.utils.formatCurrency(m.haber) : ''}</td>
+                    <td class="fw-bold">${MarketWorld.utils.formatCurrency(Math.abs(saldo))}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tableBody.innerHTML = rows || '<tr><td colspan="6" class="text-center">Sin movimientos</td></tr>';
+    }
+
+    function calcularConciliacion() {
+        const saldoBanco = parseFloat(document.querySelector('#conciliacion input:nth-of-type(1)')?.value.replace(/[^0-9.-]/g, '') || 0);
+        const saldoLibros = parseFloat(document.querySelector('#conciliacion input:nth-of-type(2)')?.value.replace(/[^0-9.-]/g, '') || 0);
+        
+        const diferencia = saldoBanco - saldoLibros;
+        const diffSpan = document.querySelector('#conciliacion .d-flex.justify-content-between span.text-danger');
+        
+        if (diffSpan) {
+            diffSpan.textContent = MarketWorld.utils.formatCurrency(Math.abs(diferencia));
+            diffSpan.className = diferencia === 0 ? 'text-success' : 'text-danger';
+        }
+
+        if (diferencia === 0) {
+            MarketWorld.utils.showNotification('✅ Conciliación exitosa. Los saldos coinciden.', 'success');
+        } else {
+            MarketWorld.utils.showNotification(`⚠️ Diferencia encontrada: ${MarketWorld.utils.formatCurrency(Math.abs(diferencia))}`, 'warning');
+        }
+    }
+
+    function registrarAjustesConciliacion() {
+        MarketWorld.utils.showNotification('✅ Ajustes de conciliación registrados', 'success');
+        console.log('📝 Registrando ajustes de conciliación bancaria');
+    }
+
+    // ==================== IMPUESTOS ====================
+
+    function inicializarImpuestos() {
+        const btnCalc = document.querySelector('#impuestos .btn-primary');
+        if (btnCalc) {
+            btnCalc.addEventListener('click', calcularImpuestos);
+        }
+
+        const btnPresentar = document.querySelector('#impuestos .btn-danger');
+        if (btnPresentar) {
+            btnPresentar.addEventListener('click', presentarDeclaracion);
+        }
+    }
+
+    function calcularImpuestos() {
+        const summary = MarketWorld.data.getFinancialSummary();
+        const impuestoRenta = summary.utilidadNeta > 0 ? summary.utilidadNeta * 0.35 : 0;
+        const ivaEstimado = summary.ingresos * 0.19;
+
+        const mensaje = `Basado en los datos contables actuales:\n\n` +
+                       `Utilidad Neta: ${MarketWorld.utils.formatCurrency(summary.utilidadNeta)}\n` +
+                       `Impuesto de Renta (35%): ${MarketWorld.utils.formatCurrency(impuestoRenta)}\n\n` +
+                       `Ingresos Totales: ${MarketWorld.utils.formatCurrency(summary.ingresos)}\n` +
+                       `IVA Estimado (19%): ${MarketWorld.utils.formatCurrency(ivaEstimado)}`;
+
+        alert(mensaje);
+        console.log('🧮 Cálculo de impuestos:', { summary, impuestoRenta, ivaEstimado });
+    }
+
+    function presentarDeclaracion() {
+        if (!confirm('¿Deseas presentar la declaración tributaria a la DIAN?')) {
+            return;
+        }
+
+        MarketWorld.utils.showNotification('📤 Enviando declaración...', 'info');
         
         setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 150);
-        }, 3000);
+            const radicado = 'DIAN-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000);
+            MarketWorld.utils.showNotification('✅ Declaración presentada exitosamente. Radicado: ' + radicado, 'success');
+            
+            MarketWorld.data.createNotification({
+                tipo: 'success',
+                titulo: 'Declaración Presentada',
+                mensaje: `Declaración tributaria radicada con número ${radicado}`,
+                enlace: 'contabilidad.html'
+            });
+        }, 2000);
     }
 
 })();
