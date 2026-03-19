@@ -3,6 +3,110 @@
 (function() {
     'use strict';
 
+    var inventoryState = {
+        products: [],
+        source: 'local'
+    };
+
+    function hasProductApi() {
+        return typeof MarketWorld !== 'undefined' &&
+            typeof MarketWorld.api !== 'undefined' &&
+            MarketWorld.api.products;
+    }
+
+    function mapApiProductToFrontend(apiProduct) {
+        return {
+            id: apiProduct.id,
+            codigo: apiProduct.sku,
+            nombre: apiProduct.nombre,
+            descripcion: apiProduct.descripcion || '',
+            categoria: apiProduct.categoria || 'Sin categoría',
+            precio: parseFloat(apiProduct.precio_venta || 0),
+            costo: parseFloat(apiProduct.precio_compra || 0),
+            stock: parseInt(apiProduct.stock || 0, 10),
+            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
+            unidad: apiProduct.unidad || 'Unidad',
+            proveedor: apiProduct.proveedor || '',
+            activo: (apiProduct.estado || 'Activo') === 'Activo',
+            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || ''
+        };
+    }
+
+    function mapFrontendProductToApi(productData) {
+        return {
+            sku: productData.codigo,
+            nombre: productData.nombre,
+            descripcion: productData.descripcion || '',
+            categoria: productData.categoria,
+            precio_compra: parseFloat(productData.costo || 0),
+            precio_venta: parseFloat(productData.precio || 0),
+            stock: parseInt(productData.stock || 0, 10),
+            stock_minimo: parseInt(productData.stockMinimo || 0, 10),
+            iva: 19,
+            unidad: productData.unidad || 'Unidad',
+            proveedor: productData.proveedor || '',
+            estado: productData.activo ? 'Activo' : 'Inactivo'
+        };
+    }
+
+    function setProductsState(products, source) {
+        inventoryState.products = Array.isArray(products) ? products : [];
+        inventoryState.source = source || 'local';
+    }
+
+    function getProductsState() {
+        if (inventoryState.products.length > 0 || inventoryState.source === 'api') {
+            return inventoryState.products.slice();
+        }
+        return MarketWorld.data.getProducts();
+    }
+
+    function getProductById(id) {
+        var products = getProductsState();
+        for (var i = 0; i < products.length; i++) {
+            if (products[i].id === parseInt(id, 10)) return products[i];
+        }
+        return null;
+    }
+
+    function getLowStockProductsState(products) {
+        var list = products || getProductsState();
+        return list.filter(function(p) {
+            return p.activo && p.stock <= p.stockMinimo;
+        });
+    }
+
+    function parseHttpStatus(error) {
+        if (error && typeof error.status === 'number') return error.status;
+        var msg = (error && error.message) ? error.message : '';
+        var match = msg.match(/HTTP\s*(\d{3})/i);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    function isConnectivityError(error) {
+        var status = parseHttpStatus(error);
+        if (status) return false;
+        var msg = ((error && error.message) ? error.message : '').toLowerCase();
+        return msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout') || msg.includes('load failed');
+    }
+
+    function showApiError(error, fallbackMessage) {
+        var status = parseHttpStatus(error);
+        if (status === 404) {
+            alert('No se encontró el recurso solicitado (404). Verifica si el producto aún existe.');
+            return;
+        }
+        if (status === 422) {
+            alert('Datos inválidos (422). Revisa campos obligatorios, formato y valores numéricos.');
+            return;
+        }
+        if (status === 500) {
+            alert('Error interno del servidor (500). Revisa logs del backend e intenta nuevamente.');
+            return;
+        }
+        alert(fallbackMessage || ('Error en API: ' + ((error && error.message) || 'desconocido')));
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Inventario cargado');
         initInventory();
@@ -33,9 +137,38 @@
     }
 
     // --- Cargar productos ---
-    function loadProducts() {
-        var products = MarketWorld.data.getProducts();
-        displayProducts(products);
+    function loadProducts(apiFilters) {
+        if (hasProductApi()) {
+            return MarketWorld.api.products.getAll(apiFilters || {})
+                .then(function(response) {
+                    if (response.success) {
+                        var mappedProducts = (response.data || []).map(mapApiProductToFrontend);
+                        setProductsState(mappedProducts, 'api');
+                        displayProducts(mappedProducts);
+                        showLowStockAlerts();
+                        updateDashboardKPIs();
+                        console.log('[API] Productos cargados desde MySQL:', response.total);
+                        return mappedProducts;
+                    }
+                    return [];
+                })
+                .catch(function(err) {
+                    console.warn('[API] Fallo, usando localStorage:', err.message);
+                    var products = MarketWorld.data.getProducts();
+                    setProductsState(products, 'local');
+                    displayProducts(products);
+                    showLowStockAlerts();
+                    updateDashboardKPIs();
+                    return products;
+                });
+        }
+
+        var localProducts = MarketWorld.data.getProducts();
+        setProductsState(localProducts, 'local');
+        displayProducts(localProducts);
+        showLowStockAlerts();
+        updateDashboardKPIs();
+        return Promise.resolve(localProducts);
     }
 
     // --- Mostrar productos ---
@@ -231,38 +364,71 @@
             activo: activo
         };
         
-        var result;
-        if (productId) {
-            result = MarketWorld.data.updateProduct(productId, productData);
-        } else {
-            result = MarketWorld.data.createProduct(productData);
-            // ======= NOTIFICAR CREACIÓN DE PRODUCTO =======
-            if (result.success && typeof MarketWorld.notifications !== 'undefined') {
-                MarketWorld.notifications.notifyProductCreated(nombre);
-            }
-        }
-        
-        if (result.success) {
-            alert(result.message);
-            loadProducts();
-            showLowStockAlerts();
-            updateDashboardKPIs();
-            
-            // ======= VERIFICAR STOCK BAJO =======
+        var onSuccess = function(message) {
+            alert(message);
+            loadProducts().then(function() {
+                showLowStockAlerts();
+                updateDashboardKPIs();
+            });
+
             if (typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.checkLowStock();
+                if (!productId) {
+                    MarketWorld.notifications.notifyProductCreated(nombre);
+                }
             }
-            
+
             var modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
             if (modal) modal.hide();
+        };
+
+        if (hasProductApi()) {
+            var payload = mapFrontendProductToApi(productData);
+            var request = productId
+                ? MarketWorld.api.products.update(productId, payload)
+                : MarketWorld.api.products.create(payload);
+
+            request
+                .then(function(response) {
+                    if (response && response.success) {
+                        onSuccess(response.message || 'Producto guardado correctamente');
+                    }
+                })
+                .catch(function(err) {
+                    if (isConnectivityError(err)) {
+                        var fallbackResult = productId
+                            ? MarketWorld.data.updateProduct(productId, productData)
+                            : MarketWorld.data.createProduct(productData);
+
+                        if (fallbackResult.success) {
+                            setProductsState(MarketWorld.data.getProducts(), 'local');
+                            onSuccess(fallbackResult.message + ' (guardado en modo local)');
+                            return;
+                        }
+                        alert('Error: ' + fallbackResult.message);
+                        return;
+                    }
+
+                    showApiError(err, 'No se pudo guardar el producto en la API.');
+                });
+            return;
+        }
+
+        var localResult = productId
+            ? MarketWorld.data.updateProduct(productId, productData)
+            : MarketWorld.data.createProduct(productData);
+
+        if (localResult.success) {
+            setProductsState(MarketWorld.data.getProducts(), 'local');
+            onSuccess(localResult.message);
         } else {
-            alert('Error: ' + result.message);
+            alert('Error: ' + localResult.message);
         }
     }
 
     // ======= EDITAR PRODUCTO =======
     function editProduct(id) {
-        var product = MarketWorld.data.findProductById(id);
+        var product = getProductById(id);
         if (!product) {
             alert('Producto no encontrado');
             return;
@@ -296,19 +462,54 @@
 
     // ======= ELIMINAR PRODUCTO =======
     function deleteProductConfirm(id) {
-        var product = MarketWorld.data.findProductById(id);
+        var product = getProductById(id);
         if (!product) return;
         
         if (confirm('¿ELIMINAR el producto "' + product.nombre + '"?\n\nEsta acción no se puede deshacer.')) {
             var productName = product.nombre;
+
+            if (hasProductApi()) {
+                MarketWorld.api.products.delete(id)
+                    .then(function(response) {
+                        if (response.success) {
+                            alert(response.message || 'Producto eliminado correctamente');
+                            return loadProducts();
+                        }
+                    })
+                    .then(function() {
+                        showLowStockAlerts();
+                        updateDashboardKPIs();
+                        if (typeof MarketWorld.notifications !== 'undefined') {
+                            MarketWorld.notifications.notifyProductDeleted(productName);
+                        }
+                    })
+                    .catch(function(err) {
+                        if (isConnectivityError(err)) {
+                            var fallbackResult = MarketWorld.data.deleteProduct(id);
+                            if (fallbackResult.success) {
+                                setProductsState(MarketWorld.data.getProducts(), 'local');
+                                alert(fallbackResult.message + ' (modo local)');
+                                loadProducts();
+                                showLowStockAlerts();
+                                updateDashboardKPIs();
+                                return;
+                            }
+                            alert('Error: ' + fallbackResult.message);
+                            return;
+                        }
+                        showApiError(err, 'No se pudo eliminar el producto.');
+                    });
+                return;
+            }
+
             var result = MarketWorld.data.deleteProduct(id);
             if (result.success) {
+                setProductsState(MarketWorld.data.getProducts(), 'local');
                 alert(result.message);
                 loadProducts();
                 showLowStockAlerts();
                 updateDashboardKPIs();
-                
-                // ======= NOTIFICAR ELIMINACIÓN DE PRODUCTO =======
+
                 if (typeof MarketWorld.notifications !== 'undefined') {
                     MarketWorld.notifications.notifyProductDeleted(productName);
                 }
@@ -320,7 +521,7 @@
 
     // ======= MOSTRAR MODAL DE AJUSTE DE STOCK =======
     function showStockModal(id) {
-        var product = MarketWorld.data.findProductById(id);
+        var product = getProductById(id);
         if (!product) return;
         
         var currentStock = product.stock;
@@ -354,15 +555,63 @@
             return;
         }
         
+        var newStock = currentStock;
+        if (opType === 'add') {
+            newStock += quantity;
+        } else if (opType === 'subtract') {
+            newStock -= quantity;
+        } else {
+            newStock = quantity;
+        }
+
+        if (newStock < 0) {
+            alert('Error: Stock insuficiente');
+            return;
+        }
+
+        if (hasProductApi()) {
+            MarketWorld.api.products.update(id, { stock: newStock })
+                .then(function(response) {
+                    if (response.success) {
+                        alert(response.message || 'Stock actualizado correctamente');
+                        return loadProducts();
+                    }
+                })
+                .then(function() {
+                    showLowStockAlerts();
+                    updateDashboardKPIs();
+                    if (typeof MarketWorld.notifications !== 'undefined') {
+                        MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
+                        MarketWorld.notifications.checkLowStock();
+                    }
+                })
+                .catch(function(err) {
+                    if (isConnectivityError(err)) {
+                        var fallbackResult = MarketWorld.data.updateStock(id, quantity, opType);
+                        if (fallbackResult.success) {
+                            setProductsState(MarketWorld.data.getProducts(), 'local');
+                            alert(fallbackResult.message + ' (modo local)');
+                            loadProducts();
+                            showLowStockAlerts();
+                            updateDashboardKPIs();
+                            return;
+                        }
+                        alert('Error: ' + fallbackResult.message);
+                        return;
+                    }
+                    showApiError(err, 'No se pudo actualizar el stock.');
+                });
+            return;
+        }
+
         var result = MarketWorld.data.updateStock(id, quantity, opType);
         if (result.success) {
-            var newStock = MarketWorld.data.findProductById(id).stock;
+            setProductsState(MarketWorld.data.getProducts(), 'local');
             alert(result.message);
             loadProducts();
             showLowStockAlerts();
             updateDashboardKPIs();
-            
-            // ======= NOTIFICAR CAMBIO DE STOCK =======
+
             if (typeof MarketWorld.notifications !== 'undefined') {
                 MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
                 MarketWorld.notifications.checkLowStock();
@@ -461,8 +710,62 @@
         var stock = document.getElementById('filterStock').value;
         var search = document.getElementById('filterSearch').value.toLowerCase();
         
-        var products = MarketWorld.data.getProducts();
-        
+        var apiFilters = {};
+        if (search) apiFilters.search = search;
+        if (categoria) apiFilters.categoria = categoria;
+        if (estado) apiFilters.estado = estado === 'activo' ? 'Activo' : 'Inactivo';
+
+        var applyClientStockFilter = function(products) {
+            var filtered = products.filter(function(product) {
+                var matchStock = !stock ||
+                    (stock === 'bajo' && product.stock <= product.stockMinimo) ||
+                    (stock === 'ok' && product.stock > product.stockMinimo);
+
+                return matchStock;
+            });
+
+            displayProducts(filtered);
+        };
+
+        if (hasProductApi()) {
+            MarketWorld.api.products.getAll(apiFilters)
+                .then(function(response) {
+                    if (response.success) {
+                        var mapped = (response.data || []).map(mapApiProductToFrontend);
+                        setProductsState(mapped, 'api');
+                        applyClientStockFilter(mapped);
+                    }
+                })
+                .catch(function(err) {
+                    if (isConnectivityError(err)) {
+                        var products = MarketWorld.data.getProducts();
+                        setProductsState(products, 'local');
+
+                        var fallbackFiltered = products.filter(function(product) {
+                            var matchCategoria = !categoria || product.categoria.toLowerCase() === categoria;
+                            var matchEstado = !estado || (estado === 'activo' ? product.activo : !product.activo);
+                            var matchStock = !stock ||
+                                (stock === 'bajo' && product.stock <= product.stockMinimo) ||
+                                (stock === 'ok' && product.stock > product.stockMinimo);
+                            var matchSearch = !search ||
+                                product.nombre.toLowerCase().includes(search) ||
+                                product.codigo.toLowerCase().includes(search) ||
+                                product.descripcion.toLowerCase().includes(search);
+
+                            return matchCategoria && matchEstado && matchStock && matchSearch;
+                        });
+
+                        displayProducts(fallbackFiltered);
+                        return;
+                    }
+
+                    showApiError(err, 'No se pudieron aplicar los filtros sobre la API.');
+                });
+            return;
+        }
+
+        var products = getProductsState();
+        setProductsState(products, 'local');
         var filtered = products.filter(function(product) {
             var matchCategoria = !categoria || product.categoria.toLowerCase() === categoria;
             var matchEstado = !estado || (estado === 'activo' ? product.activo : !product.activo);
@@ -482,7 +785,7 @@
 
     // Mostrar alertas de stock bajo
     function showLowStockAlerts() {
-        var lowStockProducts = MarketWorld.data.getLowStockProducts();
+        var lowStockProducts = getLowStockProductsState();
         var alertContainer = document.getElementById('lowStockAlerts');
         
         if (!alertContainer) return;
@@ -504,8 +807,8 @@
 
     // Actualizar KPIs del dashboard
     function updateDashboardKPIs() {
-        var products = MarketWorld.data.getProducts();
-        var lowStockProducts = MarketWorld.data.getLowStockProducts();
+        var products = getProductsState();
+        var lowStockProducts = getLowStockProductsState(products);
         
         // Total de productos activos
         var activeProducts = products.filter(function(p) { return p.activo; });
@@ -712,7 +1015,7 @@
 
     // Exportar a Excel/CSV
     function exportToExcel() {
-        var products = MarketWorld.data.getProducts();
+        var products = getProductsState();
         
         if (products.length === 0) {
             alert('No hay productos para exportar');
@@ -871,7 +1174,7 @@
     var originalDisplayProducts = displayProducts;
     displayProducts = function(products) {
         if (!products || arguments.length === 0) {
-            products = MarketWorld.data.getProducts();
+            products = getProductsState();
         }
         
         var totalPages = Math.ceil(products.length / itemsPerPage);

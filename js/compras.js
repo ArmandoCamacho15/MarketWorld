@@ -3,16 +3,21 @@
 (function() {
     'use strict';
 
+    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
+    const SUPPLIERS_STORAGE_KEY = 'marketworld_suppliers';
+
     // --- Estado ---
     let carrito = [];
     let productoSeleccionado = null;
     let metodoPagoSeleccionado = 'Transferencia';
 
     // --- Inicialización ---
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
             MarketWorld.notifications.init();
         }
+
+        await sincronizarDatosComprasConApi();
 
         cargarUsuarioActual();
         initFechas();
@@ -27,6 +32,101 @@
         // Debug: verificar que data.js está cargado
         console.log('Compras.js inicializado. Pagos en localStorage:', MarketWorld.data.getPayments().length);
     });
+
+    async function sincronizarDatosComprasConApi() {
+        try {
+            const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products;
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!hasApi || !token) return;
+
+            const response = await MarketWorld.api.products.getAll();
+            const apiProducts = Array.isArray(response && response.data) ? response.data : [];
+            if (apiProducts.length === 0) return;
+
+            const localProducts = MarketWorld.data.getProducts();
+            const byCode = new Map();
+
+            localProducts.forEach(function(product) {
+                if (product && product.codigo) {
+                    byCode.set(String(product.codigo).toLowerCase(), product);
+                }
+            });
+
+            apiProducts.forEach(function(apiProduct) {
+                const mapped = mapApiProductToCompras(apiProduct);
+                if (!mapped.codigo) return;
+                byCode.set(String(mapped.codigo).toLowerCase(), mapped);
+            });
+
+            const mergedProducts = Array.from(byCode.values());
+            localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(mergedProducts));
+            sincronizarProveedoresDesdeProductos(mergedProducts);
+        } catch (error) {
+            console.warn('No se pudieron sincronizar productos/proveedores desde API en compras:', error.message || error);
+        }
+    }
+
+    function mapApiProductToCompras(apiProduct) {
+        return {
+            id: apiProduct.id,
+            codigo: apiProduct.sku || '',
+            nombre: apiProduct.nombre || '',
+            descripcion: apiProduct.descripcion || '',
+            categoria: apiProduct.categoria || 'General',
+            precio: parseFloat(apiProduct.precio_venta || 0),
+            costo: parseFloat(apiProduct.precio_compra || 0),
+            stock: parseInt(apiProduct.stock || 0, 10),
+            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
+            unidad: apiProduct.unidad || 'Unidad',
+            proveedor: apiProduct.proveedor || '',
+            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+            activo: (apiProduct.estado || 'Activo') === 'Activo'
+        };
+    }
+
+    function sincronizarProveedoresDesdeProductos(products) {
+        const currentSuppliers = MarketWorld.data.getSuppliers();
+        const names = new Set(
+            currentSuppliers
+                .filter(function(s) { return s && s.nombre; })
+                .map(function(s) { return s.nombre.toLowerCase(); })
+        );
+
+        let nextId = currentSuppliers.length > 0
+            ? Math.max.apply(Math, currentSuppliers.map(function(s) { return s.id || 0; })) + 1
+            : 1;
+
+        const generated = [];
+
+        products.forEach(function(product) {
+            const supplierName = (product && product.proveedor ? String(product.proveedor).trim() : '');
+            if (!supplierName) return;
+
+            const key = supplierName.toLowerCase();
+            if (names.has(key)) return;
+
+            names.add(key);
+            generated.push({
+                id: nextId++,
+                nit: 'AUTO-' + Date.now() + '-' + nextId,
+                nombre: supplierName,
+                contacto: '',
+                email: '',
+                telefono: '',
+                direccion: '',
+                ciudad: '',
+                terminosPago: '30 días',
+                descuento: 0,
+                tipo: 'Regular',
+                activo: true,
+                fechaCreacion: new Date().toISOString().split('T')[0]
+            });
+        });
+
+        if (generated.length > 0) {
+            localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(currentSuppliers.concat(generated)));
+        }
+    }
 
     // --- Usuario ---
     function cargarUsuarioActual() {
@@ -289,9 +389,9 @@
     }
 
     // --- Registrar compra ---
-    function registrarCompra() {
+    async function registrarCompra() {
         // Validaciones
-        const proveedorId = parseInt(document.getElementById('selectProveedor')?.value);
+        const proveedorId = document.getElementById('selectProveedor')?.value;
         if (!proveedorId) {
             mostrarAlerta('Seleccione un proveedor', 'warning');
             return;
@@ -302,12 +402,6 @@
             return;
         }
 
-        const proveedor = MarketWorld.data.findSupplierById(proveedorId);
-        if (!proveedor) {
-            mostrarAlerta('Proveedor no encontrado', 'danger');
-            return;
-        }
-
         const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
         const iva = subtotal * 0.19;
         const descPct = parseFloat(document.getElementById('descuentoPorcentaje')?.value) || 0;
@@ -315,70 +409,58 @@
         const envio = parseFloat(document.getElementById('envioInput')?.value) || 0;
         const total = subtotal + iva - descuento + envio;
 
-        const user = MarketWorld.data.getCurrentUser();
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) throw new Error('No hay sesión activa.');
 
-        const purchaseData = {
-            numeroOrden: document.getElementById('numeroOrden')?.value || MarketWorld.data.generatePurchaseNumber(),
-            proveedorId: proveedor.id,
-            proveedorNombre: proveedor.nombre,
-            proveedorNit: proveedor.nit,
-            items: [...carrito],
-            subtotal: subtotal,
-            iva: iva,
-            descuento: descuento,
-            envio: envio,
-            total: total,
-            saldo: total,
-            terminosPago: document.getElementById('terminosPago')?.value || 'Contado',
-            estado: 'Pendiente',
-            observaciones: document.getElementById('observacionesCompra')?.value || '',
-            afectarInventario: document.getElementById('affectInventory')?.checked ?? true,
-            usuario: user ? (user.nombre || user.username) : 'Sistema',
-            fechaCreacion: document.getElementById('fechaCompra')?.value ? new Date(document.getElementById('fechaCompra').value).toISOString() : new Date().toISOString(),
-            fechaVencimiento: document.getElementById('fechaVencimiento')?.value || ''
-        };
+            const ordenNumero = document.getElementById('numeroOrden')?.value || 'COM-' + Date.now();
+            const observaciones = document.getElementById('observacionesCompra')?.value || '';
+            const fechaVal = document.getElementById('fechaCompra')?.value || new Date().toISOString().split('T')[0];
 
-        const purchase = MarketWorld.data.createPurchase(purchaseData);
+            const purchaseData = {
+                numero_orden: ordenNumero,
+                proveedor: document.querySelector('#selectProveedor option:checked')?.text || 'Proveedor',
+                fecha: fechaVal + ' ' + new Date().toTimeString().split(' ')[0],
+                total: total,
+                estado: 'Recibida',
+                observaciones: observaciones,
+                items: carrito.map(item => ({
+                    product_id: item.productoId,
+                    cantidad: item.cantidad,
+                    costo_unitario: item.precioUnitario,
+                    subtotal: item.subtotal
+                }))
+            };
 
-        // Afectar inventario si está marcado
-        if (purchaseData.afectarInventario) {
-            carrito.forEach(item => {
-                if (item.productoId) {
-                    MarketWorld.data.updateStock(item.productoId, item.cantidad, 'add');
-                }
+            const response = await fetch('http://127.0.0.1:8000/api/v1/purchases', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(purchaseData)
             });
-        }
 
-        // Notificación
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
-            MarketWorld.notifications.create(
-                'success',
-                'Compra Registrada',
-                `Orden ${purchase.numeroOrden} por ${formatMoney(total)} registrada exitosamente`,
-                'compras.html'
-            );
+            const result = await response.json();
 
-            // Verificar stock bajo después de actualizar
-            if (purchaseData.afectarInventario) {
-                const lowStock = MarketWorld.data.getLowStockProducts();
-                if (lowStock.length > 0) {
-                    MarketWorld.notifications.create(
-                        'warning',
-                        'Stock Bajo',
-                        `${lowStock.length} producto(s) con stock bajo después de la compra`,
-                        'inventario.html'
-                    );
-                }
+            if (!result.success) {
+                throw new Error(result.message || 'Error al guardar la compra en el servidor.');
             }
+
+            console.log('✅ Compra registrada en API:', result.data);
+            
+            mostrarAlerta(`Orden ${ordenNumero} registrada exitosamente. El stock ha sido aumentado.`, 'success');
+
+            // Limpiar y actualizar
+            limpiarFormularioCompra();
+            if (typeof actualizarKPIs === 'function') actualizarKPIs();
+            if (typeof cargarHistorial === 'function') cargarHistorial();
+            
+        } catch (error) {
+            console.error('Error al registrar compra:', error);
+            mostrarAlerta(`❌ Error de Producción: ${error.message}`, 'danger');
         }
-
-        // Limpiar
-        limpiarFormularioCompra();
-        actualizarKPIs();
-        cargarHistorial();
-        cargarSelectProveedores();
-
-        mostrarAlerta(`Orden ${purchase.numeroOrden} registrada exitosamente por ${formatMoney(total)}`, 'success');
     }
 
     function limpiarFormularioCompra() {
@@ -400,104 +482,63 @@
     }
 
     // --- Historial de compras ---
-    function cargarHistorial() {
-        let purchases = MarketWorld.data.getPurchases();
-        console.log('Cargando historial. Total compras:', purchases.length);
-
-        // Aplicar filtros
-        const estado = document.getElementById('estadoFiltro')?.value;
-        if (estado && estado !== 'Todos') {
-            purchases = purchases.filter(p => p.estado === estado);
-            console.log(`Filtrado por estado "${estado}":`, purchases.length);
-        }
-
-        const provId = document.getElementById('proveedorFiltro')?.value;
-        if (provId) {
-            purchases = purchases.filter(p => p.proveedorId === parseInt(provId));
-            console.log('Filtrado por proveedor:', purchases.length);
-        }
-
-        const fechaInicio = document.getElementById('fechaInicio')?.value;
-        const fechaFin = document.getElementById('fechaFin')?.value;
-        if (fechaInicio && fechaFin) {
-            purchases = purchases.filter(p => {
-                const f = new Date(p.fechaCreacion);
-                return f >= new Date(fechaInicio) && f <= new Date(fechaFin + 'T23:59:59');
-            });
-            console.log('Filtrado por fechas:', purchases.length);
-        }
-
-        // Ordenar por fecha desc
-        purchases.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
-
+    async function cargarHistorial() {
         const tbody = document.getElementById('historialTbody');
-        if (!tbody) {
-            console.error('Elemento historialTbody no encontrado');
-            return;
-        }
+        if (!tbody) return;
 
-        if (purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay compras que coincidan con los filtros</td></tr>';
-            return;
-        }
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            const response = await fetch('http://127.0.0.1:8000/api/v1/purchases', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
 
-        tbody.innerHTML = purchases.map(p => {
-            const fecha = new Date(p.fechaCreacion).toLocaleDateString('es-CO');
-            const venc = p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString('es-CO') : '-';
-            const badgeClass = getBadgeClass(p.estado);
-            const saldo = p.saldo || 0;
-            const pagado = p.total - saldo;
-            const porcentajePagado = p.total > 0 ? Math.round((pagado / p.total) * 100) : 0;
-            
-            // Indicador visual de pago
-            let estadoPago = '';
-            if (saldo <= 0) {
-                estadoPago = '<span class="badge bg-success ms-1">100% Pagado</span>';
-            } else if (pagado > 0) {
-                estadoPago = `<span class="badge bg-warning text-dark ms-1">${porcentajePagado}% Pagado</span>`;
+            if (!result.success) return;
+
+            const purchases = result.data;
+            tbody.innerHTML = '';
+
+            if (purchases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay compras registradas</td></tr>';
+                return;
             }
 
-            return `
-                <tr>
-                    <td><strong>${p.numeroOrden}</strong></td>
-                    <td>${fecha}</td>
-                    <td>${p.proveedorNombre}</td>
-                    <td>${formatMoney(p.total)}</td>
-                    <td>
-                        <span class="badge ${badgeClass}">${p.estado}</span>
-                        ${estadoPago}
-                    </td>
-                    <td>${venc}</td>
-                    <td>
-                        <div class="fw-bold ${saldo <= 0 ? 'text-success' : 'text-danger'}">
-                            ${formatMoney(saldo)}
-                        </div>
-                        ${pagado > 0 ? `<small class="text-muted">Pagado: ${formatMoney(pagado)}</small>` : ''}
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" onclick="verDetalleCompra(${p.id})">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        ${(p.estado === 'Pendiente' || p.estado === 'Pagado') ? `
-                            <button class="btn btn-sm btn-outline-success me-1" title="Marcar recibido" onclick="marcarRecibido(${p.id})">
-                                <i class="bi bi-check-circle"></i>
+            tbody.innerHTML = purchases.map(p => {
+                const fecha = new Date(p.fecha).toLocaleDateString('es-CO');
+                const badgeClass = getBadgeClass(p.estado);
+                
+                return `
+                    <tr>
+                        <td><strong>${p.numero_orden}</strong></td>
+                        <td>${fecha}</td>
+                        <td class="fw-bold">${p.proveedor}</td>
+                        <td class="fw-bold">${formatMoney(parseFloat(p.total))}</td>
+                        <td><span class="badge ${badgeClass}">${p.estado}</span></td>
+                        <td>${p.observaciones || '-'}</td>
+                        <td>-</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="verDetalleCompra(${p.id})">
+                                <i class="bi bi-eye"></i>
                             </button>
-                        ` : ''}
-                        ${p.estado === 'Pendiente' ? `
-                            <button class="btn btn-sm btn-outline-danger" title="Cancelar" onclick="cancelarCompra(${p.id})">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                </tr>`;
-        }).join('');
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            actualizarKPIs();
+
+        } catch (error) {
+            console.error('Error al cargar historial de compras API:', error);
+        }
     }
 
     function getBadgeClass(estado) {
         switch (estado) {
             case 'Pendiente': return 'bg-warning text-dark';
+            case 'Recibida':
             case 'Recibido': return 'bg-info text-white';
+            case 'Pagada':
             case 'Pagado': return 'bg-success';
+            case 'Cancelada':
             case 'Cancelado': return 'bg-danger';
             default: return 'bg-secondary';
         }

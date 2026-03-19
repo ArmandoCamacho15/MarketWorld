@@ -1,29 +1,84 @@
-// login.js - Autenticacion de MarketWorld
+// login.js - Autenticacion API de MarketWorld
 
 (function() {
     'use strict';
 
-    // --- Iniciar cuando cargue la página ---
+    var AUTH_BASE_URL = 'http://localhost:8000/api/v1/auth';
+    var AUTH_TOKEN_KEY = 'marketworld_auth_token';
+    var AUTH_USER_KEY = 'marketworld_auth_user';
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Login cargado');
-        
-        // --- Sesión ya iniciada ---
-        if (MarketWorld.data.isLoggedIn()) {
-            window.location.href = 'inicio.html';
-            return;
-        }
-        
-        initLoginForm();
-        initPasswordToggle();
-        initRememberMe();
-        initForgotPassword();
-        initRegisterLink();
+
+        checkExistingSession()
+            .finally(function() {
+                initLoginForm();
+                initPasswordToggle();
+                initRememberMe();
+                initForgotPassword();
+                initRegisterLink();
+            });
     });
 
-    // --- Configurar formulario ---
+    function getToken() {
+        return localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+
+    function setSession(token, user) {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.setCurrentUser) {
+            MarketWorld.data.setCurrentUser({
+                nombre: user.name || '',
+                apellido: '',
+                email: user.email || '',
+                rol: user.rol || 'Usuario'
+            });
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.logout) {
+            MarketWorld.data.logout();
+        }
+    }
+
+    function checkExistingSession() {
+        var token = getToken();
+        if (!token) return Promise.resolve();
+
+        return fetch(AUTH_BASE_URL + '/me', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .then(function(res) {
+                if (!res.ok) {
+                    clearSession();
+                    return;
+                }
+                return res.json();
+            })
+            .then(function(body) {
+                if (body && body.success) {
+                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(body.data));
+                    window.location.href = 'inicio.html';
+                }
+            })
+            .catch(function() {
+                clearSession();
+            });
+    }
+
     function initLoginForm() {
         var loginForm = document.getElementById('loginForm');
-        
+
         if (loginForm) {
             loginForm.addEventListener('submit', handleLogin);
         }
@@ -31,19 +86,18 @@
 
     function handleLogin(e) {
         e.preventDefault();
-        
+
         var emailInput = document.getElementById('emailInput');
         var passwordInput = document.getElementById('passwordInput');
         var btnLogin = document.querySelector('.btn-login-white');
-        
+
         var email = emailInput ? emailInput.value.trim() : '';
         var password = passwordInput ? passwordInput.value : '';
-        
+
         clearErrors();
-        
-        // --- Validar campos ---
+
         var hasErrors = false;
-        
+
         if (!email) {
             showFieldError(emailInput, 'El email es obligatorio');
             hasErrors = true;
@@ -51,7 +105,7 @@
             showFieldError(emailInput, 'Ingresa un email valido');
             hasErrors = true;
         }
-        
+
         if (!password) {
             showFieldError(passwordInput, 'La contrasena es obligatoria');
             hasErrors = true;
@@ -59,39 +113,63 @@
             showFieldError(passwordInput, 'Minimo 6 caracteres');
             hasErrors = true;
         }
-        
+
         if (hasErrors) return;
-        
-        // --- Iniciar sesión ---
+
         setLoadingState(btnLogin, true);
-        
-        setTimeout(function() {
-            var user = MarketWorld.data.verifyCredentials(email, password);
-            
-            if (user) {
-                console.log('Login exitoso:', user.email);
-                MarketWorld.data.setCurrentUser(user);
-                
-                // --- Recordar email ---
+
+        fetch(AUTH_BASE_URL + '/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ email: email, password: password })
+        })
+            .then(function(res) {
+                return res.json().then(function(body) {
+                    if (!res.ok) {
+                        throw {
+                            status: res.status,
+                            message: body && body.message ? body.message : 'Error de autenticacion'
+                        };
+                    }
+                    return body;
+                });
+            })
+            .then(function(body) {
+                if (!body.success) {
+                    throw { status: 401, message: body.message || 'Credenciales invalidas' };
+                }
+
+                setSession(body.token, body.user);
+
                 var rememberMe = document.getElementById('rememberMe');
                 if (rememberMe && rememberMe.checked) {
                     localStorage.setItem('marketworld_remember_email', email);
                 } else {
                     localStorage.removeItem('marketworld_remember_email');
                 }
-                
-                showNotification('Bienvenido ' + user.nombre + '!', 'success');
-                
+
+                showNotification('Bienvenido ' + (body.user.name || '') + '!', 'success');
+
                 setTimeout(function() {
                     window.location.href = 'inicio.html';
-                }, 1500);
-                
-            } else {
+                }, 900);
+            })
+            .catch(function(err) {
                 setLoadingState(btnLogin, false);
-                showNotification('Email o contrasena incorrectos', 'error');
+
+                if (err && err.status === 401) {
+                    showNotification('Credenciales invalidas. Verifica email y contrasena.', 'error');
+                } else if (err && err.status === 422) {
+                    showNotification('Datos invalidos. Revisa el formato del email y la contrasena.', 'error');
+                } else {
+                    showNotification('Servidor no disponible. Intenta nuevamente en unos segundos.', 'error');
+                }
+
                 shakeElement(document.querySelector('.login-card-blue'));
-            }
-        }, 1000);
+            });
     }
 
     // --- Validar email ---
@@ -167,12 +245,7 @@
             var email = prompt('Ingresa tu email para recuperar tu contrasena:');
             
             if (email && isValidEmail(email)) {
-                var user = MarketWorld.data.findUserByEmail(email);
-                if (user) {
-                    showNotification('Se envio un email de recuperacion a ' + email, 'success');
-                } else {
-                    showNotification('No existe una cuenta con ese email', 'error');
-                }
+                showNotification('Recuperacion no implementada aun. Contacta al administrador.', 'info');
             } else if (email) {
                 showNotification('Email invalido', 'error');
             }

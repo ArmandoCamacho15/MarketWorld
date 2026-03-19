@@ -43,6 +43,19 @@ Este proyecto fue desarrollado como parte del programa **Tecnólogo en Análisis
 
 ---
 
+## Alcance Oficial MVP (6 días, 4 módulos)
+
+Para la entrega MVP, el alcance oficial y priorizado queda definido en estos 4 módulos:
+
+1. Inventario
+2. Login
+3. Facturación
+4. Compras
+
+Objetivo del MVP: demostrar flujo funcional de punta a punta (frontend -> API -> MySQL) en operaciones núcleo de cada módulo.
+
+---
+
 ## Tecnologías
 
 Este proyecto utiliza las siguientes tecnologías:

@@ -2,6 +2,9 @@
 (function() {
     'use strict';
 
+    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
+    const INVOICES_STORAGE_KEY = 'marketworld_invoices';
+
     // --- Estado del módulo ---
     const moduleState = {
         initialized: false,
@@ -9,7 +12,7 @@
         searchTimeout: null
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         console.log('✅ Módulo Inicio cargado correctamente');
         console.log('🔍 Verificando disponibilidad de MarketWorld.data...');
         
@@ -39,6 +42,8 @@
             initLogout();
             initSearch();
             initQuickAccess();
+
+            await sincronizarInicioConApi();
             
             // --- Cargar datos dinámicos ---
             console.log('🚀 Iniciando carga de componentes dinámicos...');
@@ -61,6 +66,110 @@
             showErrorNotification('Error al cargar el módulo. Por favor, recarga la página.');
         }
     });
+
+    function extractDataArray(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (payload && Array.isArray(payload.data)) return payload.data;
+        if (payload && payload.data && Array.isArray(payload.data.data)) return payload.data.data;
+        return [];
+    }
+
+    async function sincronizarInicioConApi() {
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) return;
+
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            };
+
+            const [productsRes, invoicesRes] = await Promise.all([
+                fetch('http://127.0.0.1:8000/api/v1/products', { headers }),
+                fetch('http://127.0.0.1:8000/api/v1/invoices', { headers })
+            ]);
+
+            if (productsRes.ok && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
+                const body = await productsRes.json();
+                const apiProducts = extractDataArray(body);
+                if (apiProducts.length > 0) {
+                    const localProducts = MarketWorld.data.getProducts();
+                    const byCode = new Map();
+
+                    localProducts.forEach(function(product) {
+                        if (product && product.codigo) {
+                            byCode.set(String(product.codigo).toLowerCase(), product);
+                        }
+                    });
+
+                    apiProducts.forEach(function(apiProduct) {
+                        const mapped = {
+                            id: apiProduct.id,
+                            codigo: apiProduct.sku || '',
+                            nombre: apiProduct.nombre || '',
+                            descripcion: apiProduct.descripcion || '',
+                            categoria: apiProduct.categoria || 'General',
+                            precio: parseFloat(apiProduct.precio_venta || 0),
+                            costo: parseFloat(apiProduct.precio_compra || 0),
+                            stock: parseInt(apiProduct.stock || 0, 10),
+                            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
+                            unidad: apiProduct.unidad || 'Unidad',
+                            proveedor: apiProduct.proveedor || '',
+                            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+                            activo: (apiProduct.estado || 'Activo') === 'Activo'
+                        };
+
+                        if (mapped.codigo) {
+                            byCode.set(String(mapped.codigo).toLowerCase(), mapped);
+                        }
+                    });
+
+                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
+                }
+            }
+
+            if (invoicesRes.ok) {
+                const body = await invoicesRes.json();
+                const apiInvoices = extractDataArray(body);
+                if (apiInvoices.length > 0) {
+                    const byNumber = new Map();
+                    const localInvoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
+                        ? MarketWorld.data.getInvoices()
+                        : [];
+
+                    localInvoices.forEach(function(inv) {
+                        const key = String(inv.numero_factura || inv.numero || inv.id || '').toLowerCase();
+                        if (key) byNumber.set(key, inv);
+                    });
+
+                    apiInvoices.forEach(function(apiInv) {
+                        const mapped = {
+                            id: apiInv.id,
+                            numero_factura: apiInv.numero_factura || apiInv.numero || '',
+                            fechaCreacion: apiInv.created_at || apiInv.fecha || new Date().toISOString(),
+                            fecha: apiInv.fecha || apiInv.created_at || new Date().toISOString(),
+                            total: parseFloat(apiInv.total || 0),
+                            estado: apiInv.estado || 'Pagada',
+                            customer_id: apiInv.customer_id || null
+                        };
+
+                        const key = String(mapped.numero_factura || mapped.id || '').toLowerCase();
+                        if (key) {
+                            byNumber.set(key, mapped);
+                        }
+                    });
+
+                    const merged = [];
+                    byNumber.forEach(function(value) {
+                        merged.push(value);
+                    });
+                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(merged));
+                }
+            }
+        } catch (error) {
+            console.warn('No se pudieron sincronizar datos de inicio desde API:', error.message || error);
+        }
+    }
 
     // ======= VERIFICAR SESIÓN ACTIVA =======
     function checkSession() {
@@ -594,13 +703,20 @@
         
         setTimeout(() => {
             try {
-                window.location.href = targetUrl;
+                window.location.href = normalizeNavigationUrl(targetUrl);
             } catch (error) {
                 console.error('❌ Error al navegar:', error);
                 card.style.transform = '';
                 showErrorNotification('Error al navegar. Intenta de nuevo.');
             }
         }, 150);
+    }
+
+    function normalizeNavigationUrl(url) {
+        if (!url) return './inicio.html';
+        if (/^https?:\/\//i.test(url)) return url;
+        if (url.startsWith('./') || url.startsWith('../') || url.startsWith('#')) return url;
+        return `./${url.replace(/^\//, '')}`;
     }
 
     /* SISTEMA DE NOTIFICACIONES PERSONALIZADO - DESHABILITADO
@@ -964,7 +1080,7 @@
         
         // Si tiene enlace, navegar
         if (notification.enlace) {
-            window.location.href = notification.enlace;
+            window.location.href = normalizeNavigationUrl(notification.enlace);
         }
         
         closeNotificationPanel();
@@ -1412,7 +1528,7 @@
         // Navegar si tiene enlace
         const link = task.getAttribute('data-link');
         if (link) {
-            window.location.href = link;
+            window.location.href = normalizeNavigationUrl(link);
             return;
         }
         
@@ -1524,7 +1640,7 @@
         // Navegar si tiene enlace
         const link = alert.getAttribute('data-link');
         if (link) {
-            window.location.href = link;
+            window.location.href = normalizeNavigationUrl(link);
             return;
         }
         
@@ -1537,11 +1653,11 @@
             // Redirigir según el tipo de alerta
             try {
                 if (alertType === 'warning') {
-                    window.location.href = 'inventario.html?filter=stock-bajo';
+                    window.location.href = normalizeNavigationUrl('inventario.html');
                 } else if (alertType === 'info') {
-                    window.location.href = 'facturacion.html?filter=pendientes';
+                    window.location.href = normalizeNavigationUrl('facturacion.html?tab=history');
                 } else if (alertType === 'danger') {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = normalizeNavigationUrl('dashboard.html');
                 }
             } catch (error) {
                 console.error('❌ Error al navegar desde alerta:', error);

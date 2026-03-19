@@ -22,6 +22,20 @@ config.local.php
 
 # Documentación privada de desarrollo
 DEVELOPMENT_LOG.md
+# Ignorar bitácora de desarrollo local
+docs/DEVELOPMENT_LOG.2.md
+
+# Planes maestros y cronogramas (no subir)
+MARKETWORLD_20W_PLAN.md
+MARKETWORLD_20W_PLAN_v1.1.md
+PLAN_MAESTRO_MARKETWORLD_CLAUDE_20_SEMANAS.md
+guia-estilo-convenciones.md
+MVP_API_CHECKLIST.md
+STUDENT_STORIES.md
+MVP_6_DIAS_4_MODULOS.md
+docs/MVP_6_DIAS_4_MODULOS.md
+
+
 
 # Archivos de migración y verificación (no subir)
 migration-plan.md

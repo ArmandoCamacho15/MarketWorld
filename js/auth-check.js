@@ -1,63 +1,147 @@
-// auth-check.js - Verificacion de sesion y logout
+// auth-check.js - Verificacion de sesion y logout contra API
 
 (function(global) {
     'use strict';
 
-    // --- Verificar sesión activa ---
+    var AUTH_BASE_URL = 'http://localhost:8000/api/v1/auth';
+    var AUTH_TOKEN_KEY = 'marketworld_auth_token';
+    var AUTH_USER_KEY = 'marketworld_auth_user';
+
+    function getToken() {
+        return localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+
+    function getStoredUser() {
+        var raw = localStorage.getItem(AUTH_USER_KEY);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.logout) {
+            MarketWorld.data.logout();
+        }
+    }
+
+    function redirectToLogin() {
+        window.location.href = 'Login.html';
+    }
+
+    function syncUserToLegacyStore(user) {
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.setCurrentUser) {
+            MarketWorld.data.setCurrentUser({
+                nombre: user.name || '',
+                apellido: '',
+                email: user.email || '',
+                rol: user.rol || 'Usuario'
+            });
+        }
+    }
+
+    function loadUserInfo(user) {
+        if (!user) return;
+
+        var userName = document.getElementById('userName');
+        var userRole = document.getElementById('userRole');
+
+        if (userName) userName.textContent = user.name || user.email || 'Usuario';
+        if (userRole) userRole.textContent = user.rol || 'Usuario';
+    }
+
     function checkSession() {
-        if (typeof MarketWorld === 'undefined' || !MarketWorld.data || !MarketWorld.data.isLoggedIn()) {
-            window.location.href = 'Login.html';
+        var token = getToken();
+        if (!token) {
+            redirectToLogin();
+            return Promise.resolve(false);
         }
+
+        return fetch(AUTH_BASE_URL + '/me', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .then(function(res) {
+                return res.json().then(function(body) {
+                    if (!res.ok || !body.success) {
+                        throw { status: res.status, body: body };
+                    }
+                    return body;
+                });
+            })
+            .then(function(body) {
+                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(body.data));
+                syncUserToLegacyStore(body.data);
+                loadUserInfo(body.data);
+                return true;
+            })
+            .catch(function() {
+                clearSession();
+                redirectToLogin();
+                return false;
+            });
     }
 
-    // --- Cargar info del usuario ---
-    function loadUserInfo() {
-        if (typeof MarketWorld === 'undefined' || !MarketWorld.data) return;
-        
-        var user = MarketWorld.data.getCurrentUser();
-        if (user) {
-            var userName = document.getElementById('userName');
-            var userRole = document.getElementById('userRole');
-            
-            if (userName) userName.textContent = user.nombre + ' ' + user.apellido;
-            if (userRole) userRole.textContent = user.rol;
-        }
-    }
-
-    // --- Configurar logout ---
     function initLogout() {
         var logoutBtn = document.getElementById('logoutBtn');
         var logoutBtnTop = document.getElementById('logoutBtnTop');
-        
+
         if (logoutBtn) {
             logoutBtn.addEventListener('click', handleLogout);
         }
-        
+
         if (logoutBtnTop) {
             logoutBtnTop.addEventListener('click', handleLogout);
         }
     }
 
-    // --- Manejar logout ---
     function handleLogout(e) {
-        e.preventDefault();
-        
-        if (confirm('¿Seguro que deseas cerrar sesion?')) {
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                MarketWorld.data.logout();
-            }
-            window.location.href = 'Login.html';
+        if (e) e.preventDefault();
+
+        if (!confirm('¿Seguro que deseas cerrar sesion?')) {
+            return;
         }
+
+        var token = getToken();
+
+        if (!token) {
+            clearSession();
+            redirectToLogin();
+            return;
+        }
+
+        fetch(AUTH_BASE_URL + '/logout', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .finally(function() {
+                clearSession();
+                redirectToLogin();
+            });
     }
 
-    // --- Inicializar automáticamente ---
     document.addEventListener('DOMContentLoaded', function() {
-        checkSession();
-        loadUserInfo();
         initLogout();
+
+        var cachedUser = getStoredUser();
+        if (cachedUser) {
+            loadUserInfo(cachedUser);
+        }
+
+        checkSession();
     });
 
-    // --- Exponer funciones ---
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.auth = {
         checkSession: checkSession,

@@ -11,6 +11,8 @@
         if (MarketWorld.notifications && MarketWorld.notifications.init) {
             MarketWorld.notifications.init();
         }
+        // --- Cargar clientes desde el backend ---
+        loadCustomersFromAPI();
                 initClientCards();
         initClientFilters();
         initOpportunityManagement();
@@ -18,6 +20,86 @@
         initCampaigns();
         initClientSearch();
     });
+
+    // --- Carga de clientes desde API Laravel ---
+    async function loadCustomersFromAPI() {
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) {
+                console.warn('[CRM] No hay token de autenticación.');
+                return;
+            }
+
+            const response = await fetch('http://127.0.0.1:8000/api/v1/customers', {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                console.error('[CRM] Error al cargar clientes:', result.message);
+                return;
+            }
+
+            console.log('[API] Clientes cargados desde MySQL:', result.total);
+
+            const container = document.querySelector('.client-cards-container') || 
+                            document.getElementById('clientsList') || 
+                            document.querySelector('.row.g-3');
+            
+            if (!container) {
+                console.warn('[CRM] No se encontró el contenedor de clientes en el DOM.');
+                return;
+            }
+
+            // Limpiar contenido estático previo si es necesario o marcar existentes
+            // container.innerHTML = ""; // Opcional: limpiar antes de cargar
+
+            const existentes = Array.from(container.querySelectorAll('.client-card'))
+                .map(c => c.dataset.clientId);
+
+            result.data.forEach(cliente => {
+                // Evitar duplicados si el backend devuelve alguno ya pintado en el HTML estático
+                if (existentes.includes(String(cliente.id))) return;
+
+                const segmentoBadge = {
+                    'Premium': 'bg-warning',
+                    'Frecuente': 'bg-success',
+                    'Corporativo': 'bg-primary',
+                    'Nuevo': 'bg-secondary',
+                }[cliente.segmento] || 'bg-secondary';
+
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-3';
+                col.innerHTML = `
+                    <div class="card client-card h-100" data-client-id="${cliente.id}" style="border-left: 4px solid #9b59b6;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge ${segmentoBadge}">${cliente.segmento || 'General'}</span>
+                                <small class="text-muted">${cliente.tipo_documento || 'ID'}: ${cliente.documento || '---'}</small>
+                            </div>
+                            <h5 class="card-title">${cliente.nombre}</h5>
+                            <p class="text-muted small mb-1"><i class="bi bi-envelope me-1"></i>${cliente.email || 'Sin email'}</p>
+                            <p class="text-muted small mb-2"><i class="bi bi-telephone me-1"></i>${cliente.telefono || 'Sin teléfono'}</p>
+                            <div class="d-flex gap-2 mt-3">
+                                <button class="btn btn-sm btn-outline-primary flex-fill btn-view-details">Ver detalles</button>
+                                <button class="btn btn-sm btn-outline-success flex-fill btn-contact-client">Contactar</button>
+                            </div>
+                        </div>
+                    </div>`;
+                container.appendChild(col);
+            });
+
+            // Re-inicializar eventos en todas las tarjetas (viejas y nuevas)
+            initClientCards();
+
+        } catch (error) {
+            console.error('[API] Error de conexión en CRM:', error);
+        }
+    }
 
     // --- Tarjetas de clientes ---
     function initClientCards() {

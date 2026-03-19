@@ -3,23 +3,279 @@
     'use strict';
 
     let salesChart, categoriesChart, incomeExpenseChart;
+    const INVOICES_STORAGE_KEY = 'marketworld_invoices';
+    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log(' Módulo Dashboard cargado');
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log(' Módulo Dashboard cargado (Producción)');
         
+        await sincronizarDashboardConApi();
         // Inicializar
         initCharts();
         initDateFilters();
         initKPIs();
         initCalendar();
-        initTransactions();
-        animateKPIs();
+        renderRecentTransactions();
+        applyRealtimeDashboardData();
+        
+        // Cargar datos reales de la API (endpoint consolidado, si existe)
+        fetchDashboardStats();
         
         // --- Inicializar sistema de notificaciones ---
         if (typeof MarketWorld.notifications !== 'undefined') {
             MarketWorld.notifications.init();
         }
     });
+
+    function extractDataArray(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (payload && Array.isArray(payload.data)) return payload.data;
+        if (payload && payload.data && Array.isArray(payload.data.data)) return payload.data.data;
+        return [];
+    }
+
+    function parseInvoiceDate(invoice) {
+        const raw = invoice.created_at || invoice.fecha || invoice.fechaCreacion || invoice.updated_at;
+        const d = raw ? new Date(raw) : null;
+        return d instanceof Date && !isNaN(d.getTime()) ? d : null;
+    }
+
+    function parseInvoiceTotal(invoice) {
+        const value = parseFloat(invoice.total || invoice.monto_total || 0);
+        return isNaN(value) ? 0 : value;
+    }
+
+    function getActiveInvoices() {
+        const invoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
+            ? MarketWorld.data.getInvoices()
+            : [];
+
+        return invoices.filter(function(inv) {
+            const estado = String(inv && inv.estado ? inv.estado : '').toLowerCase();
+            return estado !== 'anulada' && estado !== 'cancelada';
+        });
+    }
+
+    function getProducts() {
+        return (typeof MarketWorld !== 'undefined' && MarketWorld.data)
+            ? MarketWorld.data.getProducts()
+            : [];
+    }
+
+    async function sincronizarDashboardConApi() {
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) return;
+
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            };
+
+            const [productsRes, invoicesRes] = await Promise.all([
+                fetch('http://127.0.0.1:8000/api/v1/products', { headers }),
+                fetch('http://127.0.0.1:8000/api/v1/invoices', { headers })
+            ]);
+
+            if (productsRes.ok) {
+                const productsBody = await productsRes.json();
+                const apiProducts = extractDataArray(productsBody);
+                if (apiProducts.length > 0 && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
+                    const localProducts = MarketWorld.data.getProducts();
+                    const byCode = new Map();
+
+                    localProducts.forEach(function(product) {
+                        if (product && product.codigo) {
+                            byCode.set(String(product.codigo).toLowerCase(), product);
+                        }
+                    });
+
+                    apiProducts.forEach(function(apiProduct) {
+                        const mapped = {
+                            id: apiProduct.id,
+                            codigo: apiProduct.sku || '',
+                            nombre: apiProduct.nombre || '',
+                            descripcion: apiProduct.descripcion || '',
+                            categoria: apiProduct.categoria || 'General',
+                            precio: parseFloat(apiProduct.precio_venta || 0),
+                            costo: parseFloat(apiProduct.precio_compra || 0),
+                            stock: parseInt(apiProduct.stock || 0, 10),
+                            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
+                            unidad: apiProduct.unidad || 'Unidad',
+                            proveedor: apiProduct.proveedor || '',
+                            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+                            activo: (apiProduct.estado || 'Activo') === 'Activo'
+                        };
+
+                        if (mapped.codigo) {
+                            byCode.set(String(mapped.codigo).toLowerCase(), mapped);
+                        }
+                    });
+
+                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
+                }
+            }
+
+            if (invoicesRes.ok) {
+                const invoicesBody = await invoicesRes.json();
+                const apiInvoices = extractDataArray(invoicesBody);
+                if (apiInvoices.length > 0) {
+                    const merged = [];
+                    const byNumber = new Map();
+                    const localInvoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
+                        ? MarketWorld.data.getInvoices()
+                        : [];
+
+                    localInvoices.forEach(function(inv) {
+                        const key = String(inv.numero_factura || inv.numero || inv.id || '').toLowerCase();
+                        if (key) byNumber.set(key, inv);
+                    });
+
+                    apiInvoices.forEach(function(apiInv) {
+                        const mapped = {
+                            id: apiInv.id,
+                            numero_factura: apiInv.numero_factura || apiInv.numero || '',
+                            fechaCreacion: apiInv.created_at || apiInv.fecha || new Date().toISOString(),
+                            fecha: apiInv.fecha || apiInv.created_at || new Date().toISOString(),
+                            total: parseFloat(apiInv.total || 0),
+                            estado: apiInv.estado || 'Pagada',
+                            customer_id: apiInv.customer_id || null
+                        };
+
+                        const key = String(mapped.numero_factura || mapped.id || '').toLowerCase();
+                        if (key) {
+                            byNumber.set(key, mapped);
+                        }
+                    });
+
+                    byNumber.forEach(function(value) {
+                        merged.push(value);
+                    });
+
+                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(merged));
+                }
+            }
+        } catch (error) {
+            console.warn('No se pudieron sincronizar datos del dashboard desde API:', error.message || error);
+        }
+    }
+
+    function applyRealtimeDashboardData() {
+        const invoices = getActiveInvoices();
+        const products = getProducts();
+
+        updateKpisFromRealtimeData(invoices, products);
+        updateSalesChartFromInvoices(invoices);
+        renderRecentTransactions(invoices);
+    }
+
+    function updateKpisFromRealtimeData(invoices, products) {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const monthlySales = invoices
+            .filter(function(inv) {
+                const d = parseInvoiceDate(inv);
+                return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            })
+            .reduce(function(sum, inv) { return sum + parseInvoiceTotal(inv); }, 0);
+
+        const totalStock = products.reduce(function(sum, p) {
+            return sum + (parseInt(p && p.stock, 10) || 0);
+        }, 0);
+
+        document.querySelectorAll('.kpi-card').forEach(function(card) {
+            const labelEl = card.querySelector('.kpi-label');
+            const valueEl = card.querySelector('.kpi-value');
+            const trendEl = card.querySelector('.kpi-trend');
+            if (!labelEl || !valueEl) return;
+
+            const label = labelEl.textContent.trim().toLowerCase();
+            if (label === 'ventas totales') {
+                valueEl.textContent = `$${Math.round(monthlySales).toLocaleString('es-CO')}`;
+                if (trendEl) trendEl.textContent = 'Mes actual';
+            }
+
+            if (label === 'productos en stock') {
+                valueEl.textContent = Math.round(totalStock).toLocaleString('es-CO');
+                if (trendEl) trendEl.textContent = 'Actualizado';
+            }
+        });
+    }
+
+    function updateSalesChartFromInvoices(invoices) {
+        if (!salesChart) return;
+
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const now = new Date();
+        const year = now.getFullYear();
+        const totals = new Array(12).fill(0);
+
+        invoices.forEach(function(inv) {
+            const d = parseInvoiceDate(inv);
+            if (!d || d.getFullYear() !== year) return;
+            totals[d.getMonth()] += parseInvoiceTotal(inv);
+        });
+
+        salesChart.data.labels = months;
+        salesChart.data.datasets[0].label = `Ventas ${year}`;
+        salesChart.data.datasets[0].data = totals;
+        salesChart.update();
+    }
+
+    async function fetchDashboardStats() {
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) return;
+
+            const response = await fetch('http://127.0.0.1:8000/api/v1/dashboard/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                updateDashboardUI(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+        }
+    }
+
+    function updateDashboardUI(data) {
+        if (!data) return;
+
+        // Mantiene compatibilidad con endpoint dedicado de dashboard.
+        document.querySelectorAll('.kpi-card').forEach(function(card) {
+            const labelEl = card.querySelector('.kpi-label');
+            const valueEl = card.querySelector('.kpi-value');
+            if (!labelEl || !valueEl) return;
+
+            const label = labelEl.textContent.trim().toLowerCase();
+            if (label === 'ventas totales' && data.sales_month !== undefined) {
+                valueEl.textContent = `$${parseFloat(data.sales_month || 0).toLocaleString('es-CO')}`;
+            }
+            if (label === 'compras del mes' && data.purchases_month !== undefined) {
+                valueEl.textContent = `$${parseFloat(data.purchases_month || 0).toLocaleString('es-CO')}`;
+            }
+            if (label === 'clientes activos' && data.total_customers !== undefined) {
+                valueEl.textContent = `${parseInt(data.total_customers, 10) || 0}`;
+            }
+            if (label === 'productos en stock' && data.total_stock !== undefined) {
+                valueEl.textContent = `${parseInt(data.total_stock, 10) || 0}`;
+            }
+        });
+
+        if (Array.isArray(data.sales_by_month) && salesChart) {
+            salesChart.data.datasets[0].data = data.sales_by_month.map(function(v) {
+                return parseFloat(v || 0);
+            });
+            salesChart.update();
+        }
+
+        // Recalcula también desde facturas para asegurar que la venta recién creada se refleje.
+        applyRealtimeDashboardData();
+    }
 
     // --- Inicializar gráficos con Chart.js ---
     function initCharts() {
@@ -182,13 +438,13 @@
                 
                 // ======= REDIRIGIR SEGÚN EL KPI =======
                 if (label.includes('Ventas')) {
-                    window.location.href = 'facturacion.html';
+                    window.location.href = './facturacion.html?tab=history';
                 } else if (label.includes('Compras')) {
-                    window.location.href = 'compras.html';
+                    window.location.href = './compras.html';
                 } else if (label.includes('Clientes')) {
-                    window.location.href = 'crm.html';
-                } else if (label.includes('Inventario')) {
-                    window.location.href = 'inventario.html';
+                    window.location.href = './crm.html';
+                } else if (label.includes('Inventario') || label.includes('Productos en Stock')) {
+                    window.location.href = './inventario.html';
                 }
             });
         });
@@ -223,15 +479,44 @@
     }
 
     // ======= TRANSACCIONES INTERACTIVAS =======
-    function initTransactions() {
-        const transactionRows = document.querySelectorAll('.transaction-table tbody tr');
-        
-        transactionRows.forEach(row => {
+    function renderRecentTransactions(optionalInvoices) {
+        const tbody = document.querySelector('.transaction-table tbody');
+        if (!tbody) return;
+
+        const invoices = Array.isArray(optionalInvoices) ? optionalInvoices : getActiveInvoices();
+        const sorted = invoices.slice().sort(function(a, b) {
+            const ad = parseInvoiceDate(a);
+            const bd = parseInvoiceDate(b);
+            return (bd ? bd.getTime() : 0) - (ad ? ad.getTime() : 0);
+        }).slice(0, 5);
+
+        if (sorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay transacciones registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = sorted.map(function(inv) {
+            const estado = String(inv.estado || 'Pagada');
+            const badgeClass = estado.toLowerCase() === 'pagada' ? 'badge-success' : 'badge-warning';
+            const date = parseInvoiceDate(inv);
+            const number = inv.numero_factura || inv.numero || `FAC-${inv.id || ''}`;
+
+            return `
+                <tr data-invoice="${number}">
+                    <td>${number}</td>
+                    <td>${inv.cliente_nombre || 'Cliente'}</td>
+                    <td>$${Math.round(parseInvoiceTotal(inv)).toLocaleString('es-CO')}</td>
+                    <td><span class="badge ${badgeClass}">${estado}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        const rows = tbody.querySelectorAll('tr[data-invoice]');
+        rows.forEach(function(row) {
             row.style.cursor = 'pointer';
-            row.addEventListener('click', () => {
-                const invoiceNumber = row.cells[0].textContent;
-                console.log(`🧾 Transacción seleccionada: ${invoiceNumber}`);
-                window.location.href = `facturacion.html?invoice=${invoiceNumber}`;
+            row.addEventListener('click', function() {
+                const invoiceNumber = row.getAttribute('data-invoice');
+                window.location.href = `./facturacion.html?tab=history&invoice=${encodeURIComponent(invoiceNumber)}`;
             });
         });
     }

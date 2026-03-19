@@ -3,9 +3,23 @@
 let carrito = [];
 let nextInvoiceId = 128;
 let metodoPagoSeleccionado = 'efectivo';
+const PRODUCTS_STORAGE_KEY = 'marketworld_products';
+let facturasHistorialCache = [];
+let deepLinkInvoiceRef = null;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log(' Sistema de facturación iniciado');
+
+    const params = new URLSearchParams(window.location.search);
+    const deepLinkTab = params.get('tab');
+    const deepLinkInvoice = params.get('invoice');
+    const deepLinkInvoiceId = params.get('invoiceId');
+    if (deepLinkTab === 'history' || deepLinkInvoice || deepLinkInvoiceId) {
+        activarPestanaHistorial();
+    }
+    deepLinkInvoiceRef = deepLinkInvoiceId || deepLinkInvoice || null;
+
+    await sincronizarProductosFacturacionConApi();
     
     // --- Inicializar notificaciones ---
     if (MarketWorld.notifications && MarketWorld.notifications.init) {
@@ -43,13 +57,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- Buscar y agregar productos ---
     const btnBuscarProducto = document.getElementById('btnBuscarProducto');
+    const btnAgregarProducto = document.getElementById('btnAgregarProducto');
     const inputBuscarProducto = document.getElementById('buscarProducto');
     const inputCantidadProducto = document.getElementById('cantidadProducto');
+    let productoBuscadoRapido = null;
+    let terminoBuscadoRapido = '';
     
     if (btnBuscarProducto) {
         btnBuscarProducto.addEventListener('click', function() {
             console.log(' Botón buscar clickeado');
-            buscarYAgregarProducto();
+            buscarProductoRapido();
+        });
+    }
+
+    if (btnAgregarProducto) {
+        btnAgregarProducto.addEventListener('click', function() {
+            console.log(' Botón agregar clickeado');
+            agregarProductoDesdeBusquedaRapida();
         });
     }
     
@@ -58,53 +82,142 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 console.log('⌨️ Enter presionado');
-                buscarYAgregarProducto();
+                buscarProductoRapido();
             }
+        });
+
+        inputBuscarProducto.addEventListener('input', function() {
+            // Evita agregar un producto que no coincide con el texto actual.
+            productoBuscadoRapido = null;
+            terminoBuscadoRapido = '';
         });
     }
     
-    function buscarYAgregarProducto() {
+    function buscarProductoLocal(termino) {
+        const productos = MarketWorld.data.getProducts();
+        const coincidencias = productos.filter(function(p) {
+            return p && p.activo && (
+                String(p.codigo || '').toLowerCase() === termino ||
+                String(p.codigo || '').toLowerCase().includes(termino) ||
+                String(p.nombre || '').toLowerCase().includes(termino)
+            );
+        });
+
+        if (coincidencias.length === 0) {
+            return null;
+        }
+
+        const exacto = coincidencias.find(function(p) {
+            return String(p.codigo || '').toLowerCase() === termino;
+        });
+
+        return exacto || coincidencias[0];
+    }
+
+    async function buscarProductoRapido() {
         const termino = inputBuscarProducto.value.trim().toLowerCase();
-        const cantidad = parseInt(inputCantidadProducto.value) || 1;
         
-        console.log('📦 Buscando:', termino, '| Cantidad:', cantidad);
+        console.log('📦 Buscando producto:', termino);
         
         if (!termino) {
             alert('⚠️ Por favor ingresa un código o nombre de producto');
-            return;
+            return null;
+        }
+
+        const productoLocal = buscarProductoLocal(termino);
+        if (productoLocal) {
+            productoBuscadoRapido = productoLocal;
+            terminoBuscadoRapido = termino;
+            mostrarNotificacion(`Producto encontrado: ${productoLocal.nombre}. Presiona Agregar para continuar.`, 'info');
+            return productoLocal;
         }
         
-        // ======= BUSCAR PRODUCTO EN BASE DE DATOS =======
-        const productos = MarketWorld.data.getProducts();
-        const producto = productos.find(p => 
-            p.codigo.toLowerCase().includes(termino) || 
-            p.nombre.toLowerCase().includes(termino)
-        );
-        
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            const url = `http://127.0.0.1:8000/api/v1/products?search=${encodeURIComponent(termino)}`;
+            
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            console.log('Result API:', result);
+
+            let products = [];
+            if (Array.isArray(result.data)) {
+                products = result.data;
+            } else if (result.data && Array.isArray(result.data.data)) {
+                products = result.data.data;
+            }
+
+            // Buscar coincidencia exacta por SKU o nombre en los resultados
+            const apiProduct = products.find(p =>
+                String(p.sku || '').toLowerCase() === termino ||
+                String(p.nombre || '').toLowerCase().includes(termino)
+            );
+            
+            if (!apiProduct) {
+                alert('❌ Producto no encontrado en el servidor.');
+                productoBuscadoRapido = null;
+                terminoBuscadoRapido = '';
+                return null;
+            }
+
+            const producto = {
+                id: apiProduct.id,
+                codigo: apiProduct.sku,
+                nombre: apiProduct.nombre,
+                precio: parseFloat(apiProduct.precio_venta),
+                stock: apiProduct.stock,
+                activo: apiProduct.estado === 'Activo'
+            };
+            
+            if (!producto.activo) {
+                alert('⚠️ Este producto está inactivo.');
+                productoBuscadoRapido = null;
+                terminoBuscadoRapido = '';
+                return null;
+            }
+
+            productoBuscadoRapido = producto;
+            terminoBuscadoRapido = termino;
+            mostrarNotificacion(`Producto encontrado: ${producto.nombre}. Presiona Agregar para continuar.`, 'info');
+            return producto;
+            
+        } catch (error) {
+            console.error('Error API:', error);
+            alert('❌ Error de conexión con la base de datos.');
+            return null;
+        }
+    }
+
+    async function agregarProductoDesdeBusquedaRapida() {
+        let producto = productoBuscadoRapido;
+
         if (!producto) {
-            alert('❌ Producto no encontrado. Verifica el código o nombre del producto.');
+            producto = await buscarProductoRapido();
+        }
+
+        if (!producto) {
             return;
         }
-        
-        if (!producto.activo) {
-            alert('⚠️ Este producto está inactivo y no puede ser facturado.');
-            return;
-        }
-        
+
+        const cantidad = parseInt(inputCantidadProducto.value) || 1;
         if (cantidad > producto.stock) {
-            alert(`⚠️ Stock insuficiente. Solo hay ${producto.stock} unidades disponibles.`);
+            alert(`⚠️ Stock insuficiente. Solo hay ${producto.stock} en servidor.`);
             return;
         }
-        
-        // ======= AGREGAR AL CARRITO =======
+
         agregarAlCarrito(producto, cantidad);
-        
-        // ======= LIMPIAR CAMPOS =======
+
         inputBuscarProducto.value = '';
         inputCantidadProducto.value = 1;
         inputBuscarProducto.focus();
-        
-        console.log(' Producto agregado:', producto.nombre);
+        productoBuscadoRapido = null;
+        terminoBuscadoRapido = '';
     }
     
     // ======= AGREGAR PRODUCTO AL CARRITO =======
@@ -331,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ======= GENERAR FACTURA =======
     const btnGenerarFactura = document.getElementById('btnGenerarFactura');
     if (btnGenerarFactura) {
-        btnGenerarFactura.addEventListener('click', function() {
+        btnGenerarFactura.addEventListener('click', async function() {
             if (carrito.length === 0) {
                 alert('⚠️ Agrega productos al carrito para generar la factura');
                 return;
@@ -356,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let subtotalBase = 0;
             let totalIVA = 0;
             
-            const items = carrito.map(item => {
+            const invoiceItems = carrito.map(item => {
                 const itemTotal = item.precio * item.cantidad;
                 const itemBase = Math.round(itemTotal / 1.19);
                 const itemIVA = itemTotal - itemBase;
@@ -365,12 +478,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 totalIVA += itemIVA;
                 
                 return {
-                    productoId: item.id,
-                    nombre: item.nombre,
+                    product_id: item.id,
                     cantidad: item.cantidad,
-                    precioUnitario: item.precio,
-                    subtotal: itemTotal,
-                    iva: item.iva
+                    precio_unitario: item.precio,
+                    subtotal: itemTotal
                 };
             });
             
@@ -378,88 +489,62 @@ document.addEventListener('DOMContentLoaded', function() {
             const descuentoMonto = totalConIVA * (descuentoPct / 100);
             const total = totalConIVA - descuentoMonto;
             
-            // ======= OBTENER USUARIO ACTUAL =======
-            const currentUser = MarketWorld.data.getCurrentUser();
-            
             // Obtener observaciones del modo completo
             const observacionesEl = document.getElementById('observacionesFactura');
             const observaciones = observacionesEl ? observacionesEl.value.trim() : '';
             
             try {
-                // Crear factura en la base de datos
-                const factura = MarketWorld.data.createInvoice({
-                    clienteNombre: clienteNombre,
-                    clienteDocumento: clienteDocumento,
-                    clienteId: null,
-                    items: items,
+                const token = localStorage.getItem('marketworld_auth_token');
+                if (!token) throw new Error('No hay sesión activa.');
+
+                const invoiceData = {
+                    numero_factura: 'FAC-' + Date.now(),
+                    customer_id: null,
+                    fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
                     subtotal: subtotalBase,
-                    iva: totalIVA,
-                    descuento: descuentoMonto,
+                    impuestos: totalIVA,
                     total: total,
-                    metodoPago: metodoPagoSeleccionado,
+                    metodo_pago: metodoPagoSeleccionado,
                     estado: 'Pagada',
-                    observaciones: observaciones,
-                    vendedor: currentUser ? currentUser.nombre : 'Sistema'
+                    notas: observaciones,
+                    items: invoiceItems
+                };
+
+                const response = await fetch('http://127.0.0.1:8000/api/v1/invoices', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(invoiceData)
                 });
-                
-                console.log('📄 Factura generada:', factura);
-                
-                // Crear notificación de factura generada
-                MarketWorld.data.createNotification({
-                    tipo: 'success',
-                    titulo: 'Factura Generada',
-                    mensaje: `Factura ${factura.numeroFactura} creada - Total: $${total.toLocaleString('es-CO')}`,
-                    enlace: 'facturacion.html'
-                });
-                
-                // Verificar productos con bajo stock
-                items.forEach(item => {
-                    const producto = MarketWorld.data.findProductById(item.productoId);
-                    if (producto && producto.stock <= producto.stockMinimo) {
-                        MarketWorld.data.createNotification({
-                            tipo: 'warning',
-                            titulo: 'Stock Bajo',
-                            mensaje: `${producto.nombre} tiene stock bajo (${producto.stock} unidades)`,
-                            enlace: 'inventario.html'
-                        });
-                    }
-                });
-                
-                // Actualizar badge de notificaciones
-                if (typeof MarketWorld.notifications !== 'undefined' && MarketWorld.notifications.updateBadge) {
-                    MarketWorld.notifications.updateBadge();
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Error al guardar en el servidor.');
                 }
+
+                const factura = result.data;
+                console.log('📄 Factura generada por API:', factura);
                 
-                mostrarNotificacion(`✅ Factura ${factura.numeroFactura} generada exitosamente`, 'success');
+                mostrarNotificacion(`✅ Factura ${factura.numero_factura} generada exitosamente`, 'success');
+                alert(`✅ VENTA EXITOSA\nFactura: ${factura.numero_factura}\nTotal: $${total.toLocaleString('es-CO')}\n\nEl stock ha sido actualizado en la base de datos.`);
                 
-                alert(`✅ Factura ${factura.numeroFactura} generada\n\nCliente: ${clienteNombre}\nMétodo de pago: ${metodoPagoSeleccionado}\nTotal: $${total.toLocaleString('es-CO')}\n\n¡Stock actualizado automáticamente!`);
-                
-                // Limpiar formulario
+                // Limpiar formulario e interfaz
                 carrito = [];
                 renderizarCarrito();
                 calcularTotales();
                 
-                // Limpiar campos de cliente (ambos modos)
                 if (clienteNombreRapido) clienteNombreRapido.value = '';
                 if (clienteDocumentoRapido) clienteDocumentoRapido.value = '';
                 if (clienteNombreCompleto) clienteNombreCompleto.value = '';
                 if (clienteDocumentoCompleto) clienteDocumentoCompleto.value = '';
-                
-                // Limpiar campos adicionales del modo completo
-                const direccionEl = document.getElementById('clienteDireccion');
-                const telefonoEl = document.getElementById('clienteTelefono');
-                const emailEl = document.getElementById('clienteEmail');
-                const ciudadEl = document.getElementById('clienteCiudad');
+
                 if (observacionesEl) observacionesEl.value = '';
-                if (direccionEl) direccionEl.value = '';
-                if (telefonoEl) telefonoEl.value = '';
-                if (emailEl) emailEl.value = '';
-                if (ciudadEl) ciudadEl.value = '';
-                
-                const descuentoInput = document.getElementById('descuentoInput');
-                if (descuentoInput) {
-                    descuentoInput.value = 0;
-                }
+                const descInput = document.getElementById('descuentoInput');
+                if (descInput) descInput.value = 0;
                 
                 // Actualizar productos mostrados (ambos modos)
                 mostrarProductosDisponibles();
@@ -471,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             } catch (error) {
                 console.error('Error al generar factura:', error);
-                alert(`❌ Error al generar factura: ${error.message}`);
+                alert(`❌ Error de Producción: ${error.message}`);
             }
         });
     }
@@ -483,10 +568,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         container.innerHTML = '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>';
         
-        // Obtener productos activos y mostrar los primeros 6
+        // Mostrar primero productos más recientes para reflejar altas nuevas.
         const productos = MarketWorld.data.getProducts();
         const productosActivos = productos.filter(p => p.activo);
-        const productosDestacados = productosActivos.slice(0, 6);
+        const productosDestacados = productosActivos
+            .slice()
+            .sort(function(a, b) { return (b.id || 0) - (a.id || 0); })
+            .slice(0, 6);
         
         const grid = document.createElement('div');
         grid.className = 'row g-2';
@@ -538,6 +626,19 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => notification.remove(), 150);
         }, 3000);
     }
+
+    function escapeRegExp(text) {
+        return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function resaltarTexto(texto, termino) {
+        const text = String(texto || '');
+        const term = String(termino || '').trim();
+        if (!term) return text;
+
+        const regex = new RegExp('(' + escapeRegExp(term) + ')', 'ig');
+        return text.replace(regex, '<span class="highlight">$1</span>');
+    }
     
     // Autocompletado de productos
     const inputBuscar = document.getElementById('buscarProducto');
@@ -560,9 +661,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Buscar productos que coincidan
             const productos = MarketWorld.data.getProducts();
             const productosFiltrados = productos.filter(p => 
-                p.activo && (
-                    p.nombre.toLowerCase().includes(termino) ||
-                    p.codigo.toLowerCase().includes(termino)
+                p && p.activo && (
+                    String(p.nombre || '').toLowerCase().includes(termino) ||
+                    String(p.codigo || '').toLowerCase().includes(termino)
                 )
             );
             
@@ -598,10 +699,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 
-                // Al hacer clic, agregar al carrito
+                // Al hacer clic, seleccionar el producto sin agregarlo aún.
                 suggestionItem.addEventListener('click', function() {
-                    agregarAlCarrito(producto, 1);
-                    inputBuscar.value = '';
+                    productoBuscadoRapido = producto;
+                    terminoBuscadoRapido = String(producto.codigo || producto.nombre || '').trim().toLowerCase();
+                    inputBuscar.value = `${String(producto.codigo || '').trim()} - ${String(producto.nombre || '').trim()}`;
+                    inputCantidadProducto.value = inputCantidadProducto.value || 1;
+                    mostrarNotificacion(`Seleccionado: ${producto.nombre}. Ahora presiona Agregar.`, 'info');
                     suggestionsContainer.style.display = 'none';
                     suggestionsContainer.innerHTML = '';
                 });
@@ -620,6 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ===== MODO COMPLETO: Buscar y agregar productos =====
     const btnBuscarCompleto = document.getElementById('btnBuscarProductoCompleto');
+    const btnAgregarCompleto = document.getElementById('btnAgregarProductoCompleto');
     const inputBuscarCompleto = document.getElementById('buscarProductoCompleto');
     const inputCantidadCompleto = document.getElementById('cantidadProductoCompleto');
 
@@ -657,14 +762,65 @@ document.addEventListener('DOMContentLoaded', function() {
         inputBuscarCompleto.focus();
     }
 
+    let productoBuscadoCompleto = null;
+
+    function buscarProductoCompleto() {
+        const termino = inputBuscarCompleto.value.trim().toLowerCase();
+        if (!termino) {
+            alert('⚠️ Por favor ingresa un código o nombre de producto');
+            return;
+        }
+
+        const productos = MarketWorld.data.getProducts();
+        const producto = productos.find(function(p) {
+            return p && p.activo && (
+                String(p.codigo || '').toLowerCase() === termino ||
+                String(p.codigo || '').toLowerCase().includes(termino) ||
+                String(p.nombre || '').toLowerCase().includes(termino)
+            );
+        });
+
+        if (!producto) {
+            alert('❌ Producto no encontrado. Verifica el código o nombre.');
+            productoBuscadoCompleto = null;
+            return;
+        }
+
+        productoBuscadoCompleto = producto;
+        mostrarNotificacion(`Producto encontrado: ${producto.nombre}. Presiona Agregar para continuar.`, 'info');
+    }
+
+    function agregarProductoCompleto() {
+        if (!productoBuscadoCompleto) {
+            buscarProductoCompleto();
+        }
+
+        if (!productoBuscadoCompleto) return;
+
+        const cantidad = parseInt(inputCantidadCompleto.value) || 1;
+        if (cantidad > productoBuscadoCompleto.stock) {
+            alert(`⚠️ Stock insuficiente. Solo hay ${productoBuscadoCompleto.stock} unidades disponibles.`);
+            return;
+        }
+
+        agregarAlCarrito(productoBuscadoCompleto, cantidad);
+        inputBuscarCompleto.value = '';
+        inputCantidadCompleto.value = 1;
+        inputBuscarCompleto.focus();
+        productoBuscadoCompleto = null;
+    }
+
     if (btnBuscarCompleto) {
-        btnBuscarCompleto.addEventListener('click', buscarYAgregarProductoCompleto);
+        btnBuscarCompleto.addEventListener('click', buscarProductoCompleto);
+    }
+    if (btnAgregarCompleto) {
+        btnAgregarCompleto.addEventListener('click', agregarProductoCompleto);
     }
     if (inputBuscarCompleto) {
         inputBuscarCompleto.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                buscarYAgregarProductoCompleto();
+                buscarProductoCompleto();
             }
         });
     }
@@ -682,9 +838,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const productos = MarketWorld.data.getProducts();
             const productosFiltrados = productos.filter(p =>
-                p.activo && (
-                    p.nombre.toLowerCase().includes(termino) ||
-                    p.codigo.toLowerCase().includes(termino)
+                p && p.activo && (
+                    String(p.nombre || '').toLowerCase().includes(termino) ||
+                    String(p.codigo || '').toLowerCase().includes(termino)
                 )
             );
 
@@ -711,8 +867,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 item.addEventListener('click', function() {
-                    agregarAlCarrito(producto, 1);
-                    inputBuscarCompleto.value = '';
+                    productoBuscadoCompleto = producto;
+                    inputBuscarCompleto.value = `${String(producto.codigo || '').trim()} - ${String(producto.nombre || '').trim()}`;
+                    mostrarNotificacion(`Seleccionado: ${producto.nombre}. Ahora presiona Agregar.`, 'info');
                     suggestionsCompleto.style.display = 'none';
                     suggestionsCompleto.innerHTML = '';
                 });
@@ -734,9 +891,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         container.innerHTML = '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>';
 
-        const productos = MarketWorld.data.getProducts();
-        const productosActivos = productos.filter(p => p.activo);
-        const productosDestacados = productosActivos.slice(0, 6);
+        const productosActivos = getProductosActivos();
+        const productosDestacados = productosActivos
+            .slice()
+            .sort(function(a, b) { return (b.id || 0) - (a.id || 0); })
+            .slice(0, 6);
 
         const grid = document.createElement('div');
         grid.className = 'row g-2';
@@ -745,7 +904,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const col = document.createElement('div');
             col.className = 'col-md-4 col-6';
             col.innerHTML = `
-                <div class="card h-100 producto-card" style="cursor: pointer;" onclick="agregarProductoRapido(${producto.id})">
+                <div class="card h-100 producto-card" style="cursor: pointer;" onclick="seleccionarProductoCompleto(${producto.id})">
                     <div class="card-body text-center p-2">
                         <i class="bi bi-box-seam text-primary fs-2"></i>
                         <h6 class="card-title small mt-2 mb-1">${producto.nombre}</h6>
@@ -759,6 +918,76 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         container.appendChild(grid);
+    }
+
+    window.seleccionarProductoCompleto = function(id) {
+        const producto = MarketWorld.data.findProductById(id);
+        if (!producto || !producto.activo) return;
+
+        productoBuscadoCompleto = producto;
+        if (inputBuscarCompleto) {
+            inputBuscarCompleto.value = `${String(producto.codigo || '').trim()} - ${String(producto.nombre || '').trim()}`;
+        }
+        mostrarNotificacion(`Seleccionado: ${producto.nombre}. Ahora presiona Agregar.`, 'info');
+    };
+
+    function getProductosActivos() {
+        const productos = MarketWorld.data.getProducts();
+        return productos.filter(function(p) {
+            return p && p.activo;
+        });
+    }
+
+    async function sincronizarProductosFacturacionConApi() {
+        try {
+            const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products;
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!hasApi || !token) return;
+
+            const response = await MarketWorld.api.products.getAll();
+            let apiProducts = [];
+            if (Array.isArray(response && response.data)) {
+                apiProducts = response.data;
+            } else if (response && response.data && Array.isArray(response.data.data)) {
+                apiProducts = response.data.data;
+            }
+            if (apiProducts.length === 0) return;
+
+            const localProducts = MarketWorld.data.getProducts();
+            const byCode = new Map();
+
+            localProducts.forEach(function(product) {
+                if (product && product.codigo) {
+                    byCode.set(String(product.codigo).toLowerCase(), product);
+                }
+            });
+
+            apiProducts.forEach(function(apiProduct) {
+                const mapped = {
+                    id: apiProduct.id,
+                    codigo: apiProduct.sku || '',
+                    nombre: apiProduct.nombre || '',
+                    descripcion: apiProduct.descripcion || '',
+                    categoria: apiProduct.categoria || 'General',
+                    precio: parseFloat(apiProduct.precio_venta || 0),
+                    costo: parseFloat(apiProduct.precio_compra || 0),
+                    stock: parseInt(apiProduct.stock || 0, 10),
+                    stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
+                    unidad: apiProduct.unidad || 'Unidad',
+                    proveedor: apiProduct.proveedor || '',
+                    fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+                    activo: (apiProduct.estado || 'Activo') === 'Activo'
+                };
+
+                if (mapped.codigo) {
+                    byCode.set(String(mapped.codigo).toLowerCase(), mapped);
+                }
+            });
+
+            localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
+        } catch (error) {
+            console.warn('No se pudieron sincronizar productos desde API en facturación:', error.message || error);
+        }
     }
 
     // Actualizar número de factura y fechas en modo completo
@@ -801,206 +1030,183 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Historial de facturas
+    // Cargar historial de facturas al iniciar
     cargarHistorial();
-    
-    // Botón filtrar historial
-    const btnFiltrar = document.getElementById('btnFiltrarHistorial');
-    if (btnFiltrar) {
-        btnFiltrar.addEventListener('click', cargarHistorial);
-    }
-    
-    // Escuchar cambio en pestaña historial para refrescar
-    const historyTab = document.querySelector('a[href="#history"], button[data-bs-target="#history"]');
-    if (historyTab) {
-        historyTab.addEventListener('click', function() {
-            setTimeout(cargarHistorial, 100);
-        });
-    }
-    
-    // Init
-    renderizarCarrito();
-    calcularTotales();
-    
-    const productos = MarketWorld.data.getProducts();
-    console.log(' Sistema de facturación listo. Productos disponibles:', productos.length);
-});
 
-// Resaltar texto
-function resaltarTexto(texto, busqueda) {
-    const regex = new RegExp(`(${busqueda})`, 'gi');
-    return texto.replace(regex, '<span class="highlight">$1</span>');
-}
+    function activarPestanaHistorial() {
+        const historyTab = document.querySelector('.nav-link[href="#history"]');
+        if (!historyTab || typeof bootstrap === 'undefined' || !bootstrap.Tab) return;
+        const tabInstance = bootstrap.Tab.getOrCreateInstance(historyTab);
+        tabInstance.show();
+    }
 
-// Cargar historial de facturas
-function cargarHistorial() {
-    const tbody = document.getElementById('tablaHistorial');
-    const sinFacturas = document.getElementById('sinFacturas');
-    if (!tbody) return;
-    
-    // Obtener facturas
-    let facturas = MarketWorld.data.getInvoices();
-    
-    // Aplicar filtros
-    const filtroEstado = document.getElementById('filtroEstado')?.value;
-    const filtroCliente = document.getElementById('filtroCliente')?.value?.trim().toLowerCase();
-    const filtroFechaInicio = document.getElementById('filtroFechaInicio')?.value;
-    const filtroFechaFin = document.getElementById('filtroFechaFin')?.value;
-    
-    if (filtroEstado && filtroEstado !== 'todos') {
-        facturas = facturas.filter(f => f.estado === filtroEstado);
-    }
-    
-    if (filtroCliente) {
-        facturas = facturas.filter(f => 
-            f.clienteNombre.toLowerCase().includes(filtroCliente) ||
-            f.clienteDocumento.toLowerCase().includes(filtroCliente)
-        );
-    }
-    
-    if (filtroFechaInicio) {
-        facturas = facturas.filter(f => f.fechaCreacion.split('T')[0] >= filtroFechaInicio);
-    }
-    
-    if (filtroFechaFin) {
-        facturas = facturas.filter(f => f.fechaCreacion.split('T')[0] <= filtroFechaFin);
-    }
-    
-    // Ordenar por fecha más reciente
-    facturas.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
-    
-    // Actualizar KPIs
-    actualizarKPIs();
-    
-    // Renderizar tabla
-    tbody.innerHTML = '';
-    
-    if (facturas.length === 0) {
-        if (sinFacturas) sinFacturas.style.display = 'block';
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center py-4 text-muted">
-                    <i class="bi bi-receipt-cutoff fs-1"></i>
-                    <p class="mt-2">No se encontraron facturas</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    if (sinFacturas) sinFacturas.style.display = 'none';
-    
-    facturas.forEach(factura => {
-        const fecha = new Date(factura.fechaCreacion);
-        const fechaStr = fecha.toLocaleDateString('es-CO');
+    async function cargarHistorial() {
+        const tbody = document.getElementById('tablaHistorial');
+        if (!tbody) return;
         
-        // Iconos de método de pago
-        const metodoPagoIconos = {
-            'efectivo': '<i class="bi bi-cash-coin me-1"></i> Efectivo',
-            'tarjeta': '<i class="bi bi-credit-card me-1"></i> Tarjeta',
-            'transferencia': '<i class="bi bi-bank me-1"></i> Transferencia'
-        };
-        
-        // Colores de estado
-        const estadoClases = {
-            'Pagada': 'bg-success',
-            'Pendiente': 'bg-warning text-dark',
-            'Cancelada': 'bg-danger'
-        };
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${factura.numeroFactura}</strong></td>
-            <td>${fechaStr}</td>
-            <td>
-                <div>${factura.clienteNombre}</div>
-                <div class="text-muted small">${factura.clienteDocumento}</div>
-            </td>
-            <td class="fw-bold">$${Math.round(factura.total).toLocaleString('es-CO')}</td>
-            <td><span class="badge ${estadoClases[factura.estado] || 'bg-secondary'}">${factura.estado}</span></td>
-            <td>${metodoPagoIconos[factura.metodoPago] || factura.metodoPago}</td>
-            <td>${factura.vendedor || '-'}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" onclick="verDetalleFactura(${factura.id})">
-                    <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-secondary me-1" title="Imprimir" onclick="verDetalleFactura(${factura.id}); setTimeout(imprimirFactura, 500);">
-                    <i class="bi bi-printer"></i>
-                </button>
-                ${factura.estado !== 'Cancelada' ? `
-                <button class="btn btn-sm btn-outline-danger" title="Anular factura" onclick="anularFactura(${factura.id})">
-                    <i class="bi bi-x-circle"></i>
-                </button>` : ''}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+        try {
+            const token = localStorage.getItem('marketworld_auth_token');
+            const response = await fetch('http://127.0.0.1:8000/api/v1/invoices', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            
+            if (!result.success) return;
 
-// Actualizar KPIs del historial
-function actualizarKPIs() {
-    const facturas = MarketWorld.data.getInvoices();
-    
-    const totalFacturado = facturas.reduce((sum, f) => sum + (f.total || 0), 0);
-    const pagadas = facturas.filter(f => f.estado === 'Pagada').length;
-    const pendientes = facturas.filter(f => f.estado === 'Pendiente').length;
-    const canceladas = facturas.filter(f => f.estado === 'Cancelada').length;
-    
-    const kpiTotal = document.getElementById('kpiTotalFacturado');
-    const kpiPagadas = document.getElementById('kpiFacturasPagadas');
-    const kpiPendientes = document.getElementById('kpiFacturasPendientes');
-    const kpiCanceladas = document.getElementById('kpiFacturasCanceladas');
-    
-    if (kpiTotal) kpiTotal.textContent = '$' + Math.round(totalFacturado).toLocaleString('es-CO');
-    if (kpiPagadas) kpiPagadas.textContent = pagadas;
-    if (kpiPendientes) kpiPendientes.textContent = pendientes;
-    if (kpiCanceladas) kpiCanceladas.textContent = canceladas;
-}
+            const facturas = Array.isArray(result.data) ? result.data : [];
+            facturasHistorialCache = facturas;
+            
+            // Renderizar tabla
+            tbody.innerHTML = '';
+            
+            if (facturas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center">No hay facturas registradas</td></tr>`;
+                return;
+            }
+            
+            facturas.forEach(factura => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${factura.numero_factura}</strong></td>
+                    <td>${new Date(factura.fecha).toLocaleDateString()}</td>
+                    <td>${factura.customer_id ? 'Cliente #' + factura.customer_id : 'Venta General'}</td>
+                    <td class="fw-bold">$${parseFloat(factura.total).toLocaleString('es-CO')}</td>
+                    <td><span class="badge bg-success">${factura.estado}</span></td>
+                    <td>${factura.metodo_pago}</td>
+                    <td>${factura.seller?.name || 'Sistema'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary btn-ver-factura" data-factura-id="${factura.id}" type="button">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const botonesVer = tbody.querySelectorAll('.btn-ver-factura');
+            botonesVer.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(btn.getAttribute('data-factura-id'), 10);
+                    if (!isNaN(id)) {
+                        verDetalleFactura(id);
+                    }
+                });
+            });
+
+            // Actualizar KPIs de facturación
+            actualizarKPIs(facturas);
+
+            if (deepLinkInvoiceRef) {
+                const match = facturas.find(function(f) {
+                    return String(f.id) === String(deepLinkInvoiceRef)
+                        || String(f.numero_factura || '').toLowerCase() === String(deepLinkInvoiceRef).toLowerCase();
+                });
+                if (match) {
+                    verDetalleFactura(match.id);
+                    deepLinkInvoiceRef = null;
+                }
+            }
+
+        } catch (error) {
+            console.error('Error al cargar historial:', error);
+        }
+    }
+
+    function actualizarKPIs(facturas) {
+        const total = facturas.reduce((sum, f) => sum + parseFloat(f.total), 0);
+        const kpiTotal = document.getElementById('kpiTotalFacturado');
+        if (kpiTotal) kpiTotal.textContent = '$' + total.toLocaleString('es-CO');
+    }
+
 
 // Ver detalle de factura
-function verDetalleFactura(facturaId) {
-    const factura = MarketWorld.data.findInvoiceById(facturaId);
+async function verDetalleFactura(facturaId) {
+    let factura = null;
+
+    try {
+        const token = localStorage.getItem('marketworld_auth_token');
+        if (token) {
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/invoices/${facturaId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result && result.success && result.data) {
+                factura = result.data;
+            }
+        }
+    } catch (error) {
+        console.warn('No se pudo obtener detalle por API, usando cache:', error.message || error);
+    }
+
+    if (!factura) {
+        factura = facturasHistorialCache.find(function(f) {
+            return String(f.id) === String(facturaId);
+        });
+    }
+
     if (!factura) {
         alert('Factura no encontrada');
         return;
     }
-    
-    const fecha = new Date(factura.fechaCreacion).toLocaleDateString('es-CO');
-    
+
+    const numeroFactura = factura.numero_factura || factura.numeroFactura || factura.numero || `FAC-${factura.id || ''}`;
+    const fechaRaw = factura.fecha || factura.created_at || factura.fechaCreacion || new Date().toISOString();
+    const fecha = new Date(fechaRaw).toLocaleDateString('es-CO');
+    const estado = factura.estado || 'Pagada';
+    const metodoPago = factura.metodo_pago || factura.metodoPago || '-';
+    const vendedor = factura.seller?.name || factura.vendedor || 'Sistema';
+    const clienteNombre = factura.customer?.nombre || factura.clienteNombre || (factura.customer_id ? `Cliente #${factura.customer_id}` : 'Venta General');
+    const clienteDocumento = factura.customer?.documento || factura.clienteDocumento || '-';
+    const subtotal = parseFloat(factura.subtotal || 0) || 0;
+    const iva = parseFloat(factura.impuestos || factura.iva || 0) || 0;
+    const total = parseFloat(factura.total || 0) || 0;
+    const descuento = parseFloat(factura.descuento || 0) || 0;
+
+    const items = Array.isArray(factura.items)
+        ? factura.items
+        : (Array.isArray(factura.detalles) ? factura.detalles : []);
+
     let itemsHTML = '';
-    factura.items.forEach(item => {
-        const itemTotal = item.precioUnitario * item.cantidad;
-        itemsHTML += `
-            <tr>
-                <td>${item.nombre}</td>
-                <td class="text-center">${item.cantidad}</td>
-                <td class="text-end">$${item.precioUnitario.toLocaleString('es-CO')}</td>
-                <td class="text-center">${item.iva}% <small class="text-muted">(inc.)</small></td>
-                <td class="text-end">$${Math.round(itemTotal).toLocaleString('es-CO')}</td>
-            </tr>
-        `;
-    });
-    
-    const descuento = factura.descuento || 0;
-    
+    if (items.length === 0) {
+        itemsHTML = '<tr><td colspan="5" class="text-center text-muted">No hay detalles de productos disponibles.</td></tr>';
+    } else {
+        items.forEach(function(item) {
+            const nombre = item.producto?.nombre || item.nombre || item.product_name || `Producto #${item.product_id || ''}`;
+            const cantidad = parseFloat(item.cantidad || item.quantity || 0) || 0;
+            const precio = parseFloat(item.precio_unitario || item.precioUnitario || item.price || 0) || 0;
+            const itemIva = parseFloat(item.iva || 19) || 19;
+            const itemTotal = parseFloat(item.subtotal || (precio * cantidad)) || 0;
+
+            itemsHTML += `
+                <tr>
+                    <td>${nombre}</td>
+                    <td class="text-center">${cantidad}</td>
+                    <td class="text-end">$${Math.round(precio).toLocaleString('es-CO')}</td>
+                    <td class="text-center">${itemIva}% <small class="text-muted">(inc.)</small></td>
+                    <td class="text-end">$${Math.round(itemTotal).toLocaleString('es-CO')}</td>
+                </tr>
+            `;
+        });
+    }
+
     const title = document.getElementById('modalDetalleTitle');
     const body = document.getElementById('modalDetalleBody');
-    
-    if (title) title.textContent = `Factura ${factura.numeroFactura}`;
+
+    if (title) title.textContent = `Factura ${numeroFactura}`;
     if (body) {
         body.innerHTML = `
             <div class="row mb-3">
                 <div class="col-md-6">
                     <h6 class="text-muted">Datos del Cliente</h6>
-                    <p class="mb-1"><strong>${factura.clienteNombre}</strong></p>
-                    <p class="mb-1">Documento: ${factura.clienteDocumento}</p>
+                    <p class="mb-1"><strong>${clienteNombre}</strong></p>
+                    <p class="mb-1">Documento: ${clienteDocumento}</p>
                 </div>
                 <div class="col-md-6 text-end">
                     <h6 class="text-muted">Datos de la Factura</h6>
-                    <p class="mb-1"><strong>${factura.numeroFactura}</strong></p>
+                    <p class="mb-1"><strong>${numeroFactura}</strong></p>
                     <p class="mb-1">Fecha: ${fecha}</p>
-                    <p class="mb-1">Estado: <span class="badge ${factura.estado === 'Pagada' ? 'bg-success' : factura.estado === 'Pendiente' ? 'bg-warning' : 'bg-danger'}">${factura.estado}</span></p>
-                    <p class="mb-0">Vendedor: ${factura.vendedor || '-'}</p>
+                    <p class="mb-1">Estado: <span class="badge ${estado === 'Pagada' ? 'bg-success' : estado === 'Pendiente' ? 'bg-warning' : 'bg-danger'}">${estado}</span></p>
+                    <p class="mb-0">Vendedor: ${vendedor}</p>
                 </div>
             </div>
             <hr>
@@ -1020,11 +1226,11 @@ function verDetalleFactura(facturaId) {
                 <div class="col-md-5">
                     <div class="d-flex justify-content-between mb-1">
                         <span>Subtotal:</span>
-                        <strong>$${Math.round(factura.subtotal).toLocaleString('es-CO')}</strong>
+                        <strong>$${Math.round(subtotal).toLocaleString('es-CO')}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
                         <span>IVA:</span>
-                        <strong>$${Math.round(factura.iva).toLocaleString('es-CO')}</strong>
+                        <strong>$${Math.round(iva).toLocaleString('es-CO')}</strong>
                     </div>
                     ${descuento > 0 ? `
                     <div class="d-flex justify-content-between mb-1 text-danger">
@@ -1034,16 +1240,16 @@ function verDetalleFactura(facturaId) {
                     <hr>
                     <div class="d-flex justify-content-between">
                         <span class="fs-5 fw-bold">TOTAL:</span>
-                        <span class="fs-5 fw-bold text-primary">$${Math.round(factura.total).toLocaleString('es-CO')}</span>
+                        <span class="fs-5 fw-bold text-primary">$${Math.round(total).toLocaleString('es-CO')}</span>
                     </div>
                     <div class="mt-2 text-muted small">
-                        Método de pago: ${factura.metodoPago}
+                        Método de pago: ${metodoPago}
                     </div>
                 </div>
             </div>
         `;
     }
-    
+
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleFactura'));
     modal.show();
 }
@@ -1100,3 +1306,8 @@ function imprimirFactura() {
     `);
     ventana.document.close();
 }
+
+window.verDetalleFactura = verDetalleFactura;
+window.imprimirFactura = imprimirFactura;
+
+});

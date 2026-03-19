@@ -279,6 +279,7 @@
                     return n.titulo.includes(product.nombre) && 
                            n.tipo === 'warning' &&
                            // ======= ÚLTIMAS 24H =======
+                           (new Date() - new Date(n.fechaCreacion)) < (24 * 60 * 60 * 1000);
                 });
 
                 if (!exists) {
