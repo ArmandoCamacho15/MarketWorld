@@ -156,6 +156,21 @@
     };
 
     // -------------------------------------------------------
+    // API de Compras (Módulo Compras)
+    // -------------------------------------------------------
+    var PurchaseAPI = {
+        getAll: function () {
+            return apiFetch('/purchases');
+        },
+        create: function (data) {
+            return apiFetch('/purchases', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        }
+    };
+
+    // -------------------------------------------------------
     // API de Autenticación (Sanctum)
     // -------------------------------------------------------
     var AuthAPI = {
@@ -165,9 +180,9 @@
                 method: 'POST',
                 body: JSON.stringify({ email: email, password: password }),
             }).then(function (res) {
-                if (res && res.success && res.token) {
-                    localStorage.setItem(AUTH_TOKEN_KEY, res.token);
-                    localStorage.setItem('marketworld_auth_user', JSON.stringify(res.user));
+                if (res && res.success && res.data && res.data.token) {
+                    localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
+                    localStorage.setItem('marketworld_auth_user', JSON.stringify(res.data.user));
                 }
                 return res;
             });
@@ -207,6 +222,7 @@
     global.MarketWorld.api = {
         products:  ProductAPI,
         customers: CustomerAPI,
+        purchases: PurchaseAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         BASE_URL: BASE_URL,

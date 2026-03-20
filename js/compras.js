@@ -191,27 +191,36 @@
     }
 
     // --- KPIs ---
-    function actualizarKPIs() {
-        const purchases = MarketWorld.data.getPurchases();
-        const payments = MarketWorld.data.getPayments();
+    async function actualizarKPIs() {
+        const localPurchases = MarketWorld.data.getPurchases();
         const suppliers = MarketWorld.data.getSuppliers().filter(s => s.activo);
 
-        // Total a pagar (saldos pendientes de TODAS las compras)
-        const totalPagar = purchases.filter(p => p.estado !== 'Cancelado').reduce((sum, p) => sum + (p.saldo || 0), 0);
-        setTextSafe('kpiTotalPagar', formatMoney(totalPagar));
-
-        // Compras este mes
         const now = new Date();
         const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
-        const comprasMes = purchases.filter(p => new Date(p.fechaCreacion) >= inicioMes && p.estado !== 'Cancelado');
+    
+        // Obtener compras desde API para KPIs reales
+        let apiPurchases = [];
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.purchases) {
+            try {
+                const resp = await MarketWorld.api.purchases.getAll();
+                if (resp && resp.success) apiPurchases = resp.data;
+            } catch(e) { console.warn('KPIs: No se pudo conectar a la API.'); }
+        }
+
+        // Si tenemos datos de la API, los usamos; si no, caemos a local
+        const purchases = apiPurchases.length > 0 ? apiPurchases : localPurchases;
+
+        const totalPagar = purchases.filter(p => p.estado !== 'Cancelado' && p.estado !== 'Recibida')
+                                    .reduce((sum, p) => sum + (p.total || 0), 0);
+        setTextSafe('kpiTotalPagar', formatMoney(totalPagar));
+
+        const comprasMes = purchases.filter(p => new Date(p.created_at || p.fechaCreacion) >= inicioMes && p.estado !== 'Cancelado');
         const totalMes = comprasMes.reduce((sum, p) => sum + (p.total || 0), 0);
         setTextSafe('kpiComprasMes', formatMoney(totalMes));
 
-        // Compras pendientes (cantidad de órdenes pendientes de recibir - estado Pendiente)
         const pendientes = purchases.filter(p => p.estado === 'Pendiente').length;
         setTextSafe('kpiComprasPendientes', pendientes);
 
-        // Proveedores activos
         setTextSafe('kpiProveedoresActivos', suppliers.length);
     }
 
@@ -222,8 +231,16 @@
             return;
         }
 
-        const products = MarketWorld.data.getProducts().filter(p => p.activo);
         const q = query.toLowerCase();
+        let products = [];
+        
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products) {
+            // Intentar obtener del estado global si existe o de la data local
+            products = MarketWorld.data.getProducts().filter(p => p.activo);
+        } else {
+            products = MarketWorld.data.getProducts().filter(p => p.activo);
+        }
+
         const resultados = products.filter(p =>
             p.nombre.toLowerCase().includes(q) ||
             p.codigo.toLowerCase().includes(q)
@@ -390,6 +407,8 @@
 
     // --- Registrar compra ---
     async function registrarCompra() {
+        const btnSave = document.querySelector('button[onclick="registrarCompra()"]');
+        
         // Validaciones
         const proveedorId = document.getElementById('selectProveedor')?.value;
         if (!proveedorId) {
@@ -409,57 +428,56 @@
         const envio = parseFloat(document.getElementById('envioInput')?.value) || 0;
         const total = subtotal + iva - descuento + envio;
 
-        try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) throw new Error('No hay sesión activa.');
+        const originalText = btnSave ? btnSave.innerHTML : '';
+        if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+        }
 
+        try {
             const ordenNumero = document.getElementById('numeroOrden')?.value || 'COM-' + Date.now();
             const observaciones = document.getElementById('observacionesCompra')?.value || '';
             const fechaVal = document.getElementById('fechaCompra')?.value || new Date().toISOString().split('T')[0];
 
             const purchaseData = {
                 numero_orden: ordenNumero,
-                proveedor: document.querySelector('#selectProveedor option:checked')?.text || 'Proveedor',
-                fecha: fechaVal + ' ' + new Date().toTimeString().split(' ')[0],
+                supplier_id: parseInt(proveedorId),
+                fecha: fechaVal,
                 total: total,
                 estado: 'Recibida',
                 observaciones: observaciones,
                 items: carrito.map(item => ({
                     product_id: item.productoId,
                     cantidad: item.cantidad,
-                    costo_unitario: item.precioUnitario,
+                    precio_unitario: item.precioUnitario,
                     subtotal: item.subtotal
                 }))
             };
 
-            const response = await fetch('http://127.0.0.1:8000/api/v1/purchases', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(purchaseData)
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.message || 'Error al guardar la compra en el servidor.');
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.purchases) {
+                throw new Error('Adaptador de API no disponible');
             }
 
-            console.log('✅ Compra registrada en API:', result.data);
-            
-            mostrarAlerta(`Orden ${ordenNumero} registrada exitosamente. El stock ha sido aumentado.`, 'success');
+            const response = await MarketWorld.api.purchases.create(purchaseData);
 
-            // Limpiar y actualizar
-            limpiarFormularioCompra();
-            if (typeof actualizarKPIs === 'function') actualizarKPIs();
-            if (typeof cargarHistorial === 'function') cargarHistorial();
+            if (response && response.success) {
+                console.log('✅ Compra registrada en API:', response.data);
+                mostrarAlerta(`Orden ${ordenNumero} registrada exitosamente. El stock ha sido aumentado.`, 'success');
+                limpiarFormularioCompra();
+                cargarHistorial();
+                actualizarKPIs();
+            } else {
+                throw new Error(response.message || 'Error al guardar la compra.');
+            }
             
         } catch (error) {
             console.error('Error al registrar compra:', error);
-            mostrarAlerta(`❌ Error de Producción: ${error.message}`, 'danger');
+            mostrarAlerta(`❌ Error: ${error.message}`, 'danger');
+        } finally {
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.innerHTML = originalText;
+            }
         }
     }
 
@@ -487,15 +505,14 @@
         if (!tbody) return;
 
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            const response = await fetch('http://127.0.0.1:8000/api/v1/purchases', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.purchases) {
+                return;
+            }
 
-            if (!result.success) return;
+            const response = await MarketWorld.api.purchases.getAll();
+            if (!response || !response.success) return;
 
-            const purchases = result.data;
+            const purchases = response.data;
             tbody.innerHTML = '';
 
             if (purchases.length === 0) {

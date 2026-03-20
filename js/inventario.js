@@ -92,19 +92,61 @@
 
     function showApiError(error, fallbackMessage) {
         var status = parseHttpStatus(error);
+        var body = error.body || {};
+        var errorMessage = body.message || error.message || fallbackMessage;
+
+        // Manejo de errores de validación (422) con Bootstrap 5
+        if (status === 422 && body.errors) {
+            console.warn('Errores de validación:', body.errors);
+            highlightFormErrors(body.errors);
+            return;
+        }
+
         if (status === 404) {
-            alert('No se encontró el recurso solicitado (404). Verifica si el producto aún existe.');
+            alert('No se encontró el recurso solicitado (404). ' + errorMessage);
             return;
         }
-        if (status === 422) {
-            alert('Datos inválidos (422). Revisa campos obligatorios, formato y valores numéricos.');
-            return;
-        }
+        
         if (status === 500) {
             alert('Error interno del servidor (500). Revisa logs del backend e intenta nuevamente.');
             return;
         }
-        alert(fallbackMessage || ('Error en API: ' + ((error && error.message) || 'desconocido')));
+        
+        alert(errorMessage);
+    }
+
+    function highlightFormErrors(errors) {
+        // Limpiar errores previos
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+        // Mapear campos de API a IDs de formulario
+        var fieldMap = {
+            'sku': 'productCodigo',
+            'nombre': 'productNombre',
+            'precio_venta': 'productPrecio',
+            'precio_compra': 'productCosto',
+            'stock': 'productStock'
+        };
+
+        Object.keys(errors).forEach(function(key) {
+            var fieldId = fieldMap[key] || ('product' + key.charAt(0).toUpperCase() + key.slice(1));
+            var input = document.getElementById(fieldId);
+            
+            if (input) {
+                input.classList.add('is-invalid');
+                var feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback';
+                feedback.textContent = errors[key][0]; // Mostrar el primer error
+                input.parentNode.appendChild(feedback);
+            }
+        });
+
+        // Hacer scroll al primer error
+        var firstError = document.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -384,6 +426,15 @@
 
         if (hasProductApi()) {
             var payload = mapFrontendProductToApi(productData);
+            var saveButton = document.querySelector('#productForm button[type="submit"]') || 
+                            document.querySelector('#btnSaveProduct');
+            
+            if (saveButton) {
+                var originalHtml = saveButton.innerHTML;
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando...';
+            }
+
             var request = productId
                 ? MarketWorld.api.products.update(productId, payload)
                 : MarketWorld.api.products.create(payload);
@@ -395,6 +446,11 @@
                     }
                 })
                 .catch(function(err) {
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = originalHtml;
+                    }
+
                     if (isConnectivityError(err)) {
                         var fallbackResult = productId
                             ? MarketWorld.data.updateProduct(productId, productData)

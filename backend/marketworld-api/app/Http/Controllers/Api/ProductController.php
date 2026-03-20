@@ -35,8 +35,10 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Productos listados correctamente',
             'data'    => $products,
             'total'   => $products->count(),
+            'errors'  => null,
         ]);
     }
 
@@ -46,10 +48,20 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Producto no encontrado'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Producto no encontrado',
+                'data'    => null,
+                'errors'  => null,
+            ], 404);
         }
 
-        return response()->json(['success' => true, 'data' => $product]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Producto encontrado',
+            'data'    => $product,
+            'errors'  => null,
+        ]);
     }
 
     // POST /api/v1/products
@@ -93,6 +105,7 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'Producto creado correctamente',
             'data'    => $product,
+            'errors'  => null,
         ], 201);
     }
 
@@ -102,7 +115,29 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Producto no encontrado'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Producto no encontrado',
+                'data'    => null,
+                'errors'  => null,
+            ], 404);
+        }
+
+        // Normalizar los nombres de los campos que vienen del frontend
+        if ($request->has('codigo') && !$request->has('sku')) {
+            $request->merge(['sku' => $request->codigo]);
+        }
+        if ($request->has('precio') && !$request->has('precio_venta')) {
+            $request->merge(['precio_venta' => $request->precio]);
+        }
+        if ($request->has('costo') && !$request->has('precio_compra')) {
+            $request->merge(['precio_compra' => $request->costo]);
+        }
+        if ($request->has('stockActual') && !$request->has('stock')) {
+            $request->merge(['stock' => $request->stockActual]);
+        }
+        if ($request->has('stockMinimo') && !$request->has('stock_minimo')) {
+            $request->merge(['stock_minimo' => $request->stockMinimo]);
         }
 
         $validated = $request->validate([
@@ -126,6 +161,7 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'Producto actualizado correctamente',
             'data'    => $product->fresh(),
+            'errors'  => null,
         ]);
     }
 
@@ -135,7 +171,12 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Producto no encontrado'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Producto no encontrado',
+                'data'    => null,
+                'errors'  => null,
+            ], 404);
         }
 
         $product->delete();
@@ -143,6 +184,8 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Producto eliminado correctamente',
+            'data'    => null,
+            'errors'  => null,
         ]);
     }
 
@@ -155,8 +198,10 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Productos con stock bajo listados',
             'data'    => $products,
             'total'   => $products->count(),
+            'errors'  => null,
         ]);
     }
 }

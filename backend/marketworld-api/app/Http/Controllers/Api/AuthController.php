@@ -36,13 +36,16 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Inicio de sesión exitoso',
-            'token' => $token, // El token ahora es el plainTextToken de Sanctum
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol', // Modificado: Retorna el rol real
+            'data'    => [
+                'token' => $token,
+                'user'  => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'rol'   => $user->getRoleNames()->first() ?? 'Sin Rol',
+                ],
             ],
+            'errors'  => null,
         ]);
     }
 
@@ -56,12 +59,14 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
+            'message' => 'Perfil del usuario obtenido',
+            'data'    => [
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'email' => $user->email,
-                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol', // Modificado: Retorna el rol real
+                'rol'   => $user->getRoleNames()->first() ?? 'Sin Rol',
             ],
+            'errors'  => null,
         ]);
     }
 
@@ -76,6 +81,8 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Sesión cerrada correctamente',
+            'data'    => null,
+            'errors'  => null,
         ]);
     }
 }

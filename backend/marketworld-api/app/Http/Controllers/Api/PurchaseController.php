@@ -22,7 +22,12 @@ class PurchaseController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json(['success' => true, 'data' => $purchases]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Compras listadas correctamente',
+            'data'    => $purchases,
+            'errors'  => null,
+        ]);
     }
 
     /**
@@ -34,7 +39,12 @@ class PurchaseController extends Controller
         $authUser = $request->user();
 
         if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado',
+                'data'    => null,
+                'errors'  => null,
+            ], 401);
         }
 
         $validator = Validator::make($request->all(), [
@@ -48,7 +58,12 @@ class PurchaseController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación en los datos de la compra.',
+                'data'    => null,
+                'errors'  => $validator->errors(),
+            ], 422);
         }
 
         try {
@@ -64,7 +79,7 @@ class PurchaseController extends Controller
                 ]);
 
                 foreach ($request->items as $item) {
-                    $purchaseItem = PurchaseItem::create([
+                    PurchaseItem::create([
                         'purchase_id'     => $purchase->id,
                         'product_id'      => $item['product_id'],
                         'cantidad'        => $item['cantidad'],
@@ -87,11 +102,17 @@ class PurchaseController extends Controller
                 return response()->json([
                     'success' => true, 
                     'message' => 'Compra registrada con éxito y stock actualizado',
-                    'data'    => $purchase->load(['supplier', 'items.product'])
+                    'data'    => $purchase->load(['supplier', 'items.product']),
+                    'errors'  => null,
                 ], 201);
             });
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data'    => null,
+                'errors'  => null,
+            ], 400);
         }
     }
 }

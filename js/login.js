@@ -127,7 +127,8 @@
                         localStorage.removeItem('marketworld_remember_email');
                     }
                     
-                    showNotification('¡Bienvenido ' + (body.user.name || '') + '!', 'success');
+                    var user = body.data.user;
+                    showNotification('¡Bienvenido ' + (user.name || '') + '!', 'success');
                     
                     setTimeout(function() {
                         window.location.href = 'inicio.html';
