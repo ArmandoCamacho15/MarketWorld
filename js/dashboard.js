@@ -226,55 +226,68 @@
 
     async function fetchDashboardStats() {
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) return;
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.dashboard) {
+                console.warn('Adaptador de API no disponible para Dashboard stats');
+                return;
+            }
 
-            const response = await fetch('http://127.0.0.1:8000/api/v1/dashboard/stats', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
+            const result = await MarketWorld.api.dashboard.getStats();
 
             if (result.success) {
+                console.log('📊 Dashboard stats actualizados desde API');
                 updateDashboardUI(result.data);
             }
         } catch (error) {
-            console.error('Error fetching dashboard stats:', error);
+            console.error('Error fetching dashboard stats via adapter:', error);
         }
     }
 
     function updateDashboardUI(data) {
         if (!data) return;
 
-        // Mantiene compatibilidad con endpoint dedicado de dashboard.
-        document.querySelectorAll('.kpi-card').forEach(function(card) {
+        // Actualizar KPIs con IDs específicos si existen, o por etiquetas
+        const kpiCards = document.querySelectorAll('.kpi-card');
+        kpiCards.forEach(function(card) {
             const labelEl = card.querySelector('.kpi-label');
             const valueEl = card.querySelector('.kpi-value');
             if (!labelEl || !valueEl) return;
 
             const label = labelEl.textContent.trim().toLowerCase();
-            if (label === 'ventas totales' && data.sales_month !== undefined) {
-                valueEl.textContent = `$${parseFloat(data.sales_month || 0).toLocaleString('es-CO')}`;
+            
+            if (label.includes('ventas') && data.sales_month !== undefined) {
+                valueEl.textContent = `$${parseFloat(data.sales_month).toLocaleString('es-CO')}`;
             }
-            if (label === 'compras del mes' && data.purchases_month !== undefined) {
-                valueEl.textContent = `$${parseFloat(data.purchases_month || 0).toLocaleString('es-CO')}`;
+            if (label.includes('compras') && data.purchases_month !== undefined) {
+                valueEl.textContent = `$${parseFloat(data.purchases_month).toLocaleString('es-CO')}`;
             }
-            if (label === 'clientes activos' && data.total_customers !== undefined) {
-                valueEl.textContent = `${parseInt(data.total_customers, 10) || 0}`;
+            if (label.includes('clientes') && data.total_customers !== undefined) {
+                valueEl.textContent = data.total_customers.toLocaleString();
             }
-            if (label === 'productos en stock' && data.total_stock !== undefined) {
-                valueEl.textContent = `${parseInt(data.total_stock, 10) || 0}`;
+            if ((label.includes('productos') || label.includes('stock')) && data.total_products !== undefined) {
+                valueEl.textContent = data.total_products.toLocaleString();
             }
         });
 
-        if (Array.isArray(data.sales_by_month) && salesChart) {
-            salesChart.data.datasets[0].data = data.sales_by_month.map(function(v) {
-                return parseFloat(v || 0);
-            });
+        // Actualizar Gráfico de Ventas si hay datos históricos
+        if (data.sales_history && salesChart) {
+            const labels = data.sales_history.map(item => item.label);
+            const totals = data.sales_history.map(item => item.total);
+            
+            salesChart.data.labels = labels;
+            salesChart.data.datasets[0].data = totals;
             salesChart.update();
         }
 
-        // Recalcula también desde facturas para asegurar que la venta recién creada se refleje.
-        applyRealtimeDashboardData();
+        // Actualizar Tabla de Transacciones Recientes
+        if (data.recent_sales) {
+            renderRecentTransactions(data.recent_sales);
+        }
+
+        // Notificar si hay stock bajo
+        if (data.low_stock_count > 0) {
+            console.warn(`⚠️ Hay ${data.low_stock_count} productos con stock bajo.`);
+            // Si el sistema de notificaciones está listo, podrías disparar una alerta aquí.
+        }
     }
 
     // --- Inicializar gráficos con Chart.js ---
@@ -479,25 +492,56 @@
     }
 
     // ======= TRANSACCIONES INTERACTIVAS =======
-    function renderRecentTransactions(optionalInvoices) {
+    function renderRecentTransactions(optionalData) {
         const tbody = document.querySelector('.transaction-table tbody');
         if (!tbody) return;
 
-        const invoices = Array.isArray(optionalInvoices) ? optionalInvoices : getActiveInvoices();
-        const sorted = invoices.slice().sort(function(a, b) {
-            const ad = parseInvoiceDate(a);
-            const bd = parseInvoiceDate(b);
-            return (bd ? bd.getTime() : 0) - (ad ? ad.getTime() : 0);
-        }).slice(0, 5);
+        // Si data viene de la API, tiene una estructura distinta que getActiveInvoices() local
+        let transactions = [];
+        
+        if (Array.isArray(optionalData)) {
+            // Datos mapeados desde DashboardController backend
+            transactions = optionalData;
+        } else {
+            // Fallback a local storage si no hay API
+            const invoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
+                ? MarketWorld.data.getInvoices()
+                : [];
+                
+            transactions = invoices.filter(function(inv) {
+                const estado = String(inv && inv.estado ? inv.estado : '').toLowerCase();
+                return estado !== 'anulada' && estado !== 'cancelada';
+            }).slice(0, 5);
+        }
 
-        if (sorted.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay transacciones registradas</td></tr>';
+        if (transactions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay transacciones recientes</td></tr>';
             return;
         }
 
-        tbody.innerHTML = sorted.map(function(inv) {
+        tbody.innerHTML = transactions.map(function(inv) {
             const estado = String(inv.estado || 'Pagada');
-            const badgeClass = estado.toLowerCase() === 'pagada' ? 'badge-success' : 'badge-warning';
+            const total = parseFloat(inv.total || 0).toLocaleString('es-CO');
+            const cliente = inv.cliente_nombre || (inv.customer ? inv.customer.nombre : 'Consumidor Final');
+            const fecha = inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-CO') : 'Hoy';
+            
+            let badgeClass = 'bg-success';
+            if (estado.toLowerCase() === 'pendiente') badgeClass = 'bg-warning text-dark';
+            if (estado.toLowerCase() === 'anulada') badgeClass = 'bg-danger';
+
+            return `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${inv.numero_factura || ('#00' + inv.id)}</div>
+                        <small class="text-muted">${fecha}</small>
+                    </td>
+                    <td>${cliente}</td>
+                    <td class="fw-bold text-primary">$${total}</td>
+                    <td><span class="badge ${badgeClass}">${estado}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
             const date = parseInvoiceDate(inv);
             const number = inv.numero_factura || inv.numero || `FAC-${inv.id || ''}`;
 

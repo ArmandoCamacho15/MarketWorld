@@ -488,12 +488,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const observaciones = observacionesEl ? observacionesEl.value.trim() : '';
             
             try {
-                const token = localStorage.getItem('marketworld_auth_token');
-                if (!token) throw new Error('No hay sesión activa.');
-
                 const invoiceData = {
                     numero_factura: 'FAC-' + Date.now(),
-                    customer_id: null,
+                    customer_id: 1, // Temporales: se asume cliente genérico id:1 para el MVP si no se selecciona
                     fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
                     subtotal: subtotalBase,
                     impuestos: totalIVA,
@@ -504,17 +501,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     items: invoiceItems
                 };
 
-                const response = await fetch('http://127.0.0.1:8000/api/v1/invoices', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(invoiceData)
-                });
+                if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.invoices) {
+                    throw new Error('Adaptador de API no disponible');
+                }
 
-                const result = await response.json();
+                const result = await MarketWorld.api.invoices.create(invoiceData);
 
                 if (!result.success) {
                     throw new Error(result.message || 'Error al guardar en el servidor.');
@@ -524,6 +515,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('📄 Factura generada por API:', factura);
                 
                 mostrarNotificacion(`✅ Factura ${factura.numero_factura} generada exitosamente`, 'success');
+                
+                // NOTIFICAR STOCK BAJO POST-VENTA
+                if (factura.items && Array.isArray(factura.items)) {
+                    factura.items.forEach(item => {
+                        // Accedemos a product (relación cargada en el backend)
+                        if (item.product && item.product.stock <= item.product.stock_minimo) {
+                            mostrarNotificacion(`⚠️ Stock bajo: ${item.product.nombre} (${item.product.stock} restantes)`, 'warning');
+                        }
+                    });
+                }
+
                 alert(`✅ VENTA EXITOSA\nFactura: ${factura.numero_factura}\nTotal: $${total.toLocaleString('es-CO')}\n\nEl stock ha sido actualizado en la base de datos.`);
                 
                 // Limpiar formulario e interfaz
@@ -1039,13 +1041,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!tbody) return;
         
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            const response = await fetch('http://127.0.0.1:8000/api/v1/invoices', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.invoices) {
+                return;
+            }
+
+            const result = await MarketWorld.api.invoices.getAll();
             
-            if (!result.success) return;
+            if (!result || !result.success) return;
 
             const facturas = Array.isArray(result.data) ? result.data : [];
             facturasHistorialCache = facturas;

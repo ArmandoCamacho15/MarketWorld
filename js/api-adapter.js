@@ -156,6 +156,25 @@
     };
 
     // -------------------------------------------------------
+    // API de Facturación (Módulo Facturación / POS)
+    // -------------------------------------------------------
+    var InvoiceAPI = {
+        getAll: function (filtros) {
+            var params = new URLSearchParams(filtros || {}).toString();
+            return apiFetch('/invoices' + (params ? '?' + params : ''));
+        },
+        getById: function (id) {
+            return apiFetch('/invoices/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/invoices', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        }
+    };
+
+    // -------------------------------------------------------
     // API de Compras (Módulo Compras)
     // -------------------------------------------------------
     var PurchaseAPI = {
@@ -215,6 +234,12 @@
             .catch(function () { return false; });
     }
 
+    var DashboardAPI = {
+        getStats: function () {
+            return apiFetch('/dashboard/stats');
+        }
+    };
+
     // -------------------------------------------------------
     // Exportar bajo el namespace global MarketWorld.api
     // -------------------------------------------------------
@@ -222,7 +247,9 @@
     global.MarketWorld.api = {
         products:  ProductAPI,
         customers: CustomerAPI,
+        invoices:  InvoiceAPI,
         purchases: PurchaseAPI,
+        dashboard: DashboardAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         BASE_URL: BASE_URL,

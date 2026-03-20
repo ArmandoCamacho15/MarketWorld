@@ -24,7 +24,9 @@ class InvoiceController extends Controller
 
         return response()->json([
             'success' => true, 
-            'data' => $invoices
+            'message' => 'Facturas listadas correctamente',
+            'data'    => $invoices,
+            'errors'  => null,
         ]);
     }
 
@@ -37,7 +39,12 @@ class InvoiceController extends Controller
         $authUser = $request->user();
 
         if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado',
+                'data'    => null,
+                'errors'  => null,
+            ], 401);
         }
 
         $validator = Validator::make($request->all(), [
@@ -52,7 +59,12 @@ class InvoiceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación en los datos de la factura.',
+                'data'    => null,
+                'errors'  => $validator->errors(),
+            ], 422);
         }
 
         try {
@@ -75,6 +87,10 @@ class InvoiceController extends Controller
                 foreach ($request->items as $item) {
                     $product = Product::lockForUpdate()->find($item['product_id']);
                     
+                    if (!$product) {
+                        throw new \Exception("Producto no encontrado.");
+                    }
+
                     if ($product->stock < $item['cantidad']) {
                         throw new \Exception("Stock insuficiente para el producto: " . $product->nombre);
                     }
@@ -95,29 +111,41 @@ class InvoiceController extends Controller
                 return response()->json([
                     'success' => true, 
                     'message' => 'Venta registrada con éxito', 
-                    'data'    => $invoice->load(['customer', 'items.product', 'seller'])
+                    'data'    => $invoice->load(['customer', 'items.product', 'seller']),
+                    'errors'  => null,
                 ], 201);
             });
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data'    => null,
+                'errors'  => null,
+            ], 409); // Conflicto de negocio (stock)
         }
     }
 
     /**
-     * Detalle de una factura con relaciones.
+     * Mostrar una factura específica con sus relaciones cargadas.
      */
     public function show($id)
     {
-        // Modificado: Se agregó 'customer' al eager loading
         $invoice = Invoice::with(['customer', 'items.product', 'seller'])->find($id);
-        
+
         if (!$invoice) {
-            return response()->json(['success' => false, 'message' => 'Factura no encontrada'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Factura no encontrada',
+                'data'    => null,
+                'errors'  => null,
+            ], 404);
         }
 
         return response()->json([
-            'success' => true, 
-            'data' => $invoice
+            'success' => true,
+            'message' => 'Factura obtenida correctamente',
+            'data'    => $invoice,
+            'errors'  => null,
         ]);
     }
 }
