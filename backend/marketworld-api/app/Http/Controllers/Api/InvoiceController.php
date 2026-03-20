@@ -12,15 +12,29 @@ use Illuminate\Support\Facades\Validator;
 
 class InvoiceController extends Controller
 {
+    /**
+     * Listado de facturas con Eager Loading para evitar N+1.
+     */
     public function index()
     {
-        $invoices = Invoice::with(['items.product', 'seller'])->orderBy('created_at', 'desc')->get();
-        return response()->json(['success' => true, 'data' => $invoices]);
+        // Modificado: Se agregó 'customer' al eager loading
+        $invoices = Invoice::with(['customer', 'items.product', 'seller'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true, 
+            'data' => $invoices
+        ]);
     }
 
+    /**
+     * Registrar una nueva venta (factura).
+     */
     public function store(Request $request)
     {
-        $authUser = $request->attributes->get('auth_user');
+        // Modificado: Ahora el usuario viene de Sanctum $request->user()
+        $authUser = $request->user();
 
         if (!$authUser) {
             return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
@@ -28,11 +42,12 @@ class InvoiceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'numero_factura' => 'required|unique:invoices',
-            'fecha' => 'required',
-            'metodo_pago' => 'required',
-            'items' => 'required|array|min:1',
+            'customer_id'    => 'required|exists:customers,id', // Validar existencia del cliente
+            'fecha'          => 'required',
+            'metodo_pago'    => 'required',
+            'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.cantidad' => 'required|integer|min:1',
+            'items.*.cantidad'   => 'required|integer|min:1',
             'items.*.precio_unitario' => 'required|numeric',
         ]);
 
@@ -45,15 +60,15 @@ class InvoiceController extends Controller
                 // 1. Crear la cabecera de la factura
                 $invoice = Invoice::create([
                     'numero_factura' => $request->numero_factura,
-                    'customer_id' => $request->customer_id,
-                    'fecha' => $request->fecha,
-                    'subtotal' => $request->subtotal,
-                    'impuestos' => $request->impuestos,
-                    'total' => $request->total,
-                    'metodo_pago' => $request->metodo_pago,
-                    'estado' => $request->estado ?? 'Pagada',
-                    'notas' => $request->notas,
-                    'user_id' => $authUser->id,
+                    'customer_id'    => $request->customer_id,
+                    'fecha'          => $request->fecha,
+                    'subtotal'       => $request->subtotal,
+                    'impuestos'      => $request->impuestos,
+                    'total'          => $request->total,
+                    'metodo_pago'    => $request->metodo_pago,
+                    'estado'         => $request->estado ?? 'Pagada',
+                    'notas'          => $request->notas,
+                    'user_id'        => $authUser->id,
                 ]);
 
                 // 2. Procesar ítems y actualizar stock
@@ -65,12 +80,12 @@ class InvoiceController extends Controller
                     }
 
                     InvoiceItem::create([
-                        'invoice_id' => $invoice->id,
-                        'product_id' => $item['product_id'],
-                        'cantidad' => $item['cantidad'],
+                        'invoice_id'      => $invoice->id,
+                        'product_id'      => $item['product_id'],
+                        'cantidad'        => $item['cantidad'],
                         'precio_unitario' => $item['precio_unitario'],
-                        'descuento' => $item['descuento'] ?? 0,
-                        'subtotal' => $item['subtotal'],
+                        'descuento'       => $item['descuento'] ?? 0,
+                        'subtotal'        => $item['subtotal'],
                     ]);
 
                     // REDUCIR STOCK
@@ -80,7 +95,7 @@ class InvoiceController extends Controller
                 return response()->json([
                     'success' => true, 
                     'message' => 'Venta registrada con éxito', 
-                    'data' => $invoice->load('items')
+                    'data'    => $invoice->load(['customer', 'items.product', 'seller'])
                 ], 201);
             });
         } catch (\Exception $e) {
@@ -88,10 +103,21 @@ class InvoiceController extends Controller
         }
     }
 
+    /**
+     * Detalle de una factura con relaciones.
+     */
     public function show($id)
     {
-        $invoice = Invoice::with(['items.product', 'seller'])->find($id);
-        if (!$invoice) return response()->json(['success' => false, 'message' => 'Factura no encontrada'], 404);
-        return response()->json(['success' => true, 'data' => $invoice]);
+        // Modificado: Se agregó 'customer' al eager loading
+        $invoice = Invoice::with(['customer', 'items.product', 'seller'])->find($id);
+        
+        if (!$invoice) {
+            return response()->json(['success' => false, 'message' => 'Factura no encontrada'], 404);
+        }
+
+        return response()->json([
+            'success' => true, 
+            'data' => $invoice
+        ]);
     }
 }

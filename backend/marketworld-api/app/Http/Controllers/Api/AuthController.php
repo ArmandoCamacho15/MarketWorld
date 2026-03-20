@@ -11,6 +11,9 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    /**
+     * Iniciar sesión y generar token con Sanctum.
+     */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -27,25 +30,29 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = Str::random(60);
-        $user->update(['api_token' => $token]);
+        // Modificado: Se usa Sanctum para crear el token
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Inicio de sesión exitoso',
-            'token' => $token,
+            'token' => $token, // El token ahora es el plainTextToken de Sanctum
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'rol' => 'Administrador',
+                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol', // Modificado: Retorna el rol real
             ],
         ]);
     }
 
+    /**
+     * Obtener el perfil del usuario autenticado.
+     */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->attributes->get('auth_user');
+        // Modificado: Se obtiene el usuario directamente del Request vía Sanctum
+        $user = $request->user();
 
         return response()->json([
             'success' => true,
@@ -53,15 +60,18 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'rol' => 'Administrador',
+                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol', // Modificado: Retorna el rol real
             ],
         ]);
     }
 
+    /**
+     * Cerrar sesión y revocar el token actual.
+     */
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->attributes->get('auth_user');
-        $user->update(['api_token' => null]);
+        // Modificado: Se revoca el token actual usando Sanctum
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'success' => true,

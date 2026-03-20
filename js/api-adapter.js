@@ -62,6 +62,14 @@
 
         return fetch(url, config)
             .then(function (res) {
+                // Manejo de error 401 (Token expirado o inválido)
+                if (res.status === 401 && !endpoint.includes('/auth/login')) {
+                    console.warn('Sesión expirada. Redirigiendo al login...');
+                    localStorage.removeItem(AUTH_TOKEN_KEY);
+                    window.location.href = 'Login.html';
+                    return;
+                }
+
                 return parseResponseBody(res).then(function (body) {
                     if (!res.ok) {
                         var message = (body && body.message) ? body.message : ('Error HTTP ' + res.status);
@@ -148,10 +156,44 @@
     };
 
     // -------------------------------------------------------
+    // API de Autenticación (Sanctum)
+    // -------------------------------------------------------
+    var AuthAPI = {
+
+        login: function (email, password) {
+            return apiFetch('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email: email, password: password }),
+            }).then(function (res) {
+                if (res && res.success && res.token) {
+                    localStorage.setItem(AUTH_TOKEN_KEY, res.token);
+                    localStorage.setItem('marketworld_auth_user', JSON.stringify(res.user));
+                }
+                return res;
+            });
+        },
+
+        me: function () {
+            return apiFetch('/auth/me');
+        },
+
+        logout: function () {
+            return apiFetch('/auth/logout', { method: 'POST' })
+                .finally(function () {
+                    localStorage.removeItem(AUTH_TOKEN_KEY);
+                    localStorage.removeItem('marketworld_auth_user');
+                    window.location.href = 'Login.html';
+                });
+        },
+
+        getToken: getAuthToken,
+    };
+
+    // -------------------------------------------------------
     // Verificar si el backend está disponible
     // -------------------------------------------------------
     function checkBackend() {
-        return fetch('http://localhost:8000/api/health', {
+        return fetch(BASE_URL.replace('/v1', '') + '/health', {
             headers: { 'Accept': 'application/json' },
         })
             .then(function (res) { return res.ok; })
@@ -165,6 +207,7 @@
     global.MarketWorld.api = {
         products:  ProductAPI,
         customers: CustomerAPI,
+        auth:      AuthAPI,
         checkBackend: checkBackend,
         BASE_URL: BASE_URL,
     };

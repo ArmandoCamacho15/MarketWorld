@@ -26,15 +26,17 @@ Route::prefix('v1')->group(function () {
     // === Autenticación ===
     Route::post('auth/login', [AuthController::class, 'login']);
     
-    // Rutas protegidas
-    Route::middleware('api.token')->group(function () {
+    // Rutas protegidas con Sanctum
+    Route::middleware('auth:sanctum')->group(function () { // Modificado de api.token a auth:sanctum
         
         // Dashboard Stats
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
-        // Reportes
-        Route::get('reports/sales-summary', [ReportController::class, 'salesSummary']);
-        Route::get('reports/inventory-utility', [ReportController::class, 'inventoryUtility']);
+        // Reportes (Solo Administrador)
+        Route::middleware('role:Administrador')->group(function () {
+            Route::get('reports/sales-summary', [ReportController::class, 'salesSummary']);
+            Route::get('reports/inventory-utility', [ReportController::class, 'inventoryUtility']);
+        });
 
         // Auth
         Route::prefix('auth')->group(function () {
@@ -52,7 +54,7 @@ Route::prefix('v1')->group(function () {
         // === Facturación (Ventas) ===
         Route::apiResource('invoices', InvoiceController::class);
 
-        // === Compras (Entradas de Stock) ===
-        Route::apiResource('purchases', PurchaseController::class);
+        // === Compras (Entradas de Stock - Solo Administrador y Bodeguero) ===
+        Route::apiResource('purchases', PurchaseController::class)->middleware('role:Administrador|Bodeguero');
     });
 });

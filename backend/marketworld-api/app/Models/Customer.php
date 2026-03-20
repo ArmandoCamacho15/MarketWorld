@@ -25,4 +25,12 @@ class Customer extends Model
         'valor_total'   => 'decimal:2',
         'total_compras' => 'integer',
     ];
+
+    /**
+     * Relación con las facturas del cliente.
+     */
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany // Nueva relación
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

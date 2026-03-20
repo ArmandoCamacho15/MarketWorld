@@ -48,23 +48,15 @@
     }
 
     function checkExistingSession() {
-        var token = getToken();
+        if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.auth) {
+            console.error('Adaptador de API no encontrado');
+            return Promise.resolve();
+        }
+
+        var token = MarketWorld.api.auth.getToken();
         if (!token) return Promise.resolve();
 
-        return fetch(AUTH_BASE_URL + '/me', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token
-            }
-        })
-            .then(function(res) {
-                if (!res.ok) {
-                    clearSession();
-                    return;
-                }
-                return res.json();
-            })
+        return MarketWorld.api.auth.me()
             .then(function(body) {
                 if (body && body.success) {
                     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(body.data));
@@ -118,56 +110,36 @@
 
         setLoadingState(btnLogin, true);
 
-        fetch(AUTH_BASE_URL + '/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ email: email, password: password })
-        })
-            .then(function(res) {
-                return res.json().then(function(body) {
-                    if (!res.ok) {
-                        throw {
-                            status: res.status,
-                            message: body && body.message ? body.message : 'Error de autenticacion'
-                        };
-                    }
-                    return body;
-                });
-            })
+        if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.auth) {
+            setLoadingState(btnLogin, false);
+            showGlobalError('Error interno del sistema: Adaptador API no disponible');
+            return;
+        }
+
+        MarketWorld.api.auth.login(email, password)
             .then(function(body) {
-                if (!body.success) {
-                    throw { status: 401, message: body.message || 'Credenciales invalidas' };
+                if (body && body.success) {
+                    // El token y el usuario se guardan dentro de MarketWorld.api.auth.login
+                    var rememberMe = document.getElementById('rememberMe');
+                    if (rememberMe && rememberMe.checked) {
+                        localStorage.setItem('marketworld_remember_email', email);
+                    } else {
+                        localStorage.removeItem('marketworld_remember_email');
+                    }
+                    
+                    showNotification('¡Bienvenido ' + (body.user.name || '') + '!', 'success');
+                    
+                    setTimeout(function() {
+                        window.location.href = 'inicio.html';
+                    }, 500);
                 }
-
-                setSession(body.token, body.user);
-
-                var rememberMe = document.getElementById('rememberMe');
-                if (rememberMe && rememberMe.checked) {
-                    localStorage.setItem('marketworld_remember_email', email);
-                } else {
-                    localStorage.removeItem('marketworld_remember_email');
-                }
-
-                showNotification('Bienvenido ' + (body.user.name || '') + '!', 'success');
-
-                setTimeout(function() {
-                    window.location.href = 'inicio.html';
-                }, 900);
             })
             .catch(function(err) {
                 setLoadingState(btnLogin, false);
-
-                if (err && err.status === 401) {
-                    showNotification('Credenciales invalidas. Verifica email y contrasena.', 'error');
-                } else if (err && err.status === 422) {
-                    showNotification('Datos invalidos. Revisa el formato del email y la contrasena.', 'error');
-                } else {
-                    showNotification('Servidor no disponible. Intenta nuevamente en unos segundos.', 'error');
-                }
-
+                var message = err.message || 'Error de autenticación';
+                if (err.status === 401) message = 'Credenciales inválidas';
+                
+                showNotification(message, 'error');
                 shakeElement(document.querySelector('.login-card-blue'));
             });
     }

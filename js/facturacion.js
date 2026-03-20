@@ -133,17 +133,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            const url = `http://127.0.0.1:8000/api/v1/products?search=${encodeURIComponent(termino)}`;
-            
-            const response = await fetch(url, {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            
-            const result = await response.json();
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.products) {
+                throw new Error('Adaptador API no disponible');
+            }
+
+            const result = await MarketWorld.api.products.getAll({ search: termino });
             console.log('Result API:', result);
 
             let products = [];

@@ -26,8 +26,21 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function customer(): BelongsTo // Nueva relación
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Accessor para el total calculado: subtotal + impuestos.
+     */
+    public function getTotalCalculadoAttribute(): float // Nuevo accessor
+    {
+        return (float) ($this->subtotal + $this->impuestos);
     }
 }
