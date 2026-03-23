@@ -220,62 +220,16 @@
                                                     <input type="text" class="form-control" id="clienteCiudad" placeholder="Ciudad">
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Detalles de la Factura -->
-                                    <div class="card mb-4 invoice-details-card">
-                                        <div class="card-header bg-light">
-                                            <h5 class="mb-0">
-                                                <i class="bi bi-receipt me-2"></i>Detalles de la Factura
-                                            </h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row mb-3">
-                                                <div class="col-md-4">
-                                                    <label for="numeroFacturaCompleta" class="form-label fw-semibold">Número de Factura</label>
-                                                    <input type="text" class="form-control" id="numeroFacturaCompleta" readonly>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="fechaFacturaCompleta" class="form-label fw-semibold">Fecha de Emisión</label>
-                                                    <input type="date" class="form-control" id="fechaFacturaCompleta">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="fechaVencimientoCompleta" class="form-label fw-semibold">Fecha de Vencimiento</label>
-                                                    <input type="date" class="form-control" id="fechaVencimientoCompleta">
-                                                </div>
-                                            </div>
-
-                                            <!-- Buscador de Productos en modo completo -->
-                                            <div class="row mb-3">
-                                                <div class="col-md-8">
-                                                    <label for="buscarProductoCompleto" class="form-label fw-semibold">Buscar Producto</label>
-                                                    <div style="position: relative;">
-                                                        <div class="input-group">
-                                                            <input type="text" class="form-control" id="buscarProductoCompleto" placeholder="Código o nombre del producto" autocomplete="off">
-                                                            <button class="btn btn-primary" type="button" id="btnBuscarProductoCompleto">
-                                                                <i class="bi bi-search"></i> Buscar
-                                                            </button>
-                                                            <button class="btn btn-success ms-2" type="button" id="btnAgregarProductoCompleto" style="border-radius: 0.375rem !important;">
-                                                                <i class="bi bi-plus-circle"></i> Agregar
-                                                            </button>
-                                                        </div>
-                                                        <div id="suggestionsCompleto" class="suggestions-container" style="display: none;"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label for="cantidadProductoCompleto" class="form-label fw-semibold">Cantidad</label>
-                                                    <input type="number" class="form-control" id="cantidadProductoCompleto" value="1" min="1">
-                                                </div>
-                                            </div>
-
-                                            <!-- Observaciones -->
-                                            <div class="mb-3">
-                                                <label for="observacionesFactura" class="form-label fw-semibold">Observaciones / Notas</label>
-                                                <textarea class="form-control" id="observacionesFactura" rows="3" placeholder="Observaciones adicionales..."></textarea>
+                                            <div class="d-flex justify-content-end mt-2">
+                                                <button class="btn btn-primary" id="btnGuardarClienteCompleto" type="button">
+                                                    <i class="bi bi-save me-1"></i> Guardar cliente
+                                                </button>
+                                                <button class="btn btn-outline-danger ms-2" id="btnLimpiarClienteCompleto" type="button">Limpiar</button>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Detalles de la Factura: eliminado según solicitud del usuario -->
 
                                     <!-- PRODUCTOS DESTACADOS (Modo Completo) -->
                                     <div class="card mb-4 featured-card">
@@ -284,6 +238,18 @@
                                                 <i class="bi bi-fire text-danger me-2"></i>Productos Destacados
                                             </h5>
                                             <span class="badge bg-danger">Top Ventas</span>
+                                        </div>
+                                        <!-- Barra de búsqueda prominente (modo Completo): permanece fuera del contenedor dinámico -->
+                                        <div class="p-3" style="border: 1px solid rgba(13,110,253,0.12); box-shadow: 0 6px 18px rgba(13,110,253,0.04); border-radius: 0.5rem; margin: 0.75rem 1rem;">
+                                            <div style="position: relative; width:100%;">
+                                                <div class="input-group" style="align-items: center;">
+                                                    <input type="text" id="buscarProductoCompleto" class="form-control form-control-lg" placeholder="Busca un producto por código o nombre..." autocomplete="off">
+                                                    <button class="btn btn-primary btn-lg shadow-sm" id="btnBuscarProductoCompleto" type="button"><i class="bi bi-search"></i> Buscar</button>
+                                                    <input type="number" id="cantidadProductoCompleto" class="form-control" value="1" min="1" style="width:100px">
+                                                    <button class="btn btn-success btn-lg shadow-sm" id="btnAgregarProductoCompleto" type="button" style="border-radius: 0.375rem !important;"><i class="bi bi-plus-circle"></i> Agregar</button>
+                                                </div>
+                                                <div id="suggestionsCompleto" class="suggestions-container" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:1050;"></div>
+                                            </div>
                                         </div>
                                         <div class="card-body" id="productosDisponiblesCompleto">
                                             <!-- Los productos se cargan dinámicamente desde JS -->
@@ -341,11 +307,29 @@
                                     <div class="card-body">
                                         <div class="mb-2">
                                             <label for="clienteNombre" class="form-label fw-semibold small">Nombre Completo</label>
-                                            <input type="text" class="form-control" id="clienteNombre" placeholder="Nombre del cliente">
+                                            <div style="position:relative">
+                                                <input type="text" class="form-control" id="clienteNombre" placeholder="Nombre del cliente" autocomplete="off">
+                                                <div id="suggestionsCliente" class="suggestions-container" style="display:none; position:absolute; left:0; right:0; z-index:1050;"></div>
+                                            </div>
                                         </div>
                                         <div class="mb-2">
                                             <label for="clienteDocumento" class="form-label fw-semibold small">Documento</label>
-                                            <input type="text" class="form-control" id="clienteDocumento" placeholder="CC o NIT">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="clienteDocumento" placeholder="CC o NIT" autocomplete="off">
+                                                <button class="btn btn-outline-secondary" type="button" id="btnBuscarClienteRapido" title="Buscar cliente"><i class="bi bi-search"></i></button>
+                                            </div>
+                                            <div id="clienteQuickNote" class="mt-1"><small class="text-danger"><strong>ATENCIÓN:</strong> Si el cliente no aparece, usa <strong>Factura Completa</strong> para crearlo.</small></div>
+                                        </div>
+                                        <!-- Acciones rápidas: Buscar / Crear cliente (visible) -->
+                                        <div class="mb-2 d-flex align-items-center justify-content-between" id="clienteQuickActions" style="gap:8px;">
+                                            <div id="clienteSelectedBadge" class="text-truncate" style="flex:1; min-width:0;"> 
+                                                <small class="text-muted">Ningún cliente seleccionado</small>
+                                            </div>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary" type="button" id="btnAbrirBusquedaCliente"><i class="bi bi-search me-1"></i> Buscar</button>
+                                                <button class="btn btn-sm btn-outline-danger" type="button" id="btnLimpiarCliente"><i class="bi bi-x-circle me-1"></i> Limpiar</button>
+                                                <button class="btn btn-sm btn-success" type="button" id="btnCrearClienteRapido"><i class="bi bi-plus-circle me-1"></i> Crear</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -19,6 +19,23 @@
         JOURNAL_ENTRIES: 'marketworld_journal_entries'
     };
 
+    // Utilidad: parsear JSON desde localStorage con fallback seguro
+    function safeParseStorage(key, defaultValue) {
+        var raw = localStorage.getItem(key);
+        if (!raw) return (defaultValue !== undefined ? defaultValue : []);
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('localStorage corrupto para', key, '- restaurando valor por defecto. Error:', e && e.message ? e.message : e);
+            try {
+                safeSetItem(key, JSON.stringify(defaultValue !== undefined ? defaultValue : []));
+            } catch (err) {
+                console.error('No se pudo restaurar valor por defecto en localStorage para', key, err && err.message ? err.message : err);
+            }
+            return (defaultValue !== undefined ? defaultValue : []);
+        }
+    }
+
     // --- Default users ---
     var DEFAULT_USERS = [
         {
@@ -76,7 +93,8 @@
             unidad: 'Unidad',
             proveedor: 'Tech Solutions',
             fechaCreacion: '2025-01-15',
-            activo: true
+            activo: true,
+            origin: 'mock'
         },
         {
             id: 2,
@@ -91,7 +109,8 @@
             unidad: 'Unidad',
             proveedor: 'Tech Solutions',
             fechaCreacion: '2025-01-20',
-            activo: true
+            activo: true,
+            origin: 'mock'
         },
         {
             id: 3,
@@ -101,6 +120,7 @@
             categoria: 'Electrónica',
             precio: 180000,
             costo: 120000,
+            origin: 'mock',
             stock: 3,
             stockMinimo: 5,
             unidad: 'Unidad',
@@ -347,8 +367,7 @@
 
     // Usuarios
     function getUsers() {
-        var data = localStorage.getItem(STORAGE_KEYS.USERS);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.USERS, DEFAULT_USERS);
     }
 
     function findUserByEmail(email) {
@@ -419,12 +438,14 @@
     }
 
     function getCurrentUser() {
-        var data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-        return data ? JSON.parse(data) : null;
+        var parsed = safeParseStorage(STORAGE_KEYS.CURRENT_USER, null);
+        return parsed ? parsed : null;
     }
 
     function logout() {
         localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        localStorage.removeItem('marketworld_auth_token');
+        localStorage.removeItem('marketworld_auth_user');
     }
 
     function isLoggedIn() {
@@ -493,8 +514,7 @@
 
     // Productos
     function getProducts() {
-        var data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.PRODUCTS, DEFAULT_PRODUCTS);
     }
 
     function findProductById(id) {
@@ -536,7 +556,8 @@
             unidad: productData.unidad || 'Unidad',
             proveedor: productData.proveedor || '',
             fechaCreacion: new Date().toISOString().split('T')[0],
-            activo: productData.activo !== false
+            activo: productData.activo !== false,
+            origin: 'local'
         };
         products.push(newProduct);
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
@@ -571,6 +592,8 @@
         if (productData.unidad) products[index].unidad = productData.unidad;
         if (productData.proveedor !== undefined) products[index].proveedor = productData.proveedor;
         if (productData.activo !== undefined) products[index].activo = productData.activo;
+        // Preservar/establecer origen si no existe
+        if (!products[index].origin) products[index].origin = 'local';
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
         return { success: true, message: 'Producto actualizado exitosamente', product: products[index] };
     }
@@ -611,8 +634,7 @@
 
     // Categorías
     function getCategories() {
-        var data = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
     }
 
     function createCategory(categoryData) {
@@ -673,7 +695,7 @@
 
     // Notificaciones
     function getNotifications() {
-        var notifications = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) || [];
+        var notifications = safeParseStorage(STORAGE_KEYS.NOTIFICATIONS, []);
         return notifications.sort(function(a, b) {
             return new Date(b.fechaCreacion) - new Date(a.fechaCreacion);
         });
@@ -738,8 +760,7 @@
 
     // Clientes
     function getCustomers() {
-        var customers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-        return customers ? JSON.parse(customers) : [];
+        return safeParseStorage(STORAGE_KEYS.CUSTOMERS, DEFAULT_CUSTOMERS);
     }
 
     function findCustomerById(customerId) {
@@ -810,8 +831,7 @@
 
     // Facturas
     function getInvoices() {
-        var invoices = localStorage.getItem(STORAGE_KEYS.INVOICES);
-        return invoices ? JSON.parse(invoices) : [];
+        return safeParseStorage(STORAGE_KEYS.INVOICES, DEFAULT_INVOICES);
     }
 
     function findInvoiceById(invoiceId) {
@@ -830,8 +850,14 @@
             return 'FAC-00001';
         }
         var maxNumber = Math.max.apply(Math, invoices.map(function(i) {
-            var num = parseInt(i.numeroFactura.split('-')[1]);
-            return isNaN(num) ? 0 : num;
+            try {
+                if (!i || !i.numeroFactura) return 0;
+                var parts = String(i.numeroFactura).split('-');
+                var num = parseInt(parts[1]);
+                return isNaN(num) ? 0 : num;
+            } catch (e) {
+                return 0;
+            }
         }));
         var nextNumber = maxNumber + 1;
         return 'FAC-' + String(nextNumber).padStart(5, '0');
@@ -924,7 +950,14 @@
     function getInvoicesByDateRange(startDate, endDate) {
         var invoices = getInvoices();
         return invoices.filter(function(i) {
-            var invoiceDate = i.fechaCreacion.split('T')[0];
+            var invoiceDate = '';
+            if (i && i.fechaCreacion) {
+                try {
+                    invoiceDate = String(i.fechaCreacion).split('T')[0];
+                } catch (e) {
+                    invoiceDate = String(i.fechaCreacion || '');
+                }
+            }
             return invoiceDate >= startDate && invoiceDate <= endDate;
         });
     }
@@ -936,8 +969,7 @@
 
     // Proveedores
     function getSuppliers() {
-        var data = localStorage.getItem(STORAGE_KEYS.SUPPLIERS);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.SUPPLIERS, DEFAULT_SUPPLIERS);
     }
 
     function findSupplierById(id) {
@@ -1018,8 +1050,7 @@
 
     // ======= ÓRDENES DE COMPRA =======
     function getPurchases() {
-        var data = localStorage.getItem(STORAGE_KEYS.PURCHASES);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.PURCHASES, DEFAULT_PURCHASES);
     }
 
     function findPurchaseById(id) {
@@ -1112,8 +1143,7 @@
 
     // ======= PAGOS A PROVEEDORES =======
     function getPayments() {
-        var data = localStorage.getItem(STORAGE_KEYS.PAYMENTS);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.PAYMENTS, DEFAULT_PAYMENTS);
     }
 
     function findPaymentById(id) {
@@ -1155,8 +1185,7 @@
     
     // Cuentas Contables
     function getAccounts() {
-        var data = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS);
     }
 
     function findAccountByCode(codigo) {
@@ -1343,8 +1372,7 @@
 
     // Asientos Contables
     function getJournalEntries() {
-        var data = localStorage.getItem(STORAGE_KEYS.JOURNAL_ENTRIES);
-        return data ? JSON.parse(data) : [];
+        return safeParseStorage(STORAGE_KEYS.JOURNAL_ENTRIES, DEFAULT_JOURNAL_ENTRIES);
     }
 
     function findJournalEntryById(id) {

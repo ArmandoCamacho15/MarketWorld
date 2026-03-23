@@ -33,4 +33,34 @@ class Product extends Model
     {
         return $this->stock <= $this->stock_minimo;
     }
+
+    /**
+     * Aplica el Costo Promedio Ponderado (CPP) al recibir una compra.
+     * Calcula el nuevo costo promedio y actualiza el stock y precio de compra.
+     *
+     * @param int $cantidad
+     * @param float $precioUnitarioNuevo
+     * @return $this
+     */
+    public function aplicarCostoPromedioPonderado(int $cantidad, float $precioUnitarioNuevo)
+    {
+        $stockActual = (int) ($this->stock ?? 0);
+        $costoActual = (float) ($this->precio_compra ?? 0.0);
+
+        $cantidadEntrante = max(0, $cantidad);
+        $nuevoStock = $stockActual + $cantidadEntrante;
+
+        if ($nuevoStock <= 0) {
+            return $this;
+        }
+
+        $nuevoCosto = ($stockActual * $costoActual + $cantidadEntrante * $precioUnitarioNuevo) / $nuevoStock;
+        $nuevoCosto = round($nuevoCosto, 2);
+
+        $this->stock = $nuevoStock;
+        $this->precio_compra = $nuevoCosto;
+        $this->save();
+
+        return $this;
+    }
 }

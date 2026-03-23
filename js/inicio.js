@@ -30,16 +30,10 @@
         console.log('✅ MarketWorld.data disponible');
         
         try {
-            // --- Verificar sesión ---
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.isLoggedIn === 'function') {
-                checkSession();
-            }
-            
             // --- Cargar información del usuario ---
             loadUserInfo();
             
             // --- Inicializar componentes con validación ---
-            initLogout();
             initSearch();
             initQuickAccess();
 
@@ -49,7 +43,7 @@
             console.log('🚀 Iniciando carga de componentes dinámicos...');
             loadRealAlerts();
             loadRealTasks();
-            loadRealStatCards();
+            await loadRealStatCards();
             
             initKeyboardNavigation();
             
@@ -171,19 +165,6 @@
         }
     }
 
-    // ======= VERIFICAR SESIÓN ACTIVA =======
-    function checkSession() {
-        try {
-            if (!MarketWorld.data.isLoggedIn()) {
-                console.log('⚠️ Sesión no activa, redirigiendo al login...');
-                window.location.href = 'Login.html';
-            }
-        } catch (error) {
-            console.error('❌ Error al verificar sesión:', error);
-            window.location.href = 'Login.html';
-        }
-    }
-
     // ======= CARGAR INFORMACIÓN DEL USUARIO (SANITIZACIÓN) =======
     function loadUserInfo() {
         try {
@@ -219,62 +200,7 @@
         }
     }
 
-    // ======= CERRAR SESIÓN (CONFIRMACIÓN MEJORADA) =======
-    function initLogout() {
-        const logoutButtons = [
-            document.getElementById('logoutBtn'),
-            document.getElementById('logoutBtnTop')
-        ];
-        
-        logoutButtons.forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', handleLogout);
-                // ======= MEJORAR ACCESIBILIDAD =======
-                btn.setAttribute('role', 'button');
-                btn.setAttribute('tabindex', '0');
-                
-                // ======= SOPORTE PARA TECLADO =======
-                btn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleLogout(e);
-                    }
-                });
-            }
-        });
-    }
 
-    function handleLogout(e) {
-        e.preventDefault();
-        
-        try {
-            // ======= MODAL PERSONALIZADO EN LUGAR DE CONFIRM =======
-            if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                console.log('🚪 Cerrando sesión...');
-                
-                // ======= LIMPIAR ESTADO LOCAL =======
-                moduleState.initialized = false;
-                
-                // ======= CERRAR SESIÓN =======
-                MarketWorld.data.logout();
-                
-                // ======= MOSTRAR FEEDBACK =======
-                showSuccessNotification('Sesión cerrada correctamente');
-                
-                // ======= REDIRIGIR DESPUÉS DE DELAY =======
-                setTimeout(() => {
-                    window.location.href = 'Login.html';
-                }, 500);
-            }
-        } catch (error) {
-            console.error('❌ Error al cerrar sesión:', error);
-            showErrorNotification('Error al cerrar sesión. Intentando de nuevo...');
-            // ======= INTENTAR CERRAR SESIÓN =======
-            setTimeout(() => {
-                window.location.href = 'Login.html';
-            }, 1000);
-        }
-    }
 
     // ======= BÚSQUEDA GLOBAL (VALIDACIÓN MEJORADA) =======
     function initSearch() {
@@ -791,7 +717,7 @@
             // Si no hay notificaciones, mostrar algunas de demostración
             if (notifications.length === 0) {
                 notifications = [
-                    { type: 'warning', message: '5 productos con stock bajo', time: 'Hace 10 min', read: false },
+                    { type: 'danger', message: '5 productos con stock bajo', time: 'Hace 10 min', read: false },
                     { type: 'info', message: '3 facturas por vencer esta semana', time: 'Hace 1 hora', read: false },
                     { type: 'success', message: 'Nueva venta registrada: $1,250', time: 'Hace 2 horas', read: true }
                 ];
@@ -1745,8 +1671,8 @@
     /**
      * Cargar y renderizar estadísticas reales del sistema
      */
-    function loadRealStatCards() {
-        console.log('📊 Iniciando carga de estadísticas...');
+    async function loadRealStatCards() {
+        console.log('📊 Iniciando carga de estadísticas (priorizando API)...');
         
         try {            
             // Verificar que MarketWorld.data esté disponible
@@ -1764,36 +1690,86 @@
             
             console.log('✅ MarketWorld.data disponible');
             
-            // 1. Calcular Crecimiento Mensual
-            try {
-                calculateMonthlyGrowth();
-            } catch (e) {
-                console.error('Error en calculateMonthlyGrowth:', e);
-                document.getElementById('statGrowth').textContent = '0%';
+            // Intentar obtener stats desde la API (si está disponible)
+            let usedApi = false;
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.dashboard && typeof MarketWorld.api.dashboard.getStats === 'function') {
+                try {
+                    const apiRes = await MarketWorld.api.dashboard.getStats();
+                    if (apiRes && apiRes.success && apiRes.data) {
+                        const d = apiRes.data;
+                        // Sales
+                        const salesEl = document.getElementById('statSales');
+                        if (salesEl && typeof d.sales_month !== 'undefined') {
+                            salesEl.textContent = formatCurrency(parseFloat(d.sales_month) || 0);
+                        }
+                        // Clientes
+                        const clientsEl = document.getElementById('statClients');
+                        if (clientsEl && typeof d.total_customers !== 'undefined') {
+                            clientsEl.textContent = (parseInt(d.total_customers, 10) || 0).toLocaleString();
+                        }
+                        // Productos
+                        const productsEl = document.getElementById('statProducts');
+                        if (productsEl && typeof d.total_products !== 'undefined') {
+                            productsEl.innerHTML = `\n                            <div style="line-height: 1.2;">\n                                <div style="font-size: 2rem; font-weight: 700;">${(parseInt(d.total_products,10)||0).toLocaleString()}</div>\n                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">${(parseInt(d.total_products,10)||0).toLocaleString()} unidades</div>\n                            </div>\n                        `;
+                        }
+                        // Crecimiento: si hay historial de ventas, calcular crecimiento mes actual vs anterior
+                        const growthEl = document.getElementById('statGrowth');
+                        if (growthEl && Array.isArray(d.sales_history) && d.sales_history.length >= 2) {
+                            try {
+                                const history = d.sales_history.slice(-2); // últimos 2 meses
+                                const prev = parseFloat(history[0].total) || 0;
+                                const curr = parseFloat(history[1].total) || 0;
+                                let growth = 0;
+                                if (prev > 0) growth = ((curr - prev) / prev) * 100;
+                                else if (curr > 0) growth = 100;
+                                const sign = growth >= 0 ? '+' : '';
+                                const color = growth >= 0 ? 'text-success' : 'text-danger';
+                                const icon = growth >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+                                growthEl.innerHTML = `<span class="${color}">${sign}${growth.toFixed(1)}% <i class="bi ${icon} ms-1"></i></span>`;
+                            } catch (e) {
+                                console.warn('No se pudo calcular crecimiento desde API:', e);
+                            }
+                        }
+                        usedApi = true;
+                    }
+                } catch (e) {
+                    console.warn('No se pudo obtener stats desde API:', e);
+                }
             }
-            
-            // 2. Contar Clientes Activos
-            try {
-                calculateActiveClients();
-            } catch (e) {
-                console.error('Error en calculateActiveClients:', e);
-                document.getElementById('statClients').textContent = '0';
-            }
-            
-            // 3. Contar Productos en Stock
-            try {
-                calculateProductsInStock();
-            } catch (e) {
-                console.error('Error en calculateProductsInStock:', e);
-                document.getElementById('statProducts').textContent = '0';
-            }
-            
-            // 4. Calcular Ventas del Mes
-            try {
-                calculateMonthlySales();
-            } catch (e) {
-                console.error('Error en calculateMonthlySales:', e);
-                document.getElementById('statSales').textContent = '$0';
+
+            // Si no se usó la API, caer al cálculo local existente
+            if (!usedApi) {
+                // 1. Calcular Crecimiento Mensual
+                try {
+                    calculateMonthlyGrowth();
+                } catch (e) {
+                    console.error('Error en calculateMonthlyGrowth:', e);
+                    document.getElementById('statGrowth').textContent = '0%';
+                }
+                
+                // 2. Contar Clientes Activos
+                try {
+                    calculateActiveClients();
+                } catch (e) {
+                    console.error('Error en calculateActiveClients:', e);
+                    document.getElementById('statClients').textContent = '0';
+                }
+                
+                // 3. Contar Productos en Stock
+                try {
+                    calculateProductsInStock();
+                } catch (e) {
+                    console.error('Error en calculateProductsInStock:', e);
+                    document.getElementById('statProducts').textContent = '0';
+                }
+                
+                // 4. Calcular Ventas del Mes
+                try {
+                    calculateMonthlySales();
+                } catch (e) {
+                    console.error('Error en calculateMonthlySales:', e);
+                    document.getElementById('statSales').textContent = '$0';
+                }
             }
             
             // Animaciones de entrada
@@ -1935,8 +1911,14 @@
                     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
                 })
                 .reduce((sum, f) => sum + (parseFloat(f.total) || 0), 0);
-            
-            console.log(`💰 Ventas del mes: ${formatCurrency(monthlySales)}`);
+            const filtered = facturas.filter(f => f && f.fechaCreacion && !(f.estado==='Anulada' || f.estado==='Cancelada'))
+                .filter(f => {
+                    const d = new Date(f.fechaCreacion);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                });
+
+            console.log('🔍 Detalle facturas consideradas (muestra 5):', filtered.slice(0,5).map(f=>({id:f.id, fechaCreacion:f.fechaCreacion, total:f.total, estado:f.estado})));
+            console.log(`💰 Ventas del mes (local calculado): ${formatCurrency(monthlySales)}`);
             
             const salesElement = document.getElementById('statSales');
             if (salesElement) {

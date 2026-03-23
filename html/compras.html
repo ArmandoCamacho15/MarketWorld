@@ -302,6 +302,14 @@
                                                     Afectar automáticamente al inventario
                                                 </label>
                                             </div>
+                                            <div class="mb-3">
+                                                <label for="compraEstado" class="form-label">Estado de la Orden</label>
+                                                <select id="compraEstado" class="form-select">
+                                                    <option value="Recibida">Recibida</option>
+                                                    <option value="Pendiente">Pendiente</option>
+                                                </select>
+                                                <div class="form-text">Si selecciona "Pendiente", el stock no se actualizará automáticamente hasta marcar como recibida.</div>
+                                            </div>
                                             <div class="d-grid gap-2">
                                                 <button class="btn btn-success" id="btnRegistrarCompra" type="button">
                                                     <i class="bi bi-check-circle me-2" aria-hidden="true"></i> Registrar Compra
@@ -642,6 +650,28 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-outline-primary" id="btnImprimirCompra">
                         <i class="bi bi-printer me-1"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Éxito registro compra (grande, aceptar/cancelar) -->
+    <div class="modal fade" id="modalSuccessPurchase" tabindex="-1" aria-labelledby="modalSuccessPurchaseLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalSuccessPurchaseLabel">Orden registrada con éxito</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modalSuccessPurchaseBody">
+                    <p id="successPurchaseMessage">La orden se registró correctamente.</p>
+                    <div id="successPurchaseDetails" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="btnCancelSuccess">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="btnConfirmSuccess">
+                        <i class="bi bi-check-circle me-1"></i> Aceptar
                     </button>
                 </div>
             </div>

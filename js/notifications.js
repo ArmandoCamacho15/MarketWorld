@@ -67,12 +67,23 @@
         if (!notificationBadge) return;
         
         var count = MarketWorld.data.getUnreadCount();
-        
+        var notifications = MarketWorld.data.getNotifications();
+        var dangerCount = notifications.filter(function(n) { return !n.leida && n.tipo === 'danger'; }).length;
+
         if (count > 0) {
             notificationBadge.textContent = count > 99 ? '99+' : count;
             notificationBadge.style.display = 'inline-block';
+            if (dangerCount > 0) {
+                notificationBadge.classList.add('danger-unread');
+                notificationBadge.setAttribute('title', dangerCount + ' alerta(s) críticas');
+            } else {
+                notificationBadge.classList.remove('danger-unread');
+                notificationBadge.removeAttribute('title');
+            }
         } else {
             notificationBadge.style.display = 'none';
+            notificationBadge.classList.remove('danger-unread');
+            notificationBadge.removeAttribute('title');
         }
     }
 
@@ -270,21 +281,22 @@
 
     function checkLowStock() {
         var lowStockProducts = MarketWorld.data.getLowStockProducts();
+        console.log('[Notifications] checkLowStock found:', lowStockProducts.length);
         
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(function(product) {
                 // ======= VERIFICAR NOTIFICACIÓN SIMILAR RECIENTE =======
                 var notifications = MarketWorld.data.getNotifications();
-                var exists = notifications.some(function(n) {
-                    return n.titulo.includes(product.nombre) && 
-                           n.tipo === 'warning' &&
+                      var exists = notifications.some(function(n) {
+                      return n.titulo.includes(product.nombre) && 
+                          n.tipo === 'danger' &&
                            // ======= ÚLTIMAS 24H =======
                            (new Date() - new Date(n.fechaCreacion)) < (24 * 60 * 60 * 1000);
                 });
 
                 if (!exists) {
                     createNotification(
-                        'warning',
+                        'danger',
                         'Stock Bajo: ' + product.nombre,
                         'Quedan ' + product.stock + ' unidades. Stock mínimo: ' + product.stockMinimo,
                         'inventario.html'

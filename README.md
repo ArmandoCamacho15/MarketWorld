@@ -1,4 +1,4 @@
-﻿# MarketWorld
+# MarketWorld
 
 Sistema de Gestión Empresarial (ERP) desarrollado como proyecto académico del SENA.
 
@@ -94,42 +94,49 @@ Este proyecto utiliza las siguientes tecnologías:
 
 ## Instalación
 
-### Paso 1: Descargar el proyecto
+### Paso 1: Configurar el Backend (Laravel)
+1. Entra a la carpeta del api: `cd backend/marketworld-api`
+2. Instala dependencias: `composer install`
+3. Configura el entorno: `cp .env.example .env` (y configura tu DB en el .env)
+4. Genera la clave: `php artisan key:generate`
+5. Ejecuta migraciones y datos iniciales: `php artisan migrate --seed`
+6. **Inicia el servidor API:**
+   - En CMD: `php artisan serve --port=8000`
+   - En PowerShell: `php artisan serve --port=8000` (El comando `&&` solo funciona en CMD; en PowerShell usa `;` o ejecuta los comandos uno por uno).
 
-`ash
-git clone https://github.com/tu-usuario/marketworld.git
-cd marketworld
-`
+### Paso 2: Ejecutar el Frontend
+Tienes dos opciones para ver la aplicación:
 
-### Paso 2: Abrir en VS Code
+**Opción A (Recomendada): VS Code Live Server**
+1. Abre el proyecto en VS Code.
+2. Haz clic derecho en `html/Login.html`.
+3. Selecciona **Open with Live Server** (puerto 5500).
 
-`ash
-code .
-`
+**Opción B (Línea de comandos):**
+Desde la raíz del proyecto, ejecuta:
+`php -S 127.0.0.1:5500`
 
-### Paso 3: Ejecutar con Live Server
+---
 
-1. Instala la extensión **Live Server** en VS Code
-2. Haz clic derecho en `html/Login.html`
-3. Selecciona **Open with Live Server**
-
-### Paso 4 (Opcional): Configurar base de datos
-
-`ash
-mysql -u root -p < marketworld_base_de_datos/schema/marketworld_schema.sql
-`
+## ⚡ Inicio Rápido (Pro)
+Para no tener que recordar los comandos, puedes usar el script de automatización incluido en la raíz:
+- En Windows: Doble clic a `iniciar_proyecto.bat`
+- Esto abrirá dos ventanas: una para la API y otra para el Frontend automáticamente.
 
 ---
 
 ## Uso
 
-### Credenciales de prueba
+### Credenciales del Sistema (Seeders)
 
 | Usuario | Contraseña | Rol |
 |---------|------------|-----|
-| admin@marketworld.com | admin123 | Administrador |
+| **admin@marketworld.com** | **admin123** | Super Administrador |
 | ventas@marketworld.com | ventas123 | Vendedor |
-| user@marketworld.com | 123456 | Usuario |
+| user@marketworld.com | 123456 | Cliente/Usuario |
+
+> [!NOTE]
+> Estas credenciales se generan automáticamente al ejecutar `php artisan migrate --seed`.
 
 ### Navegación
 

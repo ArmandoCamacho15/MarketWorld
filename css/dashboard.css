@@ -204,6 +204,14 @@ html, body {
     background: linear-gradient(135deg, #2ecc71, #27ae60);
     color: white;
 }
+/* Tarjeta específica para el valor del inventario: color distinto para evitar duplicados */
+.kpi-card.inventory-value {
+    background: linear-gradient(135deg, #17a2b8, #117a8b);
+    color: white;
+}
+.kpi-card.inventory-value .kpi-icon {
+    color: #fff !important;
+}
 .kpi-card.customers {
     background: linear-gradient(135deg, #9b59b6, #8e44ad);
     color: white;
@@ -211,6 +219,109 @@ html, body {
 .kpi-card.inventory {
     background: linear-gradient(135deg, #f39c12, #e67e22);
     color: white;
+}
+.col--wide {
+    flex: 1.3 1 0;
+}
+
+/* Estilos para la sección combinada de inventario */
+.inventory-combined {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: #fff;
+}
+.inventory-combined .inventory-low-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+.inventory-low-count {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    font-weight: 700;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+.inventory-low-min {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-top: 6px;
+}
+.inventory-low-label {
+    font-size: 0.85rem;
+    margin-top: 4px;
+    opacity: 0.95;
+}
+
+/* Estado de alerta para KPI de inventario (stock bajo) */
+.kpi-card.kpi-alert,
+.kpi-card.stock-low {
+    background: linear-gradient(135deg, #e74c3c, #c62828) !important;
+    color: #fff !important;
+}
+.kpi-card.kpi-alert .kpi-icon,
+.kpi-card.stock-low .kpi-icon {
+    color: #fff !important;
+}
+
+/* Tarjeta de alerta de stock bajo (arriba del dashboard) */
+.stock-alert-card {
+    background: linear-gradient(135deg, #dc3545, #b71c1c);
+    color: #ffffff;
+    padding: 18px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(199, 55, 66, 0.16);
+}
+.stock-alert-card .stock-alert-min {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 6px;
+}
+.stock-alert-card .stock-alert-label {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+.stock-alert-count {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    width: 76px;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.6rem;
+    font-weight: 700;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+.stock-alert-card.hidden {
+    display: none;
+}
+
+/* Layout flexible para KPIs: permitir 5 tarjetas reducidas proporcionalmente */
+.kpi-row {
+    display: flex;
+    gap: 1rem;
+}
+.kpi-row .col {
+    flex: 1 1 0;
+    min-width: 170px;
+}
+.kpi-row .kpi-card {
+    padding: 14px;
+}
+.kpi-row .kpi-value {
+    font-size: 1.1rem;
+}
+.kpi-row .kpi-icon {
+    font-size: 1.6rem;
 }
 .kpi-icon {
     font-size: 2.5rem;

@@ -28,6 +28,20 @@
     justify-content: center;
 }
 
+/* Badge destacado para alertas críticas */
+#notificationBadge.danger-unread {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 6px rgba(220,53,69,0.12);
+    animation: notificationPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes notificationPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
 /* --- Dropdown --- */
 
 .notification-dropdown {

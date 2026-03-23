@@ -181,6 +181,9 @@
         getAll: function () {
             return apiFetch('/purchases');
         },
+        getById: function (id) {
+            return apiFetch('/purchases/' + id);
+        },
         create: function (data) {
             return apiFetch('/purchases', {
                 method: 'POST',
@@ -199,9 +202,12 @@
                 method: 'POST',
                 body: JSON.stringify({ email: email, password: password }),
             }).then(function (res) {
-                if (res && res.success && res.data && res.data.token) {
-                    localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
-                    localStorage.setItem('marketworld_auth_user', JSON.stringify(res.data.user));
+                // La API devuelve { success, message, data: { token, user }}
+                if (res && res.success && res.data) {
+                    var token = res.data.token || (res.data.access_token || null);
+                    var user = res.data.user || res.data;
+                    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+                    if (user) localStorage.setItem(AUTH_TOKEN_KEY.replace('_token','_user'), JSON.stringify(user));
                 }
                 return res;
             });

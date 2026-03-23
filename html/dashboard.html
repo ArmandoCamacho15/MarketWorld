@@ -124,51 +124,62 @@
                 </div>
 
                 <!-- Tarjetas de indicadores clave (KPIs) -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="kpi-card sales">
+                <div class="row mb-4 kpi-row">
+                    <div class="col">
+                        <div class="kpi-card sales" role="region" aria-live="polite">
                             <div class="kpi-icon">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
-                            <div class="kpi-value">$125,450</div>
+                            <div class="kpi-value" id="kpiSales">$0</div>
                             <div class="kpi-label">Ventas Totales</div>
-                            <div class="kpi-trend positive">
-                                <i class="bi bi-arrow-up me-1"></i> +15.3% vs mes anterior
+                            <div class="kpi-trend positive" id="kpiTrendSales">
+                                <i class="bi bi-arrow-up me-1"></i> --
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="kpi-card purchases">
+                    <div class="col">
+                        <div class="kpi-card inventory-value" role="region" aria-live="polite">
                             <div class="kpi-icon">
                                 <i class="bi bi-cart"></i>
                             </div>
-                            <div class="kpi-value">$42,800</div>
-                            <div class="kpi-label">Compras del Mes</div>
-                            <div class="kpi-trend positive">
-                                <i class="bi bi-arrow-up me-1"></i> +8.2%
+                            <div class="kpi-value" id="kpiInventoryValue">$0</div>
+                            <div class="kpi-label">Valor Inventario</div>
+                            <div class="kpi-trend" id="kpiTrendInventory">
+                                <i class="bi bi-currency-dollar me-1"></i> Actual
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="kpi-card customers">
+                    <div class="col">
+                        <div class="kpi-card customers" role="region" aria-live="polite">
                             <div class="kpi-icon">
                                 <i class="bi bi-people"></i>
                             </div>
-                            <div class="kpi-value">245</div>
+                            <div class="kpi-value" id="kpiCustomers">0</div>
                             <div class="kpi-label">Clientes Activos</div>
-                            <div class="kpi-trend positive">
-                                <i class="bi bi-arrow-up me-1"></i> +12 nuevos
+                            <div class="kpi-trend positive" id="kpiTrendCustomers">
+                                <i class="bi bi-arrow-up me-1"></i> --
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="kpi-card inventory">
-                            <div class="kpi-icon">
-                                <i class="bi bi-box-seam"></i>
+                    <div class="col col--wide">
+                        <div class="kpi-card inventory-combined" id="kpiInventoryCombined" role="region" aria-live="polite">
+                            <div class="d-flex align-items-center justify-content-between gap-3">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="kpi-icon">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    <div>
+                                        <div class="kpi-value" id="kpiProductsCombined">0</div>
+                                        <div class="kpi-label">Productos en Stock</div>
+                                        <div class="kpi-trend" id="kpiTrendProducts">Actualizado</div>
+                                    </div>
+                                </div>
+                                <div class="inventory-low-section text-end">
+                                    <div class="inventory-low-count" id="kpiLowStockCount">0</div>
+                                    <div class="inventory-low-min" id="kpiLowStockMin">Mínimo: -</div>
+                                    <div class="inventory-low-label">Productos con stock bajo</div>
+                                </div>
                             </div>
-                            <div class="kpi-value">3,890</div>
-                            <div class="kpi-label">Productos en Stock</div>
-                            <div class="kpi-trend">Sin cambios</div>
                         </div>
                     </div>
                 </div>
@@ -250,5 +261,24 @@
     <script src="../js/auth-check.js"></script>
     <script src="../js/sidebar-toggle.js"></script>
     <script src="../js/dashboard.js"></script>
+    
+    <!-- Modal para ver detalle de factura (estilo Facturación) -->
+    <div class="modal fade" id="modalDetalleFactura" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalDetalleTitle">Detalle de Factura</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleBody">
+                    <div class="text-center text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="imprimirFactura()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

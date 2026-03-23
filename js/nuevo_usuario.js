@@ -68,7 +68,7 @@
         }
         
         if (!termsCheck.checked) {
-            showNotification('Debes aceptar los terminos y condiciones', 'error');
+            MarketWorld.utils.showModal('Atención', 'Debes aceptar los términos y condiciones para continuar.', 'info');
             hasErrors = true;
         }
         
@@ -76,7 +76,7 @@
         
         // --- Verificar email existente ---
         if (MarketWorld.data.findUserByEmail(email.value.trim())) {
-            showNotification('Este email ya esta registrado', 'error');
+            MarketWorld.utils.showModal('Email Registrado', 'Este correo electrónico ya se encuentra vinculado a una cuenta.', 'error');
             showFieldError(email, 'Email ya registrado');
             return;
         }
@@ -93,13 +93,13 @@
             });
             
             if (result.success) {
-                showNotification('Cuenta creada exitosamente!', 'success');
+                MarketWorld.utils.showModal('¡Registro Exitoso!', 'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.', 'success');
                 setTimeout(function() {
                     window.location.href = 'Login.html';
                 }, 1500);
             } else {
                 setLoadingState(btnRegister, false);
-                showNotification(result.message, 'error');
+                MarketWorld.utils.showModal('Error al registrar', result.message, 'error');
             }
         }, 1000);
     }

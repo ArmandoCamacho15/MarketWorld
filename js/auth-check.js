@@ -3,7 +3,7 @@
 (function(global) {
     'use strict';
 
-    var AUTH_BASE_URL = 'http://localhost:8000/api/v1/auth';
+    var AUTH_BASE_URL = 'http://127.0.0.1:8000/api/v1/auth';
     var AUTH_TOKEN_KEY = 'marketworld_auth_token';
     var AUTH_USER_KEY = 'marketworld_auth_user';
 
@@ -35,10 +35,12 @@
     }
 
     function syncUserToLegacyStore(user) {
+        if (!user) return;
+        
         if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.setCurrentUser) {
             MarketWorld.data.setCurrentUser({
-                nombre: user.name || '',
-                apellido: '',
+                nombre: user.name || user.nombre || '',
+                apellido: user.apellido || '',
                 email: user.email || '',
                 rol: user.rol || 'Usuario'
             });
@@ -51,7 +53,9 @@
         var userName = document.getElementById('userName');
         var userRole = document.getElementById('userRole');
 
-        if (userName) userName.textContent = user.name || user.email || 'Usuario';
+        if (userName) {
+            userName.textContent = user.name || user.nombre || user.email || 'Usuario';
+        }
         if (userRole) userRole.textContent = user.rol || 'Usuario';
     }
 
@@ -78,10 +82,18 @@
                 });
             })
             .then(function(body) {
-                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(body.data));
-                syncUserToLegacyStore(body.data);
-                loadUserInfo(body.data);
-                return true;
+                // El endpoint /me en Laravel suele devolver un objeto con 'data' que CONTIENE el usuario
+                var user = (body.data) ? body.data : (body.user || null);
+                
+                if (user) {
+                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+                    syncUserToLegacyStore(user);
+                    loadUserInfo(user);
+                    return true;
+                } else {
+                    console.warn('Sesión no encontrada en el servidor');
+                    throw new Error('No user data');
+                }
             })
             .catch(function() {
                 clearSession();

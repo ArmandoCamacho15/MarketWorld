@@ -192,6 +192,9 @@
                                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" aria-label="Agregar nuevo producto">
                                         <i class="bi bi-plus-circle me-2" aria-hidden="true"></i> Nuevo Producto
                                     </button>
+                                    <button class="btn btn-outline-primary" id="btnSyncProducts" title="Sincronizar productos con backend">
+                                        <i class="bi bi-arrow-repeat me-2"></i> Sincronizar
+                                    </button>
                                 </div>
                             </div>
 
@@ -346,7 +349,7 @@
                                             </td>
                                             <td>$18.00</td>
                                             <td class="fw-bold text-success">$25.00</td>
-                                            <td><span class="badge bg-warning text-dark">Stock Bajo</span></td>
+                                            <td><span class="badge stock-low">Stock Bajo</span></td>
                                             <td>
                                                 <div class="btn-group">
                                                     <button class="btn btn-sm btn-outline-primary" aria-label="Ver detalles">
@@ -650,7 +653,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="productCosto" class="form-label">Costo</label>
-                                <input type="number" class="form-control" id="productCosto" min="0" step="0.01">
+                                <input type="number" class="form-control" id="productCosto" min="0" step="0.01" readonly title="El costo se actualiza automáticamente al registrar compras; no es editable aquí">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Margen</label>
@@ -758,6 +761,43 @@
                         <div class="text-end">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Registrar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ajuste de costo (Administrador) -->
+    <div class="modal fade" id="adjustCostModal" tabindex="-1" aria-labelledby="adjustCostModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adjustCostModalLabel">Ajuste de Costo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="adjustCostForm">
+                        <input type="hidden" id="adjustProductId">
+                        <div class="mb-2">
+                            <label class="form-label">Producto</label>
+                            <div id="adjustProductName" class="form-control-plaintext fw-bold"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="currentCost" class="form-label">Costo actual</label>
+                            <div id="currentCost" class="form-control-plaintext">$0</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newCostInput" class="form-label">Nuevo costo *</label>
+                            <input id="newCostInput" type="number" class="form-control" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adjustReason" class="form-label">Motivo *</label>
+                            <textarea id="adjustReason" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Registrar ajuste</button>
                         </div>
                     </form>
                 </div>

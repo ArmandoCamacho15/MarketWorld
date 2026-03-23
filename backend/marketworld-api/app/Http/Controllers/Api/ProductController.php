@@ -74,9 +74,8 @@ class ProductController extends Controller
         if ($request->has('precio') && !$request->has('precio_venta')) {
             $request->merge(['precio_venta' => $request->precio]);
         }
-        if ($request->has('costo') && !$request->has('precio_compra')) {
-            $request->merge(['precio_compra' => $request->costo]);
-        }
+        // No permitir que el costo sea actualizado directamente desde el formulario de producto.
+        // El `precio_compra` debe actualizarse solo via órdenes de compra o ajustes administrativos.
         if ($request->has('stockActual') && !$request->has('stock')) {
             $request->merge(['stock' => $request->stockActual]);
         }
@@ -89,7 +88,7 @@ class ProductController extends Controller
             'nombre'        => 'required|string|max:200',
             'descripcion'   => 'nullable|string',
             'categoria'     => 'nullable|string|max:100',
-            'precio_compra' => 'required|numeric|min:0',
+            'precio_compra' => 'nullable|numeric|min:0',
             'precio_venta'  => 'required|numeric|min:0',
             'stock'         => 'required|integer|min:0',
             'stock_minimo'  => 'nullable|integer|min:0',
@@ -145,7 +144,7 @@ class ProductController extends Controller
             'nombre'        => 'sometimes|required|string|max:200',
             'descripcion'   => 'nullable|string',
             'categoria'     => 'nullable|string|max:100',
-            'precio_compra' => 'sometimes|required|numeric|min:0',
+            // 'precio_compra' intentionally excluded from general update validation
             'precio_venta'  => 'sometimes|required|numeric|min:0',
             'stock'         => 'sometimes|required|integer|min:0',
             'stock_minimo'  => 'nullable|integer|min:0',
@@ -199,6 +198,35 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Productos con stock bajo listados',
+            'data'    => $products,
+            'total'   => $products->count(),
+            'errors'  => null,
+        ]);
+    }
+
+    // GET /api/v1/products/valuation
+    // Devuelve la valorización por producto basada en precio_compra * stock
+    public function valuation(): JsonResponse
+    {
+        $products = Product::select('id', 'sku', 'nombre', 'precio_compra', 'stock')
+            ->where('estado', 'Activo')
+            ->get()
+            ->map(function ($p) {
+                $pc = (float) ($p->precio_compra ?? 0);
+                $stock = (int) ($p->stock ?? 0);
+                return [
+                    'id' => $p->id,
+                    'sku' => $p->sku,
+                    'nombre' => $p->nombre,
+                    'precio_compra' => $pc,
+                    'stock' => $stock,
+                    'valuation' => round($pc * $stock, 2),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Valorización de productos calculada',
             'data'    => $products,
             'total'   => $products->count(),
             'errors'  => null,

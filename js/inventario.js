@@ -50,7 +50,33 @@
     }
 
     function setProductsState(products, source) {
-        inventoryState.products = Array.isArray(products) ? products : [];
+        // Normalizar tipos: asegurar que stock y stockMinimo sean números, precio/costo números y activo boolean
+        var normalized = [];
+        if (Array.isArray(products)) {
+            normalized = products.map(function(p) {
+                try {
+                    return {
+                        id: p.id,
+                        codigo: p.codigo,
+                        nombre: p.nombre,
+                        descripcion: p.descripcion || '',
+                        categoria: p.categoria || 'Sin categoría',
+                        precio: typeof p.precio === 'number' ? p.precio : parseFloat(p.precio) || 0,
+                        costo: typeof p.costo === 'number' ? p.costo : parseFloat(p.costo) || 0,
+                        stock: parseInt(p.stock || 0, 10) || 0,
+                        stockMinimo: parseInt(p.stockMinimo || p.stock_minimo || 0, 10) || 0,
+                        unidad: p.unidad || 'Unidad',
+                        proveedor: p.proveedor || '',
+                        activo: (p.activo === true || String(p.activo).toLowerCase() === 'activo' || String(p.activo) === '1' || p.estado === 'Activo') ? true : !!p.activo,
+                        fechaCreacion: p.fechaCreacion || p.created_at || ''
+                    };
+                } catch (e) {
+                    return p;
+                }
+            });
+        }
+
+        inventoryState.products = normalized;
         inventoryState.source = source || 'local';
     }
 
@@ -72,7 +98,9 @@
     function getLowStockProductsState(products) {
         var list = products || getProductsState();
         return list.filter(function(p) {
-            return p.activo && p.stock <= p.stockMinimo;
+            var s = parseInt(p.stock || 0, 10) || 0;
+            var m = parseInt(p.stockMinimo || p.stock_minimo || 0, 10) || 0;
+            return (!!p.activo) && (s <= m);
         });
     }
 
@@ -152,11 +180,15 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Inventario cargado');
         initInventory();
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications && MarketWorld.notifications.init) {
+            MarketWorld.notifications.init();
+        }
     });
 
     // --- Inicializar inventario ---
     function initInventory() {
         loadProducts();
+        initSyncButton();
         loadCategories();
         initNewProductButton();
         initProductForm();
@@ -176,6 +208,56 @@
             MarketWorld.notifications.init();
             MarketWorld.notifications.checkLowStock();
         }
+    }
+
+    // ======= BOTÓN DE SINCRONIZACIÓN =======
+    function initSyncButton() {
+        var btn = document.getElementById('btnSyncProducts');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Sincronizando...';
+            syncProductsFromBackend().finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> Sincronizar';
+            });
+        });
+    }
+
+    // ======= SINCRONIZAR PRODUCTOS DESDE BACKEND A LOCAL ====
+    function syncProductsFromBackend() {
+        // Intentar usar adaptador primero
+        if (hasProductApi()) {
+            return MarketWorld.api.products.getAll()
+                .then(function(response) {
+                    if (response && (response.data || Array.isArray(response))) {
+                        var apiProducts = response.data || response;
+                        var mapped = apiProducts.map(mapApiProductToFrontend);
+                        // Guardar en localStorage para compatibilidad con otras partes de la app
+                        try {
+                            localStorage.setItem('marketworld_products', JSON.stringify(mapped));
+                        } catch (e) {
+                            console.warn('No se pudo guardar productos en localStorage:', e && e.message ? e.message : e);
+                        }
+                        setProductsState(mapped, 'api');
+                        displayProducts(mapped);
+                        showLowStockAlerts();
+                        updateDashboardKPIs();
+                        console.log('[Sync] Productos sincronizados desde API:', mapped.length);
+                        return mapped;
+                    }
+                    throw new Error('Respuesta API inválida');
+                })
+                .catch(function(err) {
+                    console.warn('[Sync] Error al sincronizar desde API:', err && err.message ? err.message : err);
+                    alert('No se pudo sincronizar con el backend. Revisar consola.');
+                    return Promise.reject(err);
+                });
+        }
+
+        // Si no hay API, informar al usuario
+        alert('El backend no está disponible o el adaptador no está cargado. No se puede sincronizar.');
+        return Promise.resolve([]);
     }
 
     // --- Cargar productos ---
@@ -244,7 +326,7 @@
             '<span class="badge bg-secondary">Inactivo</span>';
         
         var stockAlert = product.stock <= product.stockMinimo ? 
-            '<div class="alert alert-warning alert-sm mb-2"><i class="bi bi-exclamation-triangle me-1"></i> Stock bajo</div>' : '';
+            '<div class="alert alert-danger alert-sm mb-2 stock-low"><i class="bi bi-exclamation-triangle me-1"></i> Stock bajo</div>' : '';
         
         var margen = product.precio > 0 ? ((product.precio - product.costo) / product.precio * 100).toFixed(1) : 0;
         
@@ -284,10 +366,15 @@
                         </div>
                     </div>
                     
-                    <div class="btn-group w-100 mt-3" role="group">
+                        <div class="btn-group w-100 mt-3" role="group">
                         <button class="btn btn-sm btn-outline-primary btn-adjust-stock" data-product-id="${product.id}">
                             <i class="bi bi-plus-minus"></i> Stock
                         </button>
+                        ${ (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser && MarketWorld.data.getCurrentUser() && MarketWorld.data.getCurrentUser().rol === 'Administrador') ? `
+                        <button class="btn btn-sm btn-outline-info btn-adjust-cost" data-product-id="${product.id}">
+                            <i class="bi bi-currency-dollar"></i> Costo
+                        </button>
+                        ` : '' }
                         <button class="btn btn-sm btn-outline-warning btn-edit-product" data-product-id="${product.id}">
                             <i class="bi bi-pencil"></i> Editar
                         </button>
@@ -344,9 +431,17 @@
                     margenSpan.className = margen > 0 ? 'text-success' : 'text-danger';
                 }
             };
+            // Forzar que el campo de costo sea solo lectura en UI (no editable por el usuario)
+            try {
+                costoInput.readOnly = true;
+                costoInput.setAttribute('aria-readonly', 'true');
+                costoInput.style.backgroundColor = '#e9ecef';
+                costoInput.style.cursor = 'not-allowed';
+            } catch (e) {
+                console.warn('No se pudo forzar readonly en productCosto:', e && e.message ? e.message : e);
+            }
             
             precioInput.addEventListener('input', calculateMargin);
-            costoInput.addEventListener('input', calculateMargin);
         }
     }
 
@@ -364,6 +459,8 @@
             
             if (target.classList.contains('btn-edit-product')) {
                 editProduct(parseInt(productId));
+            } else if (target.classList.contains('btn-adjust-cost')) {
+                openAdjustCostModal(parseInt(productId));
             } else if (target.classList.contains('btn-delete-product')) {
                 deleteProductConfirm(parseInt(productId));
             } else if (target.classList.contains('btn-adjust-stock')) {
@@ -371,6 +468,112 @@
             }
         });
     }
+
+    // Abrir modal de ajuste de costo (solo para administradores)
+    function openAdjustCostModal(id) {
+        var product = getProductById(id);
+        if (!product) {
+            alert('Producto no encontrado');
+            return;
+        }
+
+        var currentUser = (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser) ? MarketWorld.data.getCurrentUser() : null;
+        if (!currentUser || currentUser.rol !== 'Administrador') {
+            alert('No tienes permisos para ajustar el costo');
+            return;
+        }
+
+        document.getElementById('adjustProductId').value = product.id;
+        document.getElementById('adjustProductName').textContent = product.nombre + ' (' + product.codigo + ')';
+        document.getElementById('currentCost').textContent = '$' + formatCurrency(product.costo);
+        document.getElementById('newCostInput').value = '';
+        document.getElementById('adjustReason').value = '';
+
+        var modalEl = document.getElementById('adjustCostModal');
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    // Manejar envío del formulario de ajuste de costo
+    (function attachAdjustCostSubmit() {
+        var attach = function() {
+            var form = document.getElementById('adjustCostForm');
+            if (!form) return;
+            form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var pid = document.getElementById('adjustProductId').value;
+            var newCost = parseFloat(document.getElementById('newCostInput').value);
+            var reason = document.getElementById('adjustReason').value.trim();
+
+            if (isNaN(newCost) || newCost < 0) {
+                alert('Ingresa un costo válido');
+                return;
+            }
+            if (!reason) {
+                alert('Ingresa el motivo del ajuste');
+                return;
+            }
+
+            var token = localStorage.getItem('marketworld_auth_token');
+            if (!token) {
+                alert('No hay token de autenticación. Inicia sesión nuevamente.');
+                return;
+            }
+
+            var submitBtn = form.querySelector('button[type="submit"]');
+            var originalText = submitBtn ? submitBtn.innerHTML : null;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Registrando...';
+            }
+
+            var endpoint = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.BASE_URL) ?
+                (MarketWorld.api.BASE_URL + '/products/' + pid + '/adjust-cost') :
+                ('/api/v1/products/' + pid + '/adjust-cost');
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ new_cost: newCost, reason: reason })
+            })
+            .then(function(res) { return res.json().then(function(body) { return { ok: res.ok, status: res.status, body: body }; }); })
+            .then(function(resp) {
+                if (!resp.ok) {
+                    var msg = (resp.body && resp.body.message) ? resp.body.message : 'Error al ajustar costo';
+                    throw new Error(msg);
+                }
+
+                alert(resp.body.message || 'Ajuste registrado correctamente');
+                var modalEl = document.getElementById('adjustCostModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                // Recargar productos desde API
+                loadProducts();
+            })
+            .catch(function(err) {
+                console.error('Ajuste fallo:', err && err.message ? err.message : err);
+                alert('No se pudo registrar el ajuste: ' + (err && err.message ? err.message : 'error'));
+            })
+            .finally(function() {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (originalText) submitBtn.innerHTML = originalText;
+                }
+            });
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attach);
+        } else {
+            attach();
+        }
+    })();
 
     // ======= GUARDAR PRODUCTO =======
     function saveProduct() {
@@ -426,11 +629,15 @@
 
         if (hasProductApi()) {
             var payload = mapFrontendProductToApi(productData);
+            // No permitir actualizar costo directamente desde el formulario de edición
+            if (productId) {
+                delete payload.precio_compra;
+            }
             var saveButton = document.querySelector('#productForm button[type="submit"]') || 
                             document.querySelector('#btnSaveProduct');
-            
+            var originalHtml = null;
             if (saveButton) {
-                var originalHtml = saveButton.innerHTML;
+                originalHtml = saveButton.innerHTML;
                 saveButton.disabled = true;
                 saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando...';
             }
@@ -443,6 +650,13 @@
                 .then(function(response) {
                     if (response && response.success) {
                         onSuccess(response.message || 'Producto guardado correctamente');
+                    } else {
+                        if (saveButton) {
+                            saveButton.disabled = false;
+                            saveButton.innerHTML = originalHtml;
+                        }
+                        var msg = (response && response.message) ? response.message : 'No se pudo guardar el producto.';
+                        alert('Error: ' + msg);
                     }
                 })
                 .catch(function(err) {
@@ -466,6 +680,12 @@
                     }
 
                     showApiError(err, 'No se pudo guardar el producto en la API.');
+                })
+                .finally(function() {
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = originalHtml;
+                    }
                 });
             return;
         }
@@ -846,19 +1066,49 @@
         
         if (!alertContainer) return;
         
+        // Diagnóstico: loguear productos con stock bajo y tipos
+        try {
+            console.log('[Inventario] lowStockProducts count:', lowStockProducts.length);
+            if (lowStockProducts.length > 0) {
+                lowStockProducts.slice(0,5).forEach(function(p, idx) {
+                    console.log('[Inventario] lowStock sample', idx, { id: p.id, codigo: p.codigo, nombre: p.nombre, stock: p.stock, stockMinimo: p.stockMinimo, types: { stock: typeof p.stock, stockMinimo: typeof p.stockMinimo } });
+                });
+            }
+        } catch (e) {
+            console.warn('[Inventario] diagnóstico lowStock fallo:', e && e.message ? e.message : e);
+        }
+
         if (lowStockProducts.length === 0) {
             alertContainer.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i> Todos los productos tienen stock suficiente</div>';
             return;
         }
         
-        var html = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i> <strong>' + lowStockProducts.length + ' producto(s) con stock bajo:</strong><ul class="mb-0 mt-2">';
-        
+        var html = '<div class="alert alert-danger stock-low"><i class="bi bi-exclamation-triangle me-2"></i> <strong>' + lowStockProducts.length + ' producto(s) con stock bajo:</strong><ul class="mb-0 mt-2">';
         lowStockProducts.forEach(function(product) {
-            html += '<li>' + product.nombre + ' (' + product.codigo + ') - Stock: ' + product.stock + ' (Mínimo: ' + product.stockMinimo + ')</li>';
+            html += '<li>' +
+                '<a href="#" class="low-stock-link" data-product-id="' + product.id + '">' + product.nombre + ' (' + product.codigo + ')</a>' +
+                ' - Stock: ' + product.stock + ' (Mínimo: ' + product.stockMinimo + ')' +
+                '</li>';
         });
-        
         html += '</ul></div>';
         alertContainer.innerHTML = html;
+
+        // Añadir evento para resaltar producto al hacer clic en el enlace
+        var links = alertContainer.querySelectorAll('.low-stock-link');
+        links.forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                var pid = link.getAttribute('data-product-id');
+                var card = document.querySelector('[data-product-id="' + pid + '"]');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('border', 'border-danger', 'shadow');
+                    setTimeout(function() {
+                        card.classList.remove('border', 'border-danger', 'shadow');
+                    }, 2000);
+                }
+            });
+        });
     }
 
     // Actualizar KPIs del dashboard
@@ -870,9 +1120,15 @@
         var activeProducts = products.filter(function(p) { return p.activo; });
         var totalProductos = activeProducts.length;
         
-        // Valor total del inventario (precio * stock)
+        // Valor total del inventario (costo unitario * stock)
+        // Usar `costo` (mapeado desde `precio_compra`) si está disponible; fallback a `precio` si no.
         var valorTotal = products.reduce(function(sum, product) {
-            return sum + (product.precio * product.stock);
+            var unitCost = (typeof product.costo === 'number' && !isNaN(product.costo)) ? product.costo : (parseFloat(product.costo) || 0);
+            if (!unitCost) {
+                unitCost = (typeof product.precio === 'number' && !isNaN(product.precio)) ? product.precio : (parseFloat(product.precio) || 0);
+            }
+            var stock = parseFloat(product.stock || 0) || 0;
+            return sum + (unitCost * stock);
         }, 0);
         
         // Productos con stock bajo
@@ -1374,7 +1630,10 @@
             if (!categories[cat]) {
                 categories[cat] = 0;
             }
-            categories[cat] += product.precio * product.stock;
+                // Valorización por categoría basada en costo (precio_compra)
+                var unitCostCat = (typeof product.costo === 'number' && !isNaN(product.costo)) ? product.costo : (parseFloat(product.costo) || 0);
+                if (!unitCostCat) unitCostCat = (typeof product.precio === 'number' && !isNaN(product.precio)) ? product.precio : (parseFloat(product.precio) || 0);
+                categories[cat] += (unitCostCat * (parseFloat(product.stock || 0) || 0));
         });
         
         var labels = Object.keys(categories);

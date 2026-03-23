@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\CostAdjustmentController;
 use App\Http\Controllers\Api\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:Administrador')->group(function () {
             Route::get('reports/sales-summary', [ReportController::class, 'salesSummary']);
             Route::get('reports/inventory-utility', [ReportController::class, 'inventoryUtility']);
+            // Ajustes de costo (registro y auditoría) - Solo Administrador
+            Route::post('products/{id}/adjust-cost', [CostAdjustmentController::class, 'store']);
         });
 
         // Auth
@@ -46,6 +49,8 @@ Route::prefix('v1')->group(function () {
 
         // === Productos (Inventario) ===
         Route::get('products/stock-bajo', [ProductController::class, 'stockBajo']);
+        // Valorización por producto (precio_compra * stock)
+        Route::get('products/valuation', [ProductController::class, 'valuation']);
         Route::apiResource('products', ProductController::class);
 
         // === Clientes (CRM / Facturación) ===

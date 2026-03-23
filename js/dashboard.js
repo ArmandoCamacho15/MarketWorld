@@ -20,6 +20,8 @@
         
         // Cargar datos reales de la API (endpoint consolidado, si existe)
         fetchDashboardStats();
+        // Obtener valorización detallada por producto y compararla con el cálculo local
+        try { fetchProductsValuation(); } catch (e) { console.warn('fetchProductsValuation fallo:', e); }
         
         // --- Inicializar sistema de notificaciones ---
         if (typeof MarketWorld.notifications !== 'undefined') {
@@ -33,6 +35,97 @@
         if (payload && payload.data && Array.isArray(payload.data.data)) return payload.data.data;
         return [];
     }
+
+    // Trae la valorización por producto desde el backend y compara con el cálculo local
+    async function fetchProductsValuation() {
+        try {
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api) {
+                // intentar fetch directo
+            }
+            var token = localStorage.getItem('marketworld_auth_token');
+            if (!token) return;
+
+            var headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
+            var res = await fetch('http://127.0.0.1:8000/api/v1/products/valuation', { headers });
+            if (!res.ok) {
+                console.warn('No se pudo obtener valorización por producto desde API:', res.status);
+                return;
+            }
+
+            var body = await res.json();
+            var apiProducts = Array.isArray(body.data) ? body.data : (Array.isArray(body) ? body : []);
+            if (!apiProducts || apiProducts.length === 0) return;
+
+            // Mapear por SKU o id
+            var apiById = new Map();
+            apiProducts.forEach(function(p) { apiById.set(String(p.id), p); });
+
+            var local = getProducts() || [];
+            var discrepancies = [];
+
+            local.forEach(function(lp) {
+                var id = String(lp.id || lp.id);
+                var apiP = apiById.get(id);
+                if (!apiP) return;
+
+                var apiVal = parseFloat(apiP.valuation || 0) || 0;
+                var unitCost = (typeof lp.costo === 'number' && !isNaN(lp.costo)) ? lp.costo : (parseFloat(lp.costo) || 0);
+                if (!unitCost) unitCost = (typeof lp.precio === 'number' && !isNaN(lp.precio)) ? lp.precio : (parseFloat(lp.precio) || 0);
+                var stock = parseFloat(lp.stock || 0) || 0;
+                var localVal = unitCost * stock;
+
+                var diff = Math.abs(localVal - apiVal);
+                var pct = apiVal > 0 ? (diff / apiVal) * 100 : (localVal > 0 ? 100 : 0);
+
+                if (pct > 2 || diff > 1000) {
+                    discrepancies.push({ id: lp.id, sku: lp.codigo || lp.sku || '', nombre: lp.nombre, stock: stock, localVal: Math.round(localVal), apiVal: Math.round(apiVal), diff: Math.round(diff), pct: Number(pct.toFixed(2)) });
+                }
+            });
+
+            if (discrepancies.length > 0) {
+                var msg = 'Discrepancias por producto detectadas: ' + discrepancies.length + '. Revisa consola para detalles.';
+                if (typeof MarketWorld !== 'undefined' && MarketWorld.utils && typeof MarketWorld.utils.showNotification === 'function') {
+                    MarketWorld.utils.showNotification(msg, 'warning', 10000);
+                } else {
+                    alert(msg);
+                }
+                console.table(discrepancies);
+            } else {
+                console.log('[Valuation] No se detectaron discrepancias significativas entre API y cálculo local.');
+            }
+        } catch (e) {
+            console.warn('Error trayendo valorización por producto:', e && e.message ? e.message : e);
+        }
+    }
+
+    // Función para imprimir el contenido del modal (misma firma que en facturación)
+    function imprimirFactura() {
+        const contenido = document.getElementById('modalDetalleBody');
+        if (!contenido) return;
+
+        const ventana = window.open('', '_blank', 'width=800,height=600');
+        ventana.document.write(`
+            <html>
+            <head>
+                <title>Imprimir Factura</title>
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+                <style>body{padding:20px}@media print{.no-print{display:none}}</style>
+            </head>
+            <body>
+                <div class="text-center mb-4">
+                    <h2>MarketWorld</h2>
+                    <p class="text-muted">Detalle de Factura</p>
+                </div>
+                ${contenido.innerHTML}
+                <div class="text-center mt-4 no-print">
+                    <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
+                </div>
+            </body>
+            </html>
+        `);
+        ventana.document.close();
+    }
+    window.imprimirFactura = imprimirFactura;
 
     function parseInvoiceDate(invoice) {
         const raw = invoice.created_at || invoice.fecha || invoice.fechaCreacion || invoice.updated_at;
@@ -112,7 +205,20 @@
                         }
                     });
 
-                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
+                    var mergedProducts = Array.from(byCode.values());
+                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(mergedProducts));
+
+                    // Diagnóstico: log de sincronización y conteo de stock bajo
+                    try {
+                        const stored = mergedProducts;
+                        const lowStockCount = stored.filter(p => (parseInt(p.stock || 0, 10) || 0) <= (parseInt(p.stockMinimo || 0, 10) || 0) && p.activo).length;
+                        console.log('[Dashboard sync] apiProducts:', apiProducts.length, 'localProducts(before):', localProducts.length, 'merged:', stored.length, 'lowStockCount:', lowStockCount);
+                        if (stored.length > 0) {
+                            console.log('[Dashboard sync] sample product types:', Object.keys(stored[0]).reduce((acc,k)=>{acc[k]=typeof stored[0][k];return acc;},{}));
+                        }
+                    } catch (e) {
+                        console.warn('[Dashboard sync] diagnóstico fallido:', e.message || e);
+                    }
                 }
             }
 
@@ -131,15 +237,24 @@
                         if (key) byNumber.set(key, inv);
                     });
 
+                    // Filtrar facturas de prueba (QA/TEST) y mapear
                     apiInvoices.forEach(function(apiInv) {
+                        const rawNumber = String(apiInv.numero_factura || apiInv.numero || apiInv.id || '');
+                        const rawCustomer = String(apiInv.cliente_nombre || apiInv.customer_name || (apiInv.customer && apiInv.customer.nombre) || '');
+                        // Omitir facturas de prueba por patrón en número o cliente
+                        if (/qa|test|inv-test|test-/i.test(rawNumber) || /qa|test/i.test(rawCustomer)) {
+                            return;
+                        }
+
                         const mapped = {
                             id: apiInv.id,
                             numero_factura: apiInv.numero_factura || apiInv.numero || '',
                             fechaCreacion: apiInv.created_at || apiInv.fecha || new Date().toISOString(),
                             fecha: apiInv.fecha || apiInv.created_at || new Date().toISOString(),
-                            total: parseFloat(apiInv.total || 0),
+                            total: parseFloat(apiInv.total || apiInv.total_amount || 0),
                             estado: apiInv.estado || 'Pagada',
-                            customer_id: apiInv.customer_id || null
+                            cliente_nombre: apiInv.cliente_nombre || apiInv.customer_name || (apiInv.customer && apiInv.customer.nombre) || 'Consumidor Final',
+                            items: apiInv.items || apiInv.lines || []
                         };
 
                         const key = String(mapped.numero_factura || mapped.id || '').toLowerCase();
@@ -152,7 +267,14 @@
                         merged.push(value);
                     });
 
-                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(merged));
+                    // Ordenar por fecha desc y mantener las 10 más recientes
+                    merged.sort(function(a,b) {
+                        const da = new Date(a.fecha || a.fechaCreacion || 0).getTime() || 0;
+                        const db = new Date(b.fecha || b.fechaCreacion || 0).getTime() || 0;
+                        return db - da;
+                    });
+                    const recent = merged.slice(0, 10);
+                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(recent));
                 }
             }
         } catch (error) {
@@ -228,14 +350,70 @@
         try {
             if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.dashboard) {
                 console.warn('Adaptador de API no disponible para Dashboard stats');
+                // intentar fetch directo al backend si hay token
+                const token = localStorage.getItem('marketworld_auth_token');
+                if (!token) {
+                    console.warn('No hay token de autenticación disponible para solicitar stats directas.');
+                    return;
+                }
+
+                try {
+                    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+                    const res = await fetch('http://127.0.0.1:8000/api/v1/products/stock-bajo', { headers });
+                    if (res.ok) {
+                        const body = await res.json();
+                        const products = Array.isArray(body.data) ? body.data : (Array.isArray(body) ? body : []);
+                        const stats = {
+                            low_stock_count: products.length,
+                            products_low: products
+                        };
+                        console.log('Dashboard: obtenido low_stock directamente del endpoint:', stats.low_stock_count);
+                        updateDashboardUI(stats);
+                        return;
+                    } else {
+                        console.warn('Fetch directo a /products/stock-bajo falló con status', res.status);
+                    }
+                } catch (err) {
+                    console.warn('Error al intentar fetch directo de low_stock:', err && err.message ? err.message : err);
+                }
                 return;
             }
 
-            const result = await MarketWorld.api.dashboard.getStats();
+            // Usar adaptador si está disponible
+            try {
+                const result = await MarketWorld.api.dashboard.getStats();
+                if (result && result.success) {
+                    console.log('📊 Dashboard stats actualizados desde API');
+                    updateDashboardUI(result.data);
+                    return;
+                }
+                console.warn('Adaptador dashboard devolvió respuesta no exitosa o vacía:', result);
+            } catch (e) {
+                console.warn('Error llamando MarketWorld.api.dashboard.getStats():', e && e.message ? e.message : e);
+            }
 
-            if (result.success) {
-                console.log('📊 Dashboard stats actualizados desde API');
-                updateDashboardUI(result.data);
+            // Si adaptador no funcionó, intentar fetch directo a products/stock-bajo
+            const token = localStorage.getItem('marketworld_auth_token');
+            if (!token) {
+                console.warn('No hay token para solicitar datos directos al backend.');
+                return;
+            }
+
+            try {
+                const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+                const res2 = await fetch('http://127.0.0.1:8000/api/v1/products/stock-bajo', { headers });
+                if (res2.ok) {
+                    const body2 = await res2.json();
+                    const products = Array.isArray(body2.data) ? body2.data : (Array.isArray(body2) ? body2 : []);
+                    const stats2 = { low_stock_count: products.length, products_low: products };
+                    console.log('Dashboard: fallback directo low_stock count=', stats2.low_stock_count);
+                    updateDashboardUI(stats2);
+                    return;
+                } else {
+                    console.warn('Fetch fallback a /products/stock-bajo falló con status', res2.status);
+                }
+            } catch (err) {
+                console.warn('Error en fetch fallback de low_stock:', err && err.message ? err.message : err);
             }
         } catch (error) {
             console.error('Error fetching dashboard stats via adapter:', error);
@@ -245,6 +423,18 @@
     function updateDashboardUI(data) {
         if (!data) return;
 
+        // Si el backend no envía low_stock_count, calcular desde el almacenamiento local
+        if (typeof data.low_stock_count === 'undefined' || data.low_stock_count === null) {
+            try {
+                const localProducts = getProducts() || [];
+                const computed = localProducts.filter(p => (parseInt(p.stock || 0, 10) || 0) <= (parseInt(p.stockMinimo || p.stock_minimo || 0, 10) || 0) && (p.activo === undefined ? true : !!p.activo)).length;
+                data.low_stock_count = computed;
+                console.log('[Dashboard] low_stock_count calculado localmente:', computed);
+            } catch (e) {
+                data.low_stock_count = 0;
+            }
+        }
+
         // Actualizar KPIs con IDs específicos si existen, o por etiquetas
         const kpiCards = document.querySelectorAll('.kpi-card');
         kpiCards.forEach(function(card) {
@@ -253,7 +443,7 @@
             if (!labelEl || !valueEl) return;
 
             const label = labelEl.textContent.trim().toLowerCase();
-            
+
             if (label.includes('ventas') && data.sales_month !== undefined) {
                 valueEl.textContent = `$${parseFloat(data.sales_month).toLocaleString('es-CO')}`;
             }
@@ -286,7 +476,152 @@
         // Notificar si hay stock bajo
         if (data.low_stock_count > 0) {
             console.warn(`⚠️ Hay ${data.low_stock_count} productos con stock bajo.`);
-            // Si el sistema de notificaciones está listo, podrías disparar una alerta aquí.
+            // Disparar las alertas para la campana de notificaciones
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications && typeof MarketWorld.notifications.checkLowStock === 'function') {
+                MarketWorld.notifications.checkLowStock();
+            }
+        }
+        // Actualizar tarjeta combinada de inventario + stock bajo
+        try {
+            var combinedCard = document.getElementById('kpiInventoryCombined');
+            var combinedProductsEl = document.getElementById('kpiProductsCombined');
+            var combinedLowCountEl = document.getElementById('kpiLowStockCount');
+            var combinedLowMinEl = document.getElementById('kpiLowStockMin');
+
+            if (combinedCard && combinedProductsEl && combinedLowCountEl && combinedLowMinEl) {
+                var productsLocal = getProducts() || [];
+                var productsForThreshold = Array.isArray(data.products_low) && data.products_low.length ? data.products_low : productsLocal;
+
+                // calcular un valor de referencia para "stock mínimo" (mínimo entre los stockMinimo conocidos)
+                var minThreshold = productsForThreshold.reduce(function(acc, p) {
+                    var v = parseInt(p.stockMinimo || p.stock_minimo || 0, 10) || 0;
+                    if (acc === null) return v;
+                    if (v === 0) return acc;
+                    return v < acc ? v : acc;
+                }, null);
+
+                combinedLowCountEl.textContent = String(data.low_stock_count || 0);
+                combinedLowMinEl.textContent = 'Mínimo: ' + (minThreshold || '-');
+
+                // también actualizar el número total de productos
+                if (data.total_products !== undefined) {
+                    combinedProductsEl.textContent = parseInt(data.total_products, 10).toLocaleString();
+                } else {
+                    combinedProductsEl.textContent = (productsLocal || []).length.toLocaleString();
+                }
+
+                // resaltar visualmente si hay stock bajo
+                if ((data.low_stock_count || 0) > 0) {
+                    combinedCard.classList.add('kpi-alert', 'stock-low');
+                } else {
+                    combinedCard.classList.remove('kpi-alert', 'stock-low');
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo actualizar tarjeta combinada de inventario:', e && e.message ? e.message : e);
+        }
+        // Asegurar que cada KPI muestre datos reales (API -> fallback local)
+        try {
+            // Ventas
+            var elSales = document.getElementById('kpiSales');
+            if (elSales) {
+                if (data.sales_month !== undefined) {
+                    elSales.textContent = `$${parseFloat(data.sales_month).toLocaleString('es-CO')}`;
+                } else {
+                    // fallback: calcular ventas del mes desde facturas locales
+                    var invoices = getActiveInvoices();
+                    var now = new Date();
+                    var monthly = invoices.filter(function(inv) {
+                        var d = parseInvoiceDate(inv);
+                        return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    }).reduce(function(sum, inv) { return sum + parseInvoiceTotal(inv); }, 0);
+                    elSales.textContent = `$${Math.round(monthly).toLocaleString('es-CO')}`;
+                }
+            }
+
+            // Valor del inventario
+            var elInventoryValue = document.getElementById('kpiInventoryValue');
+            if (elInventoryValue) {
+                if (data.inventory_value !== undefined) {
+                    elInventoryValue.textContent = `$${parseFloat(data.inventory_value).toLocaleString('es-CO')}`;
+                    // Comparar valor reportado por API vs cálculo local
+                    try {
+                        compareInventoryValues(parseFloat(data.inventory_value) || 0);
+                    } catch (e) {
+                        console.warn('compareInventoryValues fallo:', e && e.message ? e.message : e);
+                    }
+                } else {
+                    // calcular fallback desde productos locales
+                    try {
+                        var prod = getProducts();
+                        var invVal = (prod || []).reduce(function(sum, p) {
+                            var stock = parseFloat(p.stock || p.cantidad || 0) || 0;
+                            var costo = parseFloat(p.costo || p.precio_compra || p.precio || 0) || 0;
+                            return sum + (stock * costo);
+                        }, 0);
+                        elInventoryValue.textContent = `$${Math.round(invVal).toLocaleString('es-CO')}`;
+                        // Si no hay valor por API, aún ejecutar comparación con 0 (no reportado)
+                        try { compareInventoryValues(null); } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        elInventoryValue.textContent = `$0`;
+                    }
+                }
+            }
+
+            // Clientes
+            var elClients = document.getElementById('kpiCustomers');
+            if (elClients) {
+                if (data.total_customers !== undefined) {
+                    elClients.textContent = parseInt(data.total_customers, 10).toLocaleString();
+                } else if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.getCustomers === 'function') {
+                    elClients.textContent = (MarketWorld.data.getCustomers() || []).length.toLocaleString();
+                }
+            }
+
+            // Productos
+            var elProducts = document.getElementById('kpiProducts');
+            if (elProducts) {
+                if (data.total_products !== undefined) {
+                    elProducts.textContent = parseInt(data.total_products, 10).toLocaleString();
+                } else {
+                    elProducts.textContent = (getProducts() || []).length.toLocaleString();
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo sincronizar valores KPI por id:', e && e.message ? e.message : e);
+        }
+    }
+
+    // Comparar inventory_value del backend con el cálculo local y mostrar alerta si difieren.
+    function compareInventoryValues(apiValue) {
+        var products = getProducts() || [];
+        var localValue = products.reduce(function(sum, p) {
+            var unitCost = (typeof p.costo === 'number' && !isNaN(p.costo)) ? p.costo : (parseFloat(p.costo) || 0);
+            if (!unitCost) unitCost = (typeof p.precio === 'number' && !isNaN(p.precio)) ? p.precio : (parseFloat(p.precio) || 0);
+            var stock = parseFloat(p.stock || 0) || 0;
+            return sum + (unitCost * stock);
+        }, 0);
+
+        // Si apiValue es null o undefined no mostrar alerta, solo registrar
+        if (apiValue === null || typeof apiValue === 'undefined') {
+            console.log('[Dashboard] API inventory_value no disponible; cálculo local =', Math.round(localValue));
+            return;
+        }
+
+        var diff = Math.abs(localValue - apiValue);
+        var pct = apiValue > 0 ? (diff / apiValue) : (localValue > 0 ? 1 : 0);
+
+        // Umbral: 2% o diferencia absoluta > 1000
+        if (pct > 0.02 || diff > 1000) {
+            var message = 'Discrepancia detectada entre backend y cálculo local del valor de inventario. Backend: $' + Math.round(apiValue).toLocaleString('es-CO') + ', Local: $' + Math.round(localValue).toLocaleString('es-CO') + '. Revisa precios de compra y sincronización.';
+            console.warn('Dashboard discrepancy:', message);
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.utils && typeof MarketWorld.utils.showNotification === 'function') {
+                MarketWorld.utils.showNotification(message, 'warning', 10000);
+            } else {
+                alert(message);
+            }
+        } else {
+            console.log('[Dashboard] inventory_value consistente. diferencia=', Math.round(diff));
         }
     }
 
@@ -524,45 +859,112 @@
             const total = parseFloat(inv.total || 0).toLocaleString('es-CO');
             const cliente = inv.cliente_nombre || (inv.customer ? inv.customer.nombre : 'Consumidor Final');
             const fecha = inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-CO') : 'Hoy';
-            
             let badgeClass = 'bg-success';
             if (estado.toLowerCase() === 'pendiente') badgeClass = 'bg-warning text-dark';
             if (estado.toLowerCase() === 'anulada') badgeClass = 'bg-danger';
-
-            return `
-                <tr>
-                    <td>
-                        <div class="fw-bold">${inv.numero_factura || ('#00' + inv.id)}</div>
-                        <small class="text-muted">${fecha}</small>
-                    </td>
-                    <td>${cliente}</td>
-                    <td class="fw-bold text-primary">$${total}</td>
-                    <td><span class="badge ${badgeClass}">${estado}</span></td>
-                </tr>
-            `;
-        }).join('');
-    }
-            const date = parseInvoiceDate(inv);
-            const number = inv.numero_factura || inv.numero || `FAC-${inv.id || ''}`;
-
-            return `
-                <tr data-invoice="${number}">
-                    <td>${number}</td>
-                    <td>${inv.cliente_nombre || 'Cliente'}</td>
-                    <td>$${Math.round(parseInvoiceTotal(inv)).toLocaleString('es-CO')}</td>
-                    <td><span class="badge ${badgeClass}">${estado}</span></td>
-                </tr>
-            `;
+            // Agregar atributo data-invoice-id para identificar la factura
+            const displayNumber = inv.numero_factura || ('#00' + inv.id);
+            return '<tr class="recent-invoice-row" data-invoice-id="' + (inv.id || '') + '">' +
+                '<td>' +
+                    '<div class="fw-bold invoice-link" role="button" tabindex="0">' + displayNumber + '</div>' +
+                    '<small class="text-muted">' + fecha + '</small>' +
+                '</td>' +
+                '<td>' + cliente + '</td>' +
+                '<td class="fw-bold text-primary">$' + total + '</td>' +
+                '<td><span class="badge ' + badgeClass + '">' + estado + '</span></td>' +
+            '</tr>';
         }).join('');
 
-        const rows = tbody.querySelectorAll('tr[data-invoice]');
-        rows.forEach(function(row) {
-            row.style.cursor = 'pointer';
-            row.addEventListener('click', function() {
-                const invoiceNumber = row.getAttribute('data-invoice');
-                window.location.href = `./facturacion.html?tab=history&invoice=${encodeURIComponent(invoiceNumber)}`;
+        // Añadir manejadores para abrir modal de factura al hacer click
+        Array.from(tbody.querySelectorAll('.recent-invoice-row')).forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                const id = row.getAttribute('data-invoice-id');
+                if (id) openInvoiceModal(id);
+            });
+            row.querySelectorAll('.invoice-link').forEach(function(link) {
+                link.addEventListener('keydown', function(ev) {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        const id = row.getAttribute('data-invoice-id');
+                        if (id) openInvoiceModal(id);
+                    }
+                });
             });
         });
+    }
+
+    // Abre modal y carga detalle de factura desde backend
+    async function openInvoiceModal(invoiceId) {
+        const modalEl = document.getElementById('modalDetalleFactura');
+        const bodyEl = document.getElementById('modalDetalleBody');
+        if (!modalEl || !bodyEl) return;
+
+        bodyEl.innerHTML = '<div class="text-center text-muted">Cargando...</div>';
+        const bsModal = new bootstrap.Modal(modalEl, { keyboard: true });
+        bsModal.show();
+
+        try {
+            let invoiceData = null;
+
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.invoices && typeof MarketWorld.api.invoices.getById === 'function') {
+                try {
+                    const res = await MarketWorld.api.invoices.getById(invoiceId);
+                    invoiceData = res && (res.data || res) ? (res.data || res) : null;
+                } catch (err) {
+                    console.warn('Error obteniendo factura desde adaptador:', err && err.message ? err.message : err);
+                }
+            }
+
+            // Si no obtuvimos datos vía adaptador, intentar fetch directo
+            if (!invoiceData) {
+                const token = localStorage.getItem('marketworld_auth_token');
+                const headers = { 'Accept': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                try {
+                    const resp = await fetch((MarketWorld && MarketWorld.api && MarketWorld.api.BASE_URL ? MarketWorld.api.BASE_URL : 'http://127.0.0.1:8000/api/v1') + '/invoices/' + invoiceId, { headers });
+                    if (resp.ok) {
+                        const body = await resp.json();
+                        invoiceData = body && (body.data || body) ? (body.data || body) : null;
+                    } else {
+                        console.warn('Fetch invoice detail falló con status', resp.status);
+                    }
+                } catch (err) {
+                    console.warn('Error fetch invoice detail directo:', err && err.message ? err.message : err);
+                }
+            }
+
+            if (!invoiceData) {
+                bodyEl.innerHTML = '<div class="text-center text-danger">No se encontró la factura o no hay permiso para verla.</div>';
+                return;
+            }
+
+            // Log para ayuda en debugging: estructura recibida
+            try { console.debug('Invoice detail payload:', invoiceData); } catch (e) {}
+
+            // Filtrar facturas de prueba por convención en número o cliente
+            const num = String(invoiceData.numero_factura || invoiceData.numero || invoiceData.id || '');
+            if (/qa|test|inv-test|test-/i.test(num) || /qa|test/i.test(String(invoiceData.customer_name || invoiceData.cliente_nombre || ''))) {
+                bodyEl.innerHTML = '<div class="text-center text-muted">Factura de prueba detectada y omitida.</div>';
+                return;
+            }
+
+
+                // Usar el renderer estandarizado si está disponible
+                if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.renderInvoiceHTML === 'function') {
+                    try {
+                        bodyEl.innerHTML = MarketWorld.utils.renderInvoiceHTML(invoiceData);
+                    } catch (e) {
+                        console.warn('Error usando renderInvoiceHTML:', e && e.message ? e.message : e);
+                        bodyEl.innerHTML = '<div class="text-center text-danger">Error renderizando la factura.</div>';
+                    }
+                } else {
+                    bodyEl.innerHTML = '<div class="text-center text-danger">No hay renderer de factura disponible.</div>';
+                }
+            // El contenido de la factura ya fue renderizado por MarketWorld.utils.renderInvoiceHTML
+        } catch (err) {
+            console.error('openInvoiceModal error:', err && err.message ? err.message : err);
+            bodyEl.innerHTML = '<div class="text-center text-danger">Error cargando la factura.</div>';
+        }
     }
 
 })();

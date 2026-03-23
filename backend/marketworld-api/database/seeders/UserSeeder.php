@@ -10,7 +10,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
+        $user = User::updateOrCreate(
             ['email' => 'admin@marketworld.com'],
             [
                 'name' => 'Admin MarketWorld',
@@ -18,5 +18,14 @@ class UserSeeder extends Seeder
                 'api_token' => null,
             ]
         );
+
+        // Asignar rol Administrador si existe (evita errores si no se han seeded roles)
+        try {
+            if (class_exists('\\Spatie\\Permission\\Models\\Role') && \Spatie\Permission\Models\Role::where('name', 'Administrador')->exists()) {
+                $user->assignRole('Administrador');
+            }
+        } catch (\Exception $e) {
+            // No detener el seeder por falta de roles; se puede ejecutar RolesAndPermissionsSeeder antes.
+        }
     }
 }

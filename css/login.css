@@ -257,6 +257,33 @@ body {
     background: #f8f9fa;
 }
 
+/* --- Estilos para errores de validación en login --- */
+.invalid-feedback {
+    display: none; /* ocultar por defecto; se mostrará cuando el campo sea inválido */
+    color: #cc0b0b; /* rojo más intenso */
+    font-size: 1.05rem; /* ligeramente más grande */
+    font-weight: 700; /* más énfasis */
+    margin-top: 6px;
+    line-height: 1.2;
+}
+
+/* Mostrar el mensaje solo cuando el input tenga la clase is-invalid */
+.form-control.is-invalid {
+    border-color: #cc0b0b !important; /* borde rojo visible */
+    box-shadow: 0 0 0 6px rgba(204,11,11,0.08) !important; /* halo sutil rojo */
+}
+
+.form-control.is-invalid ~ .invalid-feedback,
+.form-control.is-invalid + .invalid-feedback {
+    display: block;
+}
+
+@media (max-width: 575.98px) {
+    .invalid-feedback {
+        font-size: 1rem;
+    }
+}
+
 /* Divider */
 .divider-white {
     position: relative;

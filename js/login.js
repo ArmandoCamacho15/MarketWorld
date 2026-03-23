@@ -59,7 +59,8 @@
         return MarketWorld.api.auth.me()
             .then(function(body) {
                 if (body && body.success) {
-                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(body.data));
+                    var user = body.user || body.data || body;
+                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
                     window.location.href = 'inicio.html';
                 }
             })
@@ -127,8 +128,8 @@
                         localStorage.removeItem('marketworld_remember_email');
                     }
                     
-                    var user = body.data.user;
-                    showNotification('¡Bienvenido ' + (user.name || '') + '!', 'success');
+                        var user = body.user || (body.data && body.data.user) || (body.data) || {};
+                        showNotification('¡Bienvenido ' + (user.name || user.nombre || '') + '!', 'success');
                     
                     setTimeout(function() {
                         window.location.href = 'inicio.html';

@@ -31,6 +31,29 @@ class PurchaseController extends Controller
     }
 
     /**
+     * Mostrar una compra específica.
+     */
+    public function show($id)
+    {
+        $purchase = Purchase::with(['supplier', 'items.product', 'user'])->find($id);
+        if (!$purchase) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Compra no encontrada',
+                'data'    => null,
+                'errors'  => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Compra encontrada',
+            'data'    => $purchase,
+            'errors'  => null,
+        ]);
+    }
+
+    /**
      * Registrar una compra y actualizar stock.
      */
     public function store(Request $request)
@@ -91,11 +114,8 @@ class PurchaseController extends Controller
                     if ($purchase->estado === 'Recibida') {
                         $product = Product::lockForUpdate()->find($item['product_id']);
                         
-                        // Modificado: Se usa increment() como se solicitó
-                        $product->increment('stock', $item['cantidad']);
-                        
-                        // Opcional: Actualizar el precio de compra del producto
-                        $product->update(['precio_compra' => $item['precio_unitario']]);
+                        // Actualizar stock y costo usando Costo Promedio Ponderado (CPP)
+                        $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario']);
                     }
                 }
 
