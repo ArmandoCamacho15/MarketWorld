@@ -16,7 +16,6 @@ class UserSeeder extends Seeder
                 'name' => 'Admin MarketWorld',
                 // Evita exponer credenciales fijas en código fuente.
                 'password' => Hash::make(env('ADMIN_DEFAULT_PASSWORD', 'CambiarEnProduccion2026!')),
-                'api_token' => null,
             ]
         );
 

@@ -16,27 +16,71 @@
     // en otro puerto o dominio.
     // -------------------------------------------------------
     var BASE_URL = 'http://localhost:8000/api/v1';
+    var API_ROOT = BASE_URL.replace('/api/v1', '');
+    var CSRF_URL = API_ROOT + '/sanctum/csrf-cookie';
     var AUTH_TOKEN_KEY = 'marketworld_auth_token';
+    var AUTH_USER_KEY = 'marketworld_auth_user';
 
     // Cabeceras comunes para JSON
     var JSON_HEADERS = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
     };
 
-    function getAuthToken() {
-        return localStorage.getItem(AUTH_TOKEN_KEY);
+    function setSessionState(user) {
+        // Marcador temporal de compatibilidad para módulos aún no migrados a cookie-only.
+        localStorage.setItem(AUTH_TOKEN_KEY, 'cookie_session');
+        if (user) {
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        }
+    }
+
+    function clearSessionState() {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
     }
 
     function buildHeaders(customHeaders) {
-        var headers = Object.assign({}, JSON_HEADERS, customHeaders || {});
-        var token = getAuthToken();
+        return Object.assign({}, JSON_HEADERS, customHeaders || {});
+    }
 
-        if (token) {
-            headers.Authorization = 'Bearer ' + token;
+    function getCookieValue(name) {
+        var prefix = name + '=';
+        var parts = document.cookie ? document.cookie.split(';') : [];
+
+        for (var i = 0; i < parts.length; i++) {
+            var cookie = parts[i].trim();
+            if (cookie.indexOf(prefix) === 0) {
+                return cookie.substring(prefix.length);
+            }
         }
 
-        return headers;
+        return null;
+    }
+
+    function attachXsrfHeader(config) {
+        var method = (config.method || 'GET').toUpperCase();
+        var needsCsrf = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+
+        if (!needsCsrf) {
+            return config;
+        }
+
+        var xsrfCookie = getCookieValue('XSRF-TOKEN');
+        if (!xsrfCookie) {
+            return config;
+        }
+
+        var decodedToken = xsrfCookie;
+        try {
+            decodedToken = decodeURIComponent(xsrfCookie);
+        } catch (e) {
+            decodedToken = xsrfCookie;
+        }
+
+        config.headers['X-XSRF-TOKEN'] = decodedToken;
+        return config;
     }
 
     function parseResponseBody(res) {
@@ -58,14 +102,16 @@
         var requestOptions = options || {};
         var config = Object.assign({}, requestOptions, {
             headers: buildHeaders(requestOptions.headers),
+            credentials: 'include',
         });
+        config = attachXsrfHeader(config);
 
         return fetch(url, config)
             .then(function (res) {
-                // Manejo de error 401 (Token expirado o inválido)
-                if (res.status === 401 && !endpoint.includes('/auth/login')) {
+                // Si la sesión caducó, limpiar estado local y regresar al login.
+                if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/me')) {
                     console.warn('Sesión expirada. Redirigiendo al login...');
-                    localStorage.removeItem(AUTH_TOKEN_KEY);
+                    clearSessionState();
                     window.location.href = 'Login.html';
                     return;
                 }
@@ -83,6 +129,17 @@
                 });
                 }
             );
+    }
+
+    function initCsrfCookie() {
+        return fetch(CSRF_URL, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
     }
 
     // -------------------------------------------------------
@@ -198,35 +255,42 @@
     var AuthAPI = {
 
         login: function (email, password) {
-            return apiFetch('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ email: email, password: password }),
-            }).then(function (res) {
-                // La API devuelve { success, message, data: { token, user }}
+            return initCsrfCookie()
+                .then(function () {
+                    return apiFetch('/auth/login', {
+                        method: 'POST',
+                        body: JSON.stringify({ email: email, password: password }),
+                    });
+                })
+                .then(function (res) {
+                    if (res && res.success && res.data) {
+                        var user = res.data.user || res.data;
+                        setSessionState(user || null);
+                    }
+                    return res;
+                });
+        },
+
+        me: function () {
+            return apiFetch('/auth/me').then(function (res) {
                 if (res && res.success && res.data) {
-                    var token = res.data.token || (res.data.access_token || null);
-                    var user = res.data.user || res.data;
-                    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
-                    if (user) localStorage.setItem(AUTH_TOKEN_KEY.replace('_token','_user'), JSON.stringify(user));
+                    setSessionState(res.data);
                 }
                 return res;
             });
         },
 
-        me: function () {
-            return apiFetch('/auth/me');
-        },
-
         logout: function () {
             return apiFetch('/auth/logout', { method: 'POST' })
                 .finally(function () {
-                    localStorage.removeItem(AUTH_TOKEN_KEY);
-                    localStorage.removeItem('marketworld_auth_user');
+                    clearSessionState();
                     window.location.href = 'Login.html';
                 });
         },
 
-        getToken: getAuthToken,
+        getToken: function () {
+            return localStorage.getItem(AUTH_TOKEN_KEY);
+        },
     };
 
     // -------------------------------------------------------
@@ -234,6 +298,7 @@
     // -------------------------------------------------------
     function checkBackend() {
         return fetch(BASE_URL.replace('/v1', '') + '/health', {
+            credentials: 'include',
             headers: { 'Accept': 'application/json' },
         })
             .then(function (res) { return res.ok; })

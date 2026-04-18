@@ -7,6 +7,12 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * DEPRECATED: middleware legado basado en columna users.api_token.
+ *
+ * Reemplazado por auth:sanctum en modo sesión/cookie.
+ * Se mantiene temporalmente para trazabilidad histórica.
+ */
 class ApiTokenAuth
 {
     public function handle(Request $request, Closure $next): Response

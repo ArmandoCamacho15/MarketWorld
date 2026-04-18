@@ -3,7 +3,6 @@
 (function() {
     'use strict';
 
-    var AUTH_BASE_URL = 'http://localhost:8000/api/v1/auth';
     var AUTH_TOKEN_KEY = 'marketworld_auth_token';
     var AUTH_USER_KEY = 'marketworld_auth_user';
 
@@ -20,24 +19,6 @@
             });
     });
 
-    function getToken() {
-        return localStorage.getItem(AUTH_TOKEN_KEY);
-    }
-
-    function setSession(token, user) {
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.setCurrentUser) {
-            MarketWorld.data.setCurrentUser({
-                nombre: user.name || '',
-                apellido: '',
-                email: user.email || '',
-                rol: user.rol || 'Usuario'
-            });
-        }
-    }
-
     function clearSession() {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(AUTH_USER_KEY);
@@ -52,9 +33,6 @@
             console.error('Adaptador de API no encontrado');
             return Promise.resolve();
         }
-
-        var token = MarketWorld.api.auth.getToken();
-        if (!token) return Promise.resolve();
 
         return MarketWorld.api.auth.me()
             .then(function(body) {
@@ -120,7 +98,6 @@
         MarketWorld.api.auth.login(email, password)
             .then(function(body) {
                 if (body && body.success) {
-                    // El token y el usuario se guardan dentro de MarketWorld.api.auth.login
                     var rememberMe = document.getElementById('rememberMe');
                     if (rememberMe && rememberMe.checked) {
                         localStorage.setItem('marketworld_remember_email', email);

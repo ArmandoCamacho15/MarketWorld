@@ -3,13 +3,8 @@
 (function(global) {
     'use strict';
 
-    var AUTH_BASE_URL = 'http://127.0.0.1:8000/api/v1/auth';
     var AUTH_TOKEN_KEY = 'marketworld_auth_token';
     var AUTH_USER_KEY = 'marketworld_auth_user';
-
-    function getToken() {
-        return localStorage.getItem(AUTH_TOKEN_KEY);
-    }
 
     function getStoredUser() {
         var raw = localStorage.getItem(AUTH_USER_KEY);
@@ -60,33 +55,19 @@
     }
 
     function checkSession() {
-        var token = getToken();
-        if (!token) {
+        if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.auth) {
             redirectToLogin();
             return Promise.resolve(false);
         }
 
-        return fetch(AUTH_BASE_URL + '/me', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token
-            }
-        })
-            .then(function(res) {
-                return res.json().then(function(body) {
-                    if (!res.ok || !body.success) {
-                        throw { status: res.status, body: body };
-                    }
-                    return body;
-                });
-            })
+        return MarketWorld.api.auth.me()
             .then(function(body) {
-                // El endpoint /me en Laravel suele devolver un objeto con 'data' que CONTIENE el usuario
                 var user = (body.data) ? body.data : (body.user || null);
                 
                 if (user) {
                     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+                    // Marcador temporal de compatibilidad para módulos aún no migrados.
+                    localStorage.setItem(AUTH_TOKEN_KEY, 'cookie_session');
                     syncUserToLegacyStore(user);
                     loadUserInfo(user);
                     return true;
@@ -122,25 +103,17 @@
             return;
         }
 
-        var token = getToken();
-
-        if (!token) {
-            clearSession();
-            redirectToLogin();
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.auth) {
+            MarketWorld.api.auth.logout()
+                .catch(function() {
+                    clearSession();
+                    redirectToLogin();
+                });
             return;
         }
 
-        fetch(AUTH_BASE_URL + '/logout', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token
-            }
-        })
-            .finally(function() {
-                clearSession();
-                redirectToLogin();
-            });
+        clearSession();
+        redirectToLogin();
     }
 
     document.addEventListener('DOMContentLoaded', function() {

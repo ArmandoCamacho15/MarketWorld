@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Permite que Sanctum autentique requests de SPA por sesión/cookie en rutas API.
+        $middleware->statefulApi();
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class, // Nuevo middleware de roles
         ]);
