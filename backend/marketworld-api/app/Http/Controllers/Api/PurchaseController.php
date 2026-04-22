@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -134,5 +135,61 @@ class PurchaseController extends Controller
                 'errors'  => null,
             ], 400);
         }
+    }
+
+    /**
+     * Actualizar estado de compra de forma controlada.
+     * Flujos válidos: Pendiente -> Recibida | Pendiente -> Cancelada
+     */
+    public function update(Request $request, Purchase $purchase): JsonResponse
+    {
+        $validated = $request->validate([
+            'estado' => 'required|in:Recibida,Cancelada',
+        ]);
+
+        if ($purchase->estado !== 'Pendiente') {
+            return response()->json([
+                'success' => false,
+                'message' => "No se puede cambiar el estado de una compra '{$purchase->estado}'.",
+                'data'    => null,
+                'errors'  => null,
+            ], 409);
+        }
+
+        try {
+            DB::transaction(function () use ($purchase, $validated) {
+                $purchase->loadMissing('items');
+
+                if ($validated['estado'] === 'Recibida') {
+                    foreach ($purchase->items as $item) {
+                        $product = Product::lockForUpdate()->find($item->product_id);
+
+                        if (!$product) {
+                            throw new \RuntimeException('Producto no encontrado para la compra.');
+                        }
+
+                        $product->aplicarCostoPromedioPonderado($item->cantidad, $item->precio_unitario);
+                    }
+                }
+
+                $purchase->update([
+                    'estado' => $validated['estado'],
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No fue posible actualizar el estado de la compra en este momento.',
+                'data'    => null,
+                'errors'  => null,
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Compra marcada como '{$validated['estado']}' correctamente.",
+            'data'    => $purchase->fresh()->load(['supplier', 'items.product', 'user']),
+            'errors'  => null,
+        ], 200);
     }
 }

@@ -57,9 +57,14 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('customers', CustomerController::class);
 
         // === Facturación (Ventas) ===
-        Route::apiResource('invoices', InvoiceController::class);
+        // Solo se exponen métodos implementados para evitar rutas fantasma.
+        Route::apiResource('invoices', InvoiceController::class)
+            ->only(['index', 'store', 'show', 'update']);
 
         // === Compras (Entradas de Stock - Solo Administrador y Bodeguero) ===
-        Route::apiResource('purchases', PurchaseController::class)->middleware('role:Administrador|Bodeguero');
+        // Solo se exponen métodos implementados para evitar rutas fantasma.
+        Route::apiResource('purchases', PurchaseController::class)
+            ->only(['index', 'store', 'show', 'update'])
+            ->middleware('role:Administrador|Bodeguero');
     });
 });

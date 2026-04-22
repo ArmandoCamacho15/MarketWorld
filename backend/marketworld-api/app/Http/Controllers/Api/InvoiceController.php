@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -147,5 +148,60 @@ class InvoiceController extends Controller
             'data'    => $invoice,
             'errors'  => null,
         ]);
+    }
+
+    /**
+     * Anular una factura y restituir stock de sus ítems.
+     */
+    public function update(Request $request, Invoice $invoice): JsonResponse
+    {
+        $validated = $request->validate([
+            'estado'            => 'required|in:Anulada',
+            'motivo_anulacion'  => 'required|string|min:10|max:255',
+        ]);
+
+        if ($invoice->estado === 'Anulada') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Esta factura ya está anulada.',
+                'data'    => null,
+                'errors'  => null,
+            ], 409);
+        }
+
+        try {
+            DB::transaction(function () use ($invoice, $validated) {
+                $invoice->loadMissing('items');
+
+                foreach ($invoice->items as $item) {
+                    Product::where('id', $item->product_id)
+                        ->lockForUpdate()
+                        ->increment('stock', $item->cantidad);
+                }
+
+                $lineaAnulacion = '[' . now()->format('Y-m-d H:i:s') . '] Anulación: ' . trim($validated['motivo_anulacion']);
+                $notas = trim((string) $invoice->notas);
+                $notasActualizadas = $notas === '' ? $lineaAnulacion : ($notas . PHP_EOL . $lineaAnulacion);
+
+                $invoice->update([
+                    'estado' => 'Anulada',
+                    'notas'  => $notasActualizadas,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No fue posible anular la factura en este momento.',
+                'data'    => null,
+                'errors'  => null,
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Factura anulada correctamente. El stock fue restituido.',
+            'data'    => $invoice->fresh()->load(['customer', 'items.product', 'seller']),
+            'errors'  => null,
+        ], 200);
     }
 }

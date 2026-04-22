@@ -776,82 +776,80 @@
         modal.show();
     };
 
-    window.marcarRecibido = function (id) {
+    window.marcarRecibido = async function (id) {
         if (!confirm('¿Marcar esta orden como recibida?')) return;
-        
-        const purchase = MarketWorld.data.findPurchaseById(id);
-        if (!purchase) {
-            mostrarAlerta('Orden no encontrada', 'danger');
+
+        if (!hasApiAccess() || !MarketWorld.api.purchases.update) {
+            mostrarAlerta('No hay conexión API activa para actualizar la orden.', 'warning');
             return;
         }
-        
-        console.log('Marcando orden como recibida:', purchase.numeroOrden, 'Estado anterior:', purchase.estado);
-        
-        // Actualizar estado
-        const updated = MarketWorld.data.updatePurchase(id, { estado: 'Recibido' });
-        console.log('Estado actualizado a:', updated.estado);
 
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
-            MarketWorld.notifications.create('info', 'Orden Recibida', `La orden ${purchase.numeroOrden} fue marcada como recibida`, 'compras.html');
+        try {
+            const response = await MarketWorld.api.purchases.update(id, { estado: 'Recibida' });
+            if (!response || !response.success) {
+                throw new Error((response && response.message) ? response.message : 'No se pudo actualizar la orden.');
+            }
+
+            const orderNumber = (response.data && response.data.numero_orden)
+                ? response.data.numero_orden
+                : ('#' + id);
+
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
+                MarketWorld.notifications.create('info', 'Orden Recibida', `La orden ${orderNumber} fue marcada como recibida`, 'compras.html');
+            }
+
+            const filtroEstado = document.getElementById('estadoFiltro');
+            if (filtroEstado && (filtroEstado.value === 'Pendiente' || filtroEstado.value === 'Pagado')) {
+                filtroEstado.value = 'Todos';
+            }
+
+            await cargarHistorial();
+            await actualizarKPIs();
+            mostrarAlerta('Orden marcada como recibida', 'success');
+        } catch (error) {
+            const message = (error && error.body && error.body.message)
+                ? error.body.message
+                : (error.message || 'Error al marcar la orden como recibida.');
+            mostrarAlerta(message, 'danger');
         }
-
-        // Limpiar filtro de estado para ver el cambio
-        const filtroEstado = document.getElementById('estadoFiltro');
-        if (filtroEstado && (filtroEstado.value === 'Pendiente' || filtroEstado.value === 'Pagado')) {
-            filtroEstado.value = 'Todos';
-            console.log('Filtro de estado cambiado a "Todos" para mostrar orden recibida');
-        }
-
-        // Actualizar inmediatamente los KPIs y el historial
-        actualizarKPIs();
-        cargarHistorial();
-        console.log('Dashboard actualizado - KPIs y historial recargados');
-        
-        mostrarAlerta('Orden marcada como recibida', 'success');
     };
 
-    window.cancelarCompra = function (id) {
+    window.cancelarCompra = async function (id) {
         if (!confirm('¿Está seguro de cancelar esta orden de compra?')) return;
 
-        const purchase = MarketWorld.data.findPurchaseById(id);
-        if (!purchase) {
-            mostrarAlerta('Orden no encontrada', 'danger');
+        if (!hasApiAccess() || !MarketWorld.api.purchases.update) {
+            mostrarAlerta('No hay conexión API activa para actualizar la orden.', 'warning');
             return;
         }
 
-        console.log('Cancelando orden:', purchase.numeroOrden, 'Estado anterior:', purchase.estado);
+        try {
+            const response = await MarketWorld.api.purchases.update(id, { estado: 'Cancelada' });
+            if (!response || !response.success) {
+                throw new Error((response && response.message) ? response.message : 'No se pudo cancelar la orden.');
+            }
 
-        // Restaurar stock si se había afectado
-        if (purchase.afectarInventario && purchase.items) {
-            purchase.items.forEach(item => {
-                if (item.productoId) {
-                    MarketWorld.data.updateStock(item.productoId, item.cantidad, 'subtract');
-                    console.log('Stock restaurado para producto ID:', item.productoId, 'Cantidad:', item.cantidad);
-                }
-            });
+            const orderNumber = (response.data && response.data.numero_orden)
+                ? response.data.numero_orden
+                : ('#' + id);
+
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
+                MarketWorld.notifications.create('danger', 'Orden Cancelada', `La orden ${orderNumber} fue cancelada`, 'compras.html');
+            }
+
+            const filtroEstado = document.getElementById('estadoFiltro');
+            if (filtroEstado && filtroEstado.value !== 'Todos' && filtroEstado.value !== 'Cancelada') {
+                filtroEstado.value = 'Todos';
+            }
+
+            await cargarHistorial();
+            await actualizarKPIs();
+            mostrarAlerta('Orden cancelada correctamente.', 'warning');
+        } catch (error) {
+            const message = (error && error.body && error.body.message)
+                ? error.body.message
+                : (error.message || 'Error al cancelar la orden.');
+            mostrarAlerta(message, 'danger');
         }
-
-        // Actualizar estado y saldo
-        const updated = MarketWorld.data.updatePurchase(id, { estado: 'Cancelado', saldo: 0 });
-        console.log('Estado actualizado a:', updated.estado, 'Saldo:', updated.saldo);
-
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
-            MarketWorld.notifications.create('danger', 'Orden Cancelada', `La orden ${purchase.numeroOrden} fue cancelada`, 'compras.html');
-        }
-
-        // Limpiar filtro de estado para ver el cambio
-        const filtroEstado = document.getElementById('estadoFiltro');
-        if (filtroEstado && filtroEstado.value !== 'Todos' && filtroEstado.value !== 'Cancelado') {
-            filtroEstado.value = 'Todos';
-            console.log('Filtro de estado cambiado a "Todos" para mostrar orden cancelada');
-        }
-
-        // Actualizar inmediatamente los KPIs y el historial
-        actualizarKPIs();
-        cargarHistorial();
-        console.log('Dashboard actualizado - KPIs y historial recargados');
-        
-        mostrarAlerta('Orden cancelada. Stock restaurado.', 'warning');
     };
 
     // --- Proveedores ---

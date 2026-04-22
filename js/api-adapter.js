@@ -228,6 +228,12 @@
                 method: 'POST',
                 body: JSON.stringify(data),
             });
+        },
+        update: function (id, data) {
+            return apiFetch('/invoices/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
         }
     };
 
@@ -244,6 +250,12 @@
         create: function (data) {
             return apiFetch('/purchases', {
                 method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/purchases/' + id, {
+                method: 'PUT',
                 body: JSON.stringify(data),
             });
         }
