@@ -1104,7 +1104,7 @@
                         setProductsState(products, 'local');
                         inventoryPaginationState.isServerMode = false;
                         inventoryPaginationState.page = 1;
-                        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / itemsPerPage));
+                        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / inventoryPaginationState.perPage));
                         inventoryPaginationState.total = products.length;
 
                         var fallbackFiltered = products.filter(function(product) {
@@ -1122,7 +1122,7 @@
                         });
 
                         displayProducts(fallbackFiltered);
-                        updatePaginationUI(Math.max(1, Math.ceil(fallbackFiltered.length / itemsPerPage)));
+                        updatePaginationUI(Math.max(1, Math.ceil(fallbackFiltered.length / inventoryPaginationState.perPage)));
                         return;
                     }
 
@@ -1471,8 +1471,7 @@
     }
 
     // Variables de paginación
-    var currentPage = 1;
-    var itemsPerPage = 9; // 3x3 grid
+    // La paginación ahora usa inventoryPaginationState unificado para evitar inconsistencias.
 
     // Inicializar paginación
     function initPagination() {
@@ -1517,14 +1516,14 @@
         }
 
         var products = getFilteredProducts();
-        var totalPages = Math.ceil(products.length / itemsPerPage);
+        var totalPages = Math.max(1, Math.ceil(products.length / inventoryPaginationState.perPage));
         
-        if (text === 'Anterior' && currentPage > 1) {
-            currentPage--;
-        } else if (text === 'Siguiente' && currentPage < totalPages) {
-            currentPage++;
+        if (text === 'Anterior' && inventoryPaginationState.page > 1) {
+            inventoryPaginationState.page--;
+        } else if (text === 'Siguiente' && inventoryPaginationState.page < totalPages) {
+            inventoryPaginationState.page++;
         } else if (!isNaN(parseInt(text))) {
-            currentPage = parseInt(text);
+            inventoryPaginationState.page = parseInt(text);
         }
         
         displayProductsWithPagination(products);
@@ -1557,8 +1556,8 @@
 
     // Mostrar productos con paginación
     function displayProductsWithPagination(products) {
-        var start = (currentPage - 1) * itemsPerPage;
-        var end = start + itemsPerPage;
+        var start = (inventoryPaginationState.page - 1) * inventoryPaginationState.perPage;
+        var end = start + inventoryPaginationState.perPage;
         var pageProducts = products.slice(start, end);
         
         displayProducts(pageProducts);
@@ -1570,21 +1569,22 @@
         if (!paginationContainer) return;
         
         paginationContainer.innerHTML = '';
+        var current = inventoryPaginationState.page;
         
         // Botón Anterior
         var prevLi = document.createElement('li');
-        prevLi.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
-        prevLi.innerHTML = '<a class=\"page-link\" href=\"#\" tabindex=\"' + (currentPage === 1 ? '-1' : '0') + '\">Anterior</a>';
+        prevLi.className = 'page-item' + (current === 1 ? ' disabled' : '');
+        prevLi.innerHTML = '<a class=\"page-link\" href=\"#\" tabindex=\"' + (current === 1 ? '-1' : '0') + '\">Anterior</a>';
         paginationContainer.appendChild(prevLi);
         
         // Números de página
-        var startPage = Math.max(1, currentPage - 2);
-        var endPage = Math.min(totalPages, currentPage + 2);
+        var startPage = Math.max(1, current - 2);
+        var endPage = Math.min(totalPages, current + 2);
         
         for (var i = startPage; i <= endPage; i++) {
             var li = document.createElement('li');
-            li.className = 'page-item' + (i === currentPage ? ' active' : '');
-            if (i === currentPage) {
+            li.className = 'page-item' + (i === current ? ' active' : '');
+            if (i === current) {
                 li.innerHTML = '<a class=\"page-link\" href=\"#\" aria-current=\"page\">' + i + '</a>';
             } else {
                 li.innerHTML = '<a class=\"page-link\" href=\"#\">' + i + '</a>';
@@ -1594,8 +1594,8 @@
         
         // Botón Siguiente
         var nextLi = document.createElement('li');
-        nextLi.className = 'page-item' + (currentPage === totalPages ? ' disabled' : '');
-        nextLi.innerHTML = '<a class=\"page-link\" href=\"#\" tabindex=\"' + (currentPage === totalPages ? '-1' : '0') + '\">Siguiente</a>';
+        nextLi.className = 'page-item' + (current === totalPages ? ' disabled' : '');
+        nextLi.innerHTML = '<a class=\"page-link\" href=\"#\" tabindex=\"' + (current === totalPages ? '-1' : '0') + '\">Siguiente</a>';
         paginationContainer.appendChild(nextLi);
     }
 

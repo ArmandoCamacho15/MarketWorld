@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
+use App\Models\Account;
+use App\Models\JournalEntry;
+use App\Models\JournalItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +83,6 @@ class InvoiceController extends Controller
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.cantidad'   => 'required|integer|min:1',
-            'items.*.precio_unitario' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -92,50 +94,89 @@ class InvoiceController extends Controller
             ], 422);
         }
 
+        // VALIDACIÓN: Cliente activo
+        $customer = \App\Models\Customer::find($request->customer_id);
+        if (!$customer || $customer->estado !== 'Activo') {
+            return response()->json([
+                'success' => false,
+                'message' => 'El cliente seleccionado no existe o está inactivo.',
+                'errors'  => ['customer_id' => ['Cliente inactivo.']],
+            ], 422);
+        }
+
         try {
             return DB::transaction(function () use ($request, $authUser) {
-                // 1. Crear la cabecera de la factura
+                // 1. Recalcular totales en el servidor
+                $subtotal = 0;
+                $costoTotal = 0;
+                $itemsToCreate = [];
+
+                foreach ($request->items as $itemData) {
+                    $product = Product::lockForUpdate()->find($itemData['product_id']);
+                    
+                    if (!$product) {
+                        throw new \Exception("Producto con ID {$itemData['product_id']} no encontrado.");
+                    }
+
+                    if ($product->stock < $itemData['cantidad']) {
+                        throw new \Exception("Stock insuficiente para el producto: " . $product->nombre);
+                    }
+
+                    $cantidad = (int) $itemData['cantidad'];
+                    // Day 8: El precio unitario viene de la base de datos, no del request
+                    $precioUnitario = (float) $product->precio_venta;
+                    $itemSubtotal = round($cantidad * $precioUnitario, 2);
+                    
+                    $subtotal += $itemSubtotal;
+                    $costoTotal += ($product->precio_compra * $cantidad);
+
+                    $itemsToCreate[] = [
+                        'product' => $product,
+                        'cantidad' => $cantidad,
+                        'precio_unitario' => $precioUnitario,
+                        'subtotal' => $itemSubtotal,
+                        'descuento' => (float) ($itemData['descuento'] ?? 0),
+                    ];
+                }
+
+                $impuestos = round($subtotal * 0.19, 2);
+                $total = $subtotal + $impuestos;
+
+                // 2. Crear la cabecera de la factura
                 $invoice = Invoice::create([
                     'numero_factura' => $request->numero_factura,
                     'customer_id'    => $request->customer_id,
                     'fecha'          => $request->fecha,
-                    'subtotal'       => $request->subtotal,
-                    'impuestos'      => $request->impuestos,
-                    'total'          => $request->total,
+                    'subtotal'       => $subtotal,
+                    'impuestos'      => $impuestos,
+                    'total'          => $total,
                     'metodo_pago'    => $request->metodo_pago,
                     'estado'         => $request->estado ?? 'Pagada',
                     'notas'          => $request->notas,
                     'user_id'        => $authUser->id,
                 ]);
 
-                // 2. Procesar ítems y actualizar stock
-                foreach ($request->items as $item) {
-                    $product = Product::lockForUpdate()->find($item['product_id']);
-                    
-                    if (!$product) {
-                        throw new \Exception("Producto no encontrado.");
-                    }
-
-                    if ($product->stock < $item['cantidad']) {
-                        throw new \Exception("Stock insuficiente para el producto: " . $product->nombre);
-                    }
-
+                // 3. Procesar ítems y actualizar stock
+                foreach ($itemsToCreate as $item) {
                     InvoiceItem::create([
                         'invoice_id'      => $invoice->id,
-                        'product_id'      => $item['product_id'],
+                        'product_id'      => $item['product']->id,
                         'cantidad'        => $item['cantidad'],
                         'precio_unitario' => $item['precio_unitario'],
-                        'descuento'       => $item['descuento'] ?? 0,
+                        'descuento'       => $item['descuento'],
                         'subtotal'        => $item['subtotal'],
                     ]);
 
                     // REDUCIR STOCK
-                    $product->decrement('stock', $item['cantidad']);
+                    $item['product']->decrement('stock', $item['cantidad']);
                 }
+
+                // 4. GENERAR ASIENTO CONTABLE AUTOMÁTICO
+                $this->generateInvoiceJournalEntry($invoice, $costoTotal, $authUser->id);
 
                 return response()->json([
                     'success' => true, 
-                    'message' => 'Venta registrada con éxito', 
+                    'message' => 'Venta registrada con éxito y asiento contable generado', 
                     'data'    => $invoice->load(['customer', 'items.product', 'seller']),
                     'errors'  => null,
                 ], 201);
@@ -227,5 +268,80 @@ class InvoiceController extends Controller
             'data'    => $invoice->fresh()->load(['customer', 'items.product', 'seller']),
             'errors'  => null,
         ], 200);
+    }
+
+    /**
+     * Genera el asiento contable para una factura de venta.
+     */
+    private function generateInvoiceJournalEntry(Invoice $invoice, float $costoTotal, int $userId)
+    {
+        $entry = JournalEntry::create([
+            'fecha' => $invoice->fecha,
+            'glosa' => "Venta Factura #{$invoice->numero_factura}",
+            'referencia_tipo' => 'Invoice',
+            'referencia_id' => $invoice->id,
+            'user_id' => $userId,
+        ]);
+
+        // Cuentas requeridas
+        $cuentaCaja = Account::where('codigo', '1105')->first();
+        $cuentaClientes = Account::where('codigo', '1305')->first();
+        $cuentaVentas = Account::where('codigo', '4135')->first();
+        $cuentaIVA = Account::where('codigo', '2408')->first();
+        $cuentaCostoVentas = Account::where('codigo', '6135')->first();
+        $cuentaInventario = Account::where('codigo', '1435')->first();
+
+        // 1. Registro de la Venta e Impuestos
+        // Débito a Caja o Clientes (Total)
+        $cuentaDebito = ($invoice->metodo_pago === 'Contado') ? $cuentaCaja : $cuentaClientes;
+        if ($cuentaDebito) {
+            JournalItem::create([
+                'journal_entry_id' => $entry->id,
+                'account_id' => $cuentaDebito->id,
+                'debe' => $invoice->total,
+                'haber' => 0
+            ]);
+        }
+
+        // Crédito a Ventas (Subtotal)
+        if ($cuentaVentas) {
+            JournalItem::create([
+                'journal_entry_id' => $entry->id,
+                'account_id' => $cuentaVentas->id,
+                'debe' => 0,
+                'haber' => $invoice->subtotal
+            ]);
+        }
+
+        // Crédito a IVA (Impuestos)
+        if ($cuentaIVA && $invoice->impuestos > 0) {
+            JournalItem::create([
+                'journal_entry_id' => $entry->id,
+                'account_id' => $cuentaIVA->id,
+                'debe' => 0,
+                'haber' => $invoice->impuestos
+            ]);
+        }
+
+        // 2. Registro del Costo de Ventas (si hay costo calculado)
+        if ($costoTotal > 0) {
+            if ($cuentaCostoVentas) {
+                JournalItem::create([
+                    'journal_entry_id' => $entry->id,
+                    'account_id' => $cuentaCostoVentas->id,
+                    'debe' => $costoTotal,
+                    'haber' => 0
+                ]);
+            }
+
+            if ($cuentaInventario) {
+                JournalItem::create([
+                    'journal_entry_id' => $entry->id,
+                    'account_id' => $cuentaInventario->id,
+                    'debe' => 0,
+                    'haber' => $costoTotal
+                ]);
+            }
+        }
     }
 }

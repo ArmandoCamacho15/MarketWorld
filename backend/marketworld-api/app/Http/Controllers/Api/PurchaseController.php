@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Product;
+use App\Models\Account;
+use App\Models\JournalEntry;
+use App\Models\JournalItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -102,7 +105,7 @@ class PurchaseController extends Controller
             'items'        => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.cantidad'       => 'required|integer|min:1',
-            'items.*.precio_unitario' => 'required|numeric',
+            'items.*.precio_unitario' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -114,39 +117,71 @@ class PurchaseController extends Controller
             ], 422);
         }
 
+        // VALIDACIÓN: Proveedor activo
+        $supplier = \App\Models\Supplier::find($request->supplier_id);
+        if (!$supplier || $supplier->estado !== 'Activo') {
+            return response()->json([
+                'success' => false,
+                'message' => 'El proveedor seleccionado no existe o está inactivo.',
+                'errors'  => ['supplier_id' => ['Proveedor inactivo.']],
+            ], 422);
+        }
+
         try {
             return DB::transaction(function () use ($request, $authUser) {
+                // 1. Recalcular total en el servidor
+                $totalCalculado = 0;
+                $itemsToCreate = [];
+
+                foreach ($request->items as $itemData) {
+                    $cantidad = (int) $itemData['cantidad'];
+                    $precioUnitario = (float) $itemData['precio_unitario'];
+                    $itemSubtotal = round($cantidad * $precioUnitario, 2);
+                    $totalCalculado += $itemSubtotal;
+
+                    $itemsToCreate[] = [
+                        'product_id' => $itemData['product_id'],
+                        'cantidad' => $cantidad,
+                        'precio_unitario' => $precioUnitario,
+                        'subtotal' => $itemSubtotal,
+                    ];
+                }
+
                 $purchase = Purchase::create([
                     'numero_orden'  => $request->numero_orden,
-                    'supplier_id'   => $request->supplier_id, // Modificado
+                    'supplier_id'   => $request->supplier_id,
                     'fecha'         => $request->fecha,
-                    'total'         => $request->total,
+                    'total'         => $totalCalculado,
                     'estado'        => $request->estado ?? 'Recibida',
                     'observaciones' => $request->observaciones,
                     'user_id'       => $authUser->id,
                 ]);
 
-                foreach ($request->items as $item) {
+                foreach ($itemsToCreate as $item) {
                     PurchaseItem::create([
                         'purchase_id'     => $purchase->id,
                         'product_id'      => $item['product_id'],
                         'cantidad'        => $item['cantidad'],
-                        'precio_unitario' => $item['precio_unitario'], // Modificado campo
+                        'precio_unitario' => $item['precio_unitario'],
                         'subtotal'        => $item['subtotal'],
                     ]);
 
                     // Lógica para actualizar stock si el estado es 'Recibida'
                     if ($purchase->estado === 'Recibida') {
                         $product = Product::lockForUpdate()->find($item['product_id']);
-                        
-                        // Actualizar stock y costo usando Costo Promedio Ponderado (CPP)
-                        $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario']);
+                        if ($product) {
+                            // Actualizar stock y costo usando Costo Promedio Ponderado (CPP)
+                            $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario']);
+                        }
                     }
                 }
 
+                // 2. GENERAR ASIENTO CONTABLE AUTOMÁTICO
+                $this->generatePurchaseJournalEntry($purchase, $authUser->id);
+
                 return response()->json([
                     'success' => true, 
-                    'message' => 'Compra registrada con éxito y stock actualizado',
+                    'message' => 'Compra registrada con éxito, stock actualizado y asiento generado',
                     'data'    => $purchase->load(['supplier', 'items.product']),
                     'errors'  => null,
                 ], 201);
@@ -215,5 +250,47 @@ class PurchaseController extends Controller
             'data'    => $purchase->fresh()->load(['supplier', 'items.product', 'user']),
             'errors'  => null,
         ], 200);
+    }
+
+    /**
+     * Genera el asiento contable para una compra.
+     */
+    private function generatePurchaseJournalEntry(Purchase $purchase, int $userId)
+    {
+        $entry = JournalEntry::create([
+            'fecha' => $purchase->fecha,
+            'glosa' => "Compra Orden #{$purchase->numero_orden}",
+            'referencia_tipo' => 'Purchase',
+            'referencia_id' => $purchase->id,
+            'user_id' => $userId,
+        ]);
+
+        // Cuentas requeridas
+        $cuentaInventario = Account::where('codigo', '1435')->first();
+        $cuentaCaja = Account::where('codigo', '1105')->first();
+        $cuentaProveedores = Account::where('codigo', '2205')->first();
+
+        // Débito a Inventario (Total)
+        if ($cuentaInventario) {
+            JournalItem::create([
+                'journal_entry_id' => $entry->id,
+                'account_id' => $cuentaInventario->id,
+                'debe' => $purchase->total,
+                'haber' => 0
+            ]);
+        }
+
+        // Crédito a Caja o Proveedores
+        // (Por ahora simplificamos: si el estado es 'Recibida' asumimos Contado, sino Crédito/Proveedores)
+        $cuentaCredito = ($purchase->estado === 'Recibida') ? $cuentaCaja : $cuentaProveedores;
+        
+        if ($cuentaCredito) {
+            JournalItem::create([
+                'journal_entry_id' => $entry->id,
+                'account_id' => $cuentaCredito->id,
+                'debe' => 0,
+                'haber' => $purchase->total
+            ]);
+        }
     }
 }
