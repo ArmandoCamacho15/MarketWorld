@@ -13,6 +13,7 @@ class CustomerController extends Controller
     // GET /api/v1/customers
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
         $query = Customer::query();
 
         if ($request->filled('estado')) {
@@ -32,12 +33,22 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('nombre')->get();
+        $customers = $query
+            ->orderBy('nombre')
+            ->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data'    => $customers,
-            'total'   => $customers->count(),
+            'message' => 'Clientes listados correctamente',
+            'data'    => $customers->items(),
+            'meta'    => [
+                'total'        => $customers->total(),
+                'per_page'     => $customers->perPage(),
+                'current_page' => $customers->currentPage(),
+                'last_page'    => $customers->lastPage(),
+            ],
+            'total'   => $customers->total(),
+            'errors'  => null,
         ]);
     }
 

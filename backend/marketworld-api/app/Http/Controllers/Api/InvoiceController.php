@@ -16,17 +16,41 @@ class InvoiceController extends Controller
     /**
      * Listado de facturas con Eager Loading para evitar N+1.
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
+
         // Modificado: Se agregó 'customer' al eager loading
-        $invoices = Invoice::with(['customer', 'items.product', 'seller'])
+        $query = Invoice::with(['customer', 'items.product', 'seller']);
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('numero_factura', 'like', "%{$search}%");
+        }
+
+        $invoices = $query
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
             'success' => true, 
             'message' => 'Facturas listadas correctamente',
-            'data'    => $invoices,
+            'data'    => $invoices->items(),
+            'meta'    => [
+                'total'        => $invoices->total(),
+                'per_page'     => $invoices->perPage(),
+                'current_page' => $invoices->currentPage(),
+                'last_page'    => $invoices->lastPage(),
+            ],
+            'total'   => $invoices->total(),
             'errors'  => null,
         ]);
     }

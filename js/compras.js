@@ -10,6 +10,12 @@
     let carrito = [];
     let productoSeleccionado = null;
     let metodoPagoSeleccionado = 'Transferencia';
+    const purchaseHistoryState = {
+        page: 1,
+        perPage: 10,
+        lastPage: 1,
+        total: 0,
+    };
 
     // --- Inicialización ---
     document.addEventListener('DOMContentLoaded', async function() {
@@ -135,6 +141,79 @@
         } catch (e) {
             return false;
         }
+    }
+
+    function normalizeApiListResponse(response, fallbackMeta) {
+        if (typeof MarketWorld !== 'undefined' &&
+            MarketWorld.api &&
+            typeof MarketWorld.api.normalizeListResponse === 'function') {
+            return MarketWorld.api.normalizeListResponse(response, fallbackMeta);
+        }
+
+        const items = response && Array.isArray(response.data) ? response.data : [];
+        return {
+            items: items,
+            meta: Object.assign({
+                total: items.length,
+                per_page: (fallbackMeta && fallbackMeta.per_page) || 10,
+                current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
+                last_page: 1,
+            }, (response && response.meta) || {}),
+            success: !response || response.success !== false,
+        };
+    }
+
+    function ensurePurchaseHistoryPagination() {
+        const tbody = document.getElementById('historialTbody');
+        if (!tbody) return null;
+
+        const tableResponsive = tbody.closest('.table-responsive');
+        if (!tableResponsive || !tableResponsive.parentNode) return null;
+
+        let container = document.getElementById('purchaseHistoryPagination');
+        if (container) return container;
+
+        container = document.createElement('nav');
+        container.id = 'purchaseHistoryPagination';
+        container.className = 'mt-3 d-flex justify-content-center';
+        container.setAttribute('aria-label', 'Paginación historial de compras');
+        tableResponsive.parentNode.appendChild(container);
+
+        return container;
+    }
+
+    function renderPurchaseHistoryPagination() {
+        const container = ensurePurchaseHistoryPagination();
+        if (!container) return;
+
+        const current = purchaseHistoryState.page;
+        const last = Math.max(1, purchaseHistoryState.lastPage);
+
+        if (last <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const pageItems = [];
+        const startPage = Math.max(1, current - 2);
+        const endPage = Math.min(last, current + 2);
+
+        pageItems.push('<li class="page-item' + (current <= 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-purchase-page="prev">Anterior</a></li>');
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageItems.push('<li class="page-item' + (i === current ? ' active' : '') + '"><a class="page-link" href="#" data-purchase-page="' + i + '">' + i + '</a></li>');
+        }
+
+        pageItems.push('<li class="page-item' + (current >= last ? ' disabled' : '') + '"><a class="page-link" href="#" data-purchase-page="next">Siguiente</a></li>');
+
+        container.innerHTML = '<ul class="pagination mb-0">' + pageItems.join('') + '</ul>';
+    }
+
+    function mapEstadoFiltroToApi(value) {
+        if (!value || value === 'Todos') return '';
+        if (value === 'Recibido') return 'Recibida';
+        if (value === 'Cancelado') return 'Cancelada';
+        return value;
     }
 
     // --- Usuario ---
@@ -566,21 +645,50 @@
     }
 
     // --- Historial de compras ---
-    async function cargarHistorial() {
+    async function cargarHistorial(options) {
+        options = options || {};
         const tbody = document.getElementById('historialTbody');
         if (!tbody) return;
+
+        if (options.resetPage) {
+            purchaseHistoryState.page = 1;
+        }
 
             try {
                 if (!hasApiAccess()) return;
 
-                const response = await MarketWorld.api.purchases.getAll();
-                if (!response || !response.success) return;
+                const estadoFiltro = document.getElementById('estadoFiltro');
+                const proveedorFiltro = document.getElementById('proveedorFiltro');
+                const requestFilters = {
+                    page: purchaseHistoryState.page,
+                    per_page: purchaseHistoryState.perPage,
+                };
 
-                const purchases = response.data;
+                const estadoApi = mapEstadoFiltroToApi(estadoFiltro ? estadoFiltro.value : '');
+                if (estadoApi) requestFilters.estado = estadoApi;
+
+                if (proveedorFiltro && proveedorFiltro.value) {
+                    requestFilters.supplier_id = proveedorFiltro.value;
+                }
+
+                const response = await MarketWorld.api.purchases.getAll(requestFilters);
+                const parsed = normalizeApiListResponse(response, {
+                    current_page: purchaseHistoryState.page,
+                    per_page: purchaseHistoryState.perPage,
+                });
+                if (!parsed.success) return;
+
+                purchaseHistoryState.page = parsed.meta.current_page;
+                purchaseHistoryState.perPage = parsed.meta.per_page;
+                purchaseHistoryState.lastPage = parsed.meta.last_page;
+                purchaseHistoryState.total = parsed.meta.total;
+
+                const purchases = parsed.items;
             tbody.innerHTML = '';
 
             if (purchases.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay compras registradas</td></tr>';
+                renderPurchaseHistoryPagination();
                 return;
             }
 
@@ -606,6 +714,7 @@
                     </tr>`;
             }).join('');
 
+            renderPurchaseHistoryPagination();
             actualizarKPIs();
 
         } catch (error) {
@@ -1375,8 +1484,40 @@
         // Filtros historial
         ['estadoFiltro', 'proveedorFiltro', 'fechaInicio', 'fechaFin'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('change', cargarHistorial);
+            if (el) {
+                el.addEventListener('change', function() {
+                    cargarHistorial({ resetPage: true });
+                });
+            }
         });
+
+        const purchaseHistoryPagination = ensurePurchaseHistoryPagination();
+        if (purchaseHistoryPagination) {
+            purchaseHistoryPagination.addEventListener('click', function(event) {
+                const link = event.target.closest('[data-purchase-page]');
+                if (!link) return;
+
+                event.preventDefault();
+                const target = link.getAttribute('data-purchase-page');
+                let nextPage = purchaseHistoryState.page;
+
+                if (target === 'prev') {
+                    nextPage = Math.max(1, purchaseHistoryState.page - 1);
+                } else if (target === 'next') {
+                    nextPage = Math.min(purchaseHistoryState.lastPage, purchaseHistoryState.page + 1);
+                } else {
+                    const parsedPage = parseInt(target, 10);
+                    if (!isNaN(parsedPage)) {
+                        nextPage = parsedPage;
+                    }
+                }
+
+                if (nextPage !== purchaseHistoryState.page) {
+                    purchaseHistoryState.page = nextPage;
+                    cargarHistorial();
+                }
+            });
+        }
 
         // Nuevo proveedor
         const btnNuevo = document.getElementById('btnNuevoProveedor');

@@ -13,6 +13,7 @@ class ProductController extends Controller
     // GET /api/v1/products
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
         $query = Product::query();
 
         if ($request->filled('categoria')) {
@@ -31,13 +32,25 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->orderBy('nombre')->get();
+        if ($request->boolean('stock_bajo')) {
+            $query->whereColumn('stock', '<=', 'stock_minimo');
+        }
+
+        $products = $query
+            ->orderBy('nombre')
+            ->paginate($perPage);
 
         return response()->json([
             'success' => true,
             'message' => 'Productos listados correctamente',
-            'data'    => $products,
-            'total'   => $products->count(),
+            'data'    => $products->items(),
+            'meta'    => [
+                'total'        => $products->total(),
+                'per_page'     => $products->perPage(),
+                'current_page' => $products->currentPage(),
+                'last_page'    => $products->lastPage(),
+            ],
+            'total'   => $products->total(),
             'errors'  => null,
         ]);
     }

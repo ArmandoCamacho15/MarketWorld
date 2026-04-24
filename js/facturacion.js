@@ -7,6 +7,12 @@ const PRODUCTS_STORAGE_KEY = 'marketworld_products';
 let facturasHistorialCache = [];
 let deepLinkInvoiceRef = null;
 let selectedCliente = null; // cliente seleccionado desde búsqueda rápida
+const invoiceHistoryState = {
+    page: 1,
+    perPage: 10,
+    lastPage: 1,
+    total: 0,
+};
 
 // Helper: escape HTML para mostrar nombres seguros (local a este módulo)
 function escapeHtml(str) {
@@ -17,6 +23,129 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function normalizeApiListResponse(response, fallbackMeta) {
+    if (typeof MarketWorld !== 'undefined' &&
+        MarketWorld.api &&
+        typeof MarketWorld.api.normalizeListResponse === 'function') {
+        return MarketWorld.api.normalizeListResponse(response, fallbackMeta);
+    }
+
+    const items = response && Array.isArray(response.data) ? response.data : [];
+    return {
+        items: items,
+        meta: Object.assign({
+            total: items.length,
+            per_page: (fallbackMeta && fallbackMeta.per_page) || 10,
+            current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
+            last_page: 1,
+        }, (response && response.meta) || {}),
+        success: !response || response.success !== false,
+    };
+}
+
+function ensureInvoiceHistoryPagination() {
+    const table = document.getElementById('tablaHistorial');
+    if (!table) return null;
+
+    const tableResponsive = table.closest('.table-responsive');
+    if (!tableResponsive || !tableResponsive.parentNode) return null;
+
+    let container = document.getElementById('invoiceHistoryPagination');
+    if (container) return container;
+
+    container = document.createElement('nav');
+    container.id = 'invoiceHistoryPagination';
+    container.className = 'mt-3 d-flex justify-content-center';
+    container.setAttribute('aria-label', 'Paginación historial de facturas');
+    tableResponsive.parentNode.appendChild(container);
+
+    return container;
+}
+
+function renderInvoiceHistoryPagination() {
+    const container = ensureInvoiceHistoryPagination();
+    if (!container) return;
+
+    const current = invoiceHistoryState.page;
+    const last = Math.max(1, invoiceHistoryState.lastPage);
+
+    if (last <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const startPage = Math.max(1, current - 2);
+    const endPage = Math.min(last, current + 2);
+    const items = [];
+
+    items.push('<li class="page-item' + (current <= 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-invoice-page="prev">Anterior</a></li>');
+
+    for (let i = startPage; i <= endPage; i++) {
+        items.push('<li class="page-item' + (i === current ? ' active' : '') + '"><a class="page-link" href="#" data-invoice-page="' + i + '">' + i + '</a></li>');
+    }
+
+    items.push('<li class="page-item' + (current >= last ? ' disabled' : '') + '"><a class="page-link" href="#" data-invoice-page="next">Siguiente</a></li>');
+    container.innerHTML = '<ul class="pagination mb-0">' + items.join('') + '</ul>';
+}
+
+function initInvoiceHistoryEvents() {
+    const btnFiltrarHistorial = document.getElementById('btnFiltrarHistorial');
+    const filtroEstado = document.getElementById('filtroEstado');
+    const filtroCliente = document.getElementById('filtroCliente');
+
+    if (btnFiltrarHistorial) {
+        btnFiltrarHistorial.addEventListener('click', function() {
+            invoiceHistoryState.page = 1;
+            cargarHistorial();
+        });
+    }
+
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', function() {
+            invoiceHistoryState.page = 1;
+            cargarHistorial();
+        });
+    }
+
+    if (filtroCliente) {
+        filtroCliente.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                invoiceHistoryState.page = 1;
+                cargarHistorial();
+            }
+        });
+    }
+
+    const pagination = ensureInvoiceHistoryPagination();
+    if (pagination) {
+        pagination.addEventListener('click', function(event) {
+            const link = event.target.closest('[data-invoice-page]');
+            if (!link) return;
+
+            event.preventDefault();
+            const target = link.getAttribute('data-invoice-page');
+            let nextPage = invoiceHistoryState.page;
+
+            if (target === 'prev') {
+                nextPage = Math.max(1, invoiceHistoryState.page - 1);
+            } else if (target === 'next') {
+                nextPage = Math.min(invoiceHistoryState.lastPage, invoiceHistoryState.page + 1);
+            } else {
+                const parsedPage = parseInt(target, 10);
+                if (!isNaN(parsedPage)) {
+                    nextPage = parsedPage;
+                }
+            }
+
+            if (nextPage !== invoiceHistoryState.page) {
+                invoiceHistoryState.page = nextPage;
+                cargarHistorial();
+            }
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -1641,6 +1770,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Cargar historial de facturas al iniciar
+    initInvoiceHistoryEvents();
     cargarHistorial();
 
     function activarPestanaHistorial() {
@@ -1659,11 +1789,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            const result = await MarketWorld.api.invoices.getAll();
-            
-            if (!result || !result.success) return;
+            const filtroEstado = document.getElementById('filtroEstado');
+            const filtroCliente = document.getElementById('filtroCliente');
+            const requestFilters = {
+                page: invoiceHistoryState.page,
+                per_page: invoiceHistoryState.perPage,
+            };
 
-            const facturas = Array.isArray(result.data) ? result.data : [];
+            if (filtroEstado && filtroEstado.value && filtroEstado.value !== 'todos') {
+                requestFilters.estado = filtroEstado.value;
+            }
+
+            if (filtroCliente && filtroCliente.value.trim()) {
+                requestFilters.search = filtroCliente.value.trim();
+            }
+
+            const result = await MarketWorld.api.invoices.getAll(requestFilters);
+            const parsed = normalizeApiListResponse(result, {
+                current_page: invoiceHistoryState.page,
+                per_page: invoiceHistoryState.perPage,
+            });
+
+            if (!parsed.success) return;
+
+            invoiceHistoryState.page = parsed.meta.current_page;
+            invoiceHistoryState.perPage = parsed.meta.per_page;
+            invoiceHistoryState.lastPage = parsed.meta.last_page;
+            invoiceHistoryState.total = parsed.meta.total;
+
+            const facturas = parsed.items;
             facturasHistorialCache = facturas;
             
             // Renderizar tabla
@@ -1671,6 +1825,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (facturas.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center">No hay facturas registradas</td></tr>`;
+                renderInvoiceHistoryPagination();
                 return;
             }
             
@@ -1705,6 +1860,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Actualizar KPIs de facturación
             actualizarKPIs(facturas);
+            renderInvoiceHistoryPagination();
 
             if (deepLinkInvoiceRef) {
                 const match = facturas.find(function(f) {

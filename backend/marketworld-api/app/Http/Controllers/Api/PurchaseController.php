@@ -16,17 +16,41 @@ class PurchaseController extends Controller
     /**
      * Listado de compras con Eager Loading.
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
+
         // Modificado: Se agregó 'supplier' al eager loading
-        $purchases = Purchase::with(['supplier', 'items.product', 'user'])
+        $query = Purchase::with(['supplier', 'items.product', 'user']);
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('numero_orden', 'like', "%{$search}%");
+        }
+
+        $purchases = $query
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
             'success' => true,
             'message' => 'Compras listadas correctamente',
-            'data'    => $purchases,
+            'data'    => $purchases->items(),
+            'meta'    => [
+                'total'        => $purchases->total(),
+                'per_page'     => $purchases->perPage(),
+                'current_page' => $purchases->currentPage(),
+                'last_page'    => $purchases->lastPage(),
+            ],
+            'total'   => $purchases->total(),
             'errors'  => null,
         ]);
     }

@@ -4,6 +4,15 @@
 
     let selectedClient = null;
     let selectedOpportunity = null;
+    const crmCustomerListState = {
+        page: 1,
+        perPage: 9,
+        lastPage: 1,
+        total: 0,
+        search: '',
+        segmento: '',
+        estado: '',
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log(' Módulo CRM cargado');
@@ -15,55 +24,178 @@
         loadCustomersFromAPI();
                 initClientCards();
         initClientFilters();
+        initCrmPaginationEvents();
         initOpportunityManagement();
         initSegmentation();
         initCampaigns();
         initClientSearch();
     });
 
+    function normalizeApiListResponse(response, fallbackMeta) {
+        if (typeof MarketWorld !== 'undefined' &&
+            MarketWorld.api &&
+            typeof MarketWorld.api.normalizeListResponse === 'function') {
+            return MarketWorld.api.normalizeListResponse(response, fallbackMeta);
+        }
+
+        const items = response && Array.isArray(response.data) ? response.data : [];
+        return {
+            items: items,
+            meta: Object.assign({
+                total: items.length,
+                per_page: (fallbackMeta && fallbackMeta.per_page) || 9,
+                current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
+                last_page: 1,
+            }, (response && response.meta) || {}),
+            success: !response || response.success !== false,
+        };
+    }
+
+    function getClientsContainer() {
+        let container = document.getElementById('clientsList');
+        if (container) return container;
+
+        const existingCard = document.querySelector('#clientes .client-card');
+        if (existingCard) {
+            container = existingCard.closest('.row');
+        }
+
+        if (!container) {
+            container = document.querySelector('#clientes .row');
+        }
+
+        return container;
+    }
+
+    function ensureCrmPaginationContainer() {
+        const clientsContainer = getClientsContainer();
+        if (!clientsContainer || !clientsContainer.parentNode) return null;
+
+        let pagination = document.getElementById('crmCustomersPagination');
+        if (pagination) return pagination;
+
+        pagination = document.createElement('nav');
+        pagination.id = 'crmCustomersPagination';
+        pagination.className = 'mt-3 d-flex justify-content-center';
+        pagination.setAttribute('aria-label', 'Paginación de clientes CRM');
+        clientsContainer.parentNode.appendChild(pagination);
+
+        return pagination;
+    }
+
+    function renderCrmPagination() {
+        const pagination = ensureCrmPaginationContainer();
+        if (!pagination) return;
+
+        const current = crmCustomerListState.page;
+        const last = Math.max(1, crmCustomerListState.lastPage);
+
+        if (last <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        const startPage = Math.max(1, current - 2);
+        const endPage = Math.min(last, current + 2);
+        const items = [];
+
+        items.push('<li class="page-item' + (current <= 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-crm-page="prev">Anterior</a></li>');
+
+        for (let i = startPage; i <= endPage; i++) {
+            items.push('<li class="page-item' + (i === current ? ' active' : '') + '"><a class="page-link" href="#" data-crm-page="' + i + '">' + i + '</a></li>');
+        }
+
+        items.push('<li class="page-item' + (current >= last ? ' disabled' : '') + '"><a class="page-link" href="#" data-crm-page="next">Siguiente</a></li>');
+        pagination.innerHTML = '<ul class="pagination mb-0">' + items.join('') + '</ul>';
+    }
+
+    function initCrmPaginationEvents() {
+        const pagination = ensureCrmPaginationContainer();
+        if (!pagination) return;
+
+        pagination.addEventListener('click', function(event) {
+            const link = event.target.closest('[data-crm-page]');
+            if (!link) return;
+
+            event.preventDefault();
+            const target = link.getAttribute('data-crm-page');
+            let nextPage = crmCustomerListState.page;
+
+            if (target === 'prev') {
+                nextPage = Math.max(1, crmCustomerListState.page - 1);
+            } else if (target === 'next') {
+                nextPage = Math.min(crmCustomerListState.lastPage, crmCustomerListState.page + 1);
+            } else {
+                const page = parseInt(target, 10);
+                if (!isNaN(page)) {
+                    nextPage = page;
+                }
+            }
+
+            if (nextPage !== crmCustomerListState.page) {
+                crmCustomerListState.page = nextPage;
+                loadCustomersFromAPI();
+            }
+        });
+    }
+
     // --- Carga de clientes desde API Laravel ---
     async function loadCustomersFromAPI() {
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) {
-                console.warn('[CRM] No hay token de autenticación.');
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.customers) {
+                console.warn('[CRM] API de clientes no disponible.');
                 return;
             }
 
-            const response = await fetch('http://127.0.0.1:8000/api/v1/customers', {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+            const requestParams = {
+                page: crmCustomerListState.page,
+                per_page: crmCustomerListState.perPage,
+            };
+
+            if (crmCustomerListState.search) {
+                requestParams.search = crmCustomerListState.search;
+            }
+            if (crmCustomerListState.segmento) {
+                requestParams.segmento = crmCustomerListState.segmento;
+            }
+            if (crmCustomerListState.estado) {
+                requestParams.estado = crmCustomerListState.estado;
+            }
+
+            const response = await MarketWorld.api.customers.getAll(requestParams);
+            const parsed = normalizeApiListResponse(response, {
+                current_page: crmCustomerListState.page,
+                per_page: crmCustomerListState.perPage,
             });
 
-            const result = await response.json();
-            
-            if (!result.success) {
-                console.error('[CRM] Error al cargar clientes:', result.message);
+            if (!parsed.success) {
+                console.error('[CRM] Error al cargar clientes:', response && response.message ? response.message : 'respuesta inválida');
                 return;
             }
 
-            console.log('[API] Clientes cargados desde MySQL:', result.total);
+            crmCustomerListState.page = parsed.meta.current_page;
+            crmCustomerListState.perPage = parsed.meta.per_page;
+            crmCustomerListState.lastPage = parsed.meta.last_page;
+            crmCustomerListState.total = parsed.meta.total;
 
-            const container = document.querySelector('.client-cards-container') || 
-                            document.getElementById('clientsList') || 
-                            document.querySelector('.row.g-3');
+            console.log('[API] Clientes cargados desde MySQL:', parsed.meta.total);
+
+            const container = getClientsContainer();
             
             if (!container) {
                 console.warn('[CRM] No se encontró el contenedor de clientes en el DOM.');
                 return;
             }
 
-            // Limpiar contenido estático previo si es necesario o marcar existentes
-            // container.innerHTML = ""; // Opcional: limpiar antes de cargar
+            container.innerHTML = '';
 
-            const existentes = Array.from(container.querySelectorAll('.client-card'))
-                .map(c => c.dataset.clientId);
+            if (!parsed.items || parsed.items.length === 0) {
+                container.innerHTML = '<div class="col-12"><div class="alert alert-info">No hay clientes para mostrar con los filtros actuales.</div></div>';
+                renderCrmPagination();
+                return;
+            }
 
-            result.data.forEach(cliente => {
-                // Evitar duplicados si el backend devuelve alguno ya pintado en el HTML estático
-                if (existentes.includes(String(cliente.id))) return;
+            parsed.items.forEach(cliente => {
 
                 const segmentoBadge = {
                     'Premium': 'bg-warning',
@@ -84,6 +216,7 @@
                             <h5 class="card-title">${cliente.nombre}</h5>
                             <p class="text-muted small mb-1"><i class="bi bi-envelope me-1"></i>${cliente.email || 'Sin email'}</p>
                             <p class="text-muted small mb-2"><i class="bi bi-telephone me-1"></i>${cliente.telefono || 'Sin teléfono'}</p>
+                            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>${cliente.ciudad || 'Sin ciudad'}</p>
                             <div class="d-flex gap-2 mt-3">
                                 <button class="btn btn-sm btn-outline-primary flex-fill btn-view-details">Ver detalles</button>
                                 <button class="btn btn-sm btn-outline-success flex-fill btn-contact-client">Contactar</button>
@@ -95,6 +228,7 @@
 
             // Re-inicializar eventos en todas las tarjetas (viejas y nuevas)
             initClientCards();
+            renderCrmPagination();
 
         } catch (error) {
             console.error('[API] Error de conexión en CRM:', error);
@@ -221,14 +355,22 @@
     }
 
     function applyClientFilters() {
-        const tipo = document.querySelector('select[aria-label*="Tipo"]')?.value || 'Todos';
-        const ciudad = document.querySelector('select[aria-label*="Ciudad"]')?.value || 'Todas';
-        const segmento = document.querySelector('select[aria-label*="Segmento"]')?.value || 'Todos';
-        
-        console.log(`🔍 Filtrando clientes:`, { tipo, ciudad, segmento });
-        
-        // filtrado
-        alert(`Filtros aplicados:\n- Tipo: ${tipo}\n- Ciudad: ${ciudad}\n- Segmento: ${segmento}`);
+        const selects = document.querySelectorAll('#clientes .filter-bar select');
+        const segmento = (selects[2] && selects[2].value) ? selects[2].value : 'Todos';
+
+        crmCustomerListState.page = 1;
+        crmCustomerListState.estado = '';
+        crmCustomerListState.segmento = '';
+
+        if (segmento && segmento !== 'Todos') {
+            if (segmento === 'Inactivo') {
+                crmCustomerListState.estado = 'Inactivo';
+            } else {
+                crmCustomerListState.segmento = segmento;
+            }
+        }
+
+        loadCustomersFromAPI();
     }
 
     // ======= GESTIÓN DE OPORTUNIDADES =======
@@ -349,7 +491,7 @@
         if (searchInput) {
             searchInput.addEventListener('input', debounce((e) => {
                 const query = e.target.value.trim();
-                if (query.length > 2) {
+                if (query.length > 2 || query.length === 0) {
                     searchClients(query);
                 }
             }, 300));
@@ -357,8 +499,9 @@
     }
 
     function searchClients(query) {
-        console.log(`🔍 Buscando clientes: "${query}"`);
-        
+        crmCustomerListState.search = query || '';
+        crmCustomerListState.page = 1;
+        loadCustomersFromAPI();
     }
 
     // Utilidad: debounce

@@ -8,6 +8,15 @@
         source: 'local'
     };
 
+    var inventoryPaginationState = {
+        page: 1,
+        perPage: 9,
+        lastPage: 1,
+        total: 0,
+        filters: {},
+        isServerMode: false,
+    };
+
     function hasProductApi() {
         return typeof MarketWorld !== 'undefined' &&
             typeof MarketWorld.api !== 'undefined' &&
@@ -46,6 +55,32 @@
             unidad: productData.unidad || 'Unidad',
             proveedor: productData.proveedor || '',
             estado: productData.activo ? 'Activo' : 'Inactivo'
+        };
+    }
+
+    function normalizeApiListResponse(response, fallbackMeta) {
+        if (typeof MarketWorld !== 'undefined' &&
+            MarketWorld.api &&
+            typeof MarketWorld.api.normalizeListResponse === 'function') {
+            return MarketWorld.api.normalizeListResponse(response, fallbackMeta);
+        }
+
+        var items = [];
+        if (response && Array.isArray(response.data)) {
+            items = response.data;
+        } else if (Array.isArray(response)) {
+            items = response;
+        }
+
+        return {
+            items: items,
+            meta: Object.assign({
+                total: items.length,
+                per_page: (fallbackMeta && fallbackMeta.per_page) || 9,
+                current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
+                last_page: 1,
+            }, (response && response.meta) || {}),
+            success: !response || response.success !== false,
         };
     }
 
@@ -263,15 +298,35 @@
     // --- Cargar productos ---
     function loadProducts(apiFilters) {
         if (hasProductApi()) {
-            return MarketWorld.api.products.getAll(apiFilters || {})
+            var requestedPage = parseInt((apiFilters && apiFilters.page) || inventoryPaginationState.page || 1, 10);
+            var requestedPerPage = parseInt((apiFilters && apiFilters.per_page) || inventoryPaginationState.perPage || 9, 10);
+            var normalizedFilters = Object.assign({}, apiFilters || {}, {
+                page: requestedPage,
+                per_page: requestedPerPage,
+            });
+
+            return MarketWorld.api.products.getAll(normalizedFilters)
                 .then(function(response) {
-                    if (response.success) {
-                        var mappedProducts = (response.data || []).map(mapApiProductToFrontend);
+                    var parsed = normalizeApiListResponse(response, {
+                        current_page: requestedPage,
+                        per_page: requestedPerPage,
+                    });
+
+                    if (parsed.success) {
+                        var mappedProducts = parsed.items.map(mapApiProductToFrontend);
+
                         setProductsState(mappedProducts, 'api');
+                        inventoryPaginationState.isServerMode = true;
+                        inventoryPaginationState.page = parsed.meta.current_page;
+                        inventoryPaginationState.perPage = parsed.meta.per_page;
+                        inventoryPaginationState.lastPage = parsed.meta.last_page;
+                        inventoryPaginationState.total = parsed.meta.total;
+
                         displayProducts(mappedProducts);
+                        updatePaginationUI(parsed.meta.last_page);
                         showLowStockAlerts();
                         updateDashboardKPIs();
-                        console.log('[API] Productos cargados desde MySQL:', response.total);
+                        console.log('[API] Productos cargados desde MySQL:', parsed.meta.total);
                         return mappedProducts;
                     }
                     return [];
@@ -280,7 +335,12 @@
                     console.warn('[API] Fallo, usando localStorage:', err.message);
                     var products = MarketWorld.data.getProducts();
                     setProductsState(products, 'local');
+                    inventoryPaginationState.isServerMode = false;
+                    inventoryPaginationState.page = 1;
+                    inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / itemsPerPage));
+                    inventoryPaginationState.total = products.length;
                     displayProducts(products);
+                    updatePaginationUI(inventoryPaginationState.lastPage);
                     showLowStockAlerts();
                     updateDashboardKPIs();
                     return products;
@@ -289,7 +349,12 @@
 
         var localProducts = MarketWorld.data.getProducts();
         setProductsState(localProducts, 'local');
+        inventoryPaginationState.isServerMode = false;
+        inventoryPaginationState.page = 1;
+        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(localProducts.length / itemsPerPage));
+        inventoryPaginationState.total = localProducts.length;
         displayProducts(localProducts);
+        updatePaginationUI(inventoryPaginationState.lastPage);
         showLowStockAlerts();
         updateDashboardKPIs();
         return Promise.resolve(localProducts);
@@ -990,6 +1055,7 @@
         if (search) apiFilters.search = search;
         if (categoria) apiFilters.categoria = categoria;
         if (estado) apiFilters.estado = estado === 'activo' ? 'Activo' : 'Inactivo';
+        if (stock === 'bajo') apiFilters.stock_bajo = 1;
 
         var applyClientStockFilter = function(products) {
             var filtered = products.filter(function(product) {
@@ -1004,18 +1070,42 @@
         };
 
         if (hasProductApi()) {
-            MarketWorld.api.products.getAll(apiFilters)
+            inventoryPaginationState.filters = Object.assign({}, apiFilters);
+            inventoryPaginationState.page = 1;
+
+            var requestFilters = Object.assign({}, inventoryPaginationState.filters, {
+                page: inventoryPaginationState.page,
+                per_page: inventoryPaginationState.perPage,
+            });
+
+            MarketWorld.api.products.getAll(requestFilters)
                 .then(function(response) {
-                    if (response.success) {
-                        var mapped = (response.data || []).map(mapApiProductToFrontend);
+                    var parsed = normalizeApiListResponse(response, {
+                        current_page: inventoryPaginationState.page,
+                        per_page: inventoryPaginationState.perPage,
+                    });
+
+                    if (parsed.success) {
+                        var mapped = parsed.items.map(mapApiProductToFrontend);
+
                         setProductsState(mapped, 'api');
+                        inventoryPaginationState.isServerMode = true;
+                        inventoryPaginationState.page = parsed.meta.current_page;
+                        inventoryPaginationState.lastPage = parsed.meta.last_page;
+                        inventoryPaginationState.total = parsed.meta.total;
+
                         applyClientStockFilter(mapped);
+                        updatePaginationUI(parsed.meta.last_page);
                     }
                 })
                 .catch(function(err) {
                     if (isConnectivityError(err)) {
                         var products = MarketWorld.data.getProducts();
                         setProductsState(products, 'local');
+                        inventoryPaginationState.isServerMode = false;
+                        inventoryPaginationState.page = 1;
+                        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / itemsPerPage));
+                        inventoryPaginationState.total = products.length;
 
                         var fallbackFiltered = products.filter(function(product) {
                             var matchCategoria = !categoria || product.categoria.toLowerCase() === categoria;
@@ -1032,6 +1122,7 @@
                         });
 
                         displayProducts(fallbackFiltered);
+                        updatePaginationUI(Math.max(1, Math.ceil(fallbackFiltered.length / itemsPerPage)));
                         return;
                     }
 
@@ -1399,6 +1490,32 @@
         if (!link) return;
         
         var text = link.textContent.trim();
+
+        if (inventoryPaginationState.isServerMode && hasProductApi()) {
+            var targetPage = inventoryPaginationState.page;
+
+            if (text === 'Anterior' && targetPage > 1) {
+                targetPage--;
+            } else if (text === 'Siguiente' && targetPage < inventoryPaginationState.lastPage) {
+                targetPage++;
+            } else if (!isNaN(parseInt(text, 10))) {
+                targetPage = parseInt(text, 10);
+            }
+
+            if (targetPage === inventoryPaginationState.page) {
+                return;
+            }
+
+            inventoryPaginationState.page = targetPage;
+            var requestFilters = Object.assign({}, inventoryPaginationState.filters, {
+                page: targetPage,
+                per_page: inventoryPaginationState.perPage,
+            });
+
+            loadProducts(requestFilters);
+            return;
+        }
+
         var products = getFilteredProducts();
         var totalPages = Math.ceil(products.length / itemsPerPage);
         
@@ -1487,6 +1604,13 @@
     displayProducts = function(products) {
         if (!products || arguments.length === 0) {
             products = getProductsState();
+        }
+
+        if (inventoryPaginationState.isServerMode) {
+            currentPage = inventoryPaginationState.page;
+            itemsPerPage = inventoryPaginationState.perPage;
+            originalDisplayProducts(products);
+            return;
         }
         
         var totalPages = Math.ceil(products.length / itemsPerPage);

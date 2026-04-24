@@ -15,7 +15,11 @@
     // Configuración — cambia BASE_URL si tu servidor corre
     // en otro puerto o dominio.
     // -------------------------------------------------------
-    var BASE_URL = 'http://localhost:8000/api/v1';
+    var currentHost = (typeof window !== 'undefined' && window.location && window.location.hostname)
+        ? window.location.hostname
+        : '127.0.0.1';
+    // Permite override manual si se define antes de cargar el adaptador.
+    var BASE_URL = global.MARKETWORLD_API_BASE_URL || ('http://' + currentHost + ':8000/api/v1');
     var API_ROOT = BASE_URL.replace('/api/v1', '');
     var CSRF_URL = API_ROOT + '/sanctum/csrf-cookie';
     var AUTH_TOKEN_KEY = 'marketworld_auth_token';
@@ -94,6 +98,77 @@
         });
     }
 
+    function buildListParams(filtros) {
+        var normalized = Object.assign({}, filtros || {});
+
+        // Compatibilidad temporal: mientras el frontend migra paginación completa,
+        // pedimos lotes amplios controlados al backend paginado.
+        if (!Object.prototype.hasOwnProperty.call(normalized, 'per_page')) {
+            normalized.per_page = 100;
+        }
+
+        return new URLSearchParams(normalized).toString();
+    }
+
+    function normalizeListResponse(response, fallback) {
+        var fallbackMeta = Object.assign({
+            total: 0,
+            per_page: 15,
+            current_page: 1,
+            last_page: 1,
+        }, fallback || {});
+
+        if (Array.isArray(response)) {
+            return {
+                items: response,
+                meta: Object.assign({}, fallbackMeta, {
+                    total: response.length,
+                    last_page: 1,
+                }),
+                success: true,
+                message: '',
+            };
+        }
+
+        var payload = response || {};
+        var items = [];
+
+        if (Array.isArray(payload.data)) {
+            items = payload.data;
+        } else if (payload.data && Array.isArray(payload.data.data)) {
+            items = payload.data.data;
+        }
+
+        var responseMeta = payload.meta || (payload.data && payload.data.meta) || {};
+        var total = responseMeta.total;
+
+        if (typeof total !== 'number') {
+            if (typeof payload.total === 'number') {
+                total = payload.total;
+            } else {
+                total = items.length;
+            }
+        }
+
+        var normalizedMeta = {
+            total: total,
+            per_page: responseMeta.per_page || fallbackMeta.per_page,
+            current_page: responseMeta.current_page || fallbackMeta.current_page,
+            last_page: responseMeta.last_page || fallbackMeta.last_page,
+        };
+
+        if (!normalizedMeta.last_page || normalizedMeta.last_page < 1) {
+            normalizedMeta.last_page = 1;
+        }
+
+        return {
+            items: items,
+            meta: normalizedMeta,
+            success: payload.success !== false,
+            message: payload.message || '',
+        };
+    }
+
     // -------------------------------------------------------
     // Utilidad interna: fetch con timeout y manejo de errores
     // -------------------------------------------------------
@@ -148,7 +223,7 @@
     var ProductAPI = {
 
         getAll: function (filtros) {
-            var params = new URLSearchParams(filtros || {}).toString();
+            var params = buildListParams(filtros);
             return apiFetch('/products' + (params ? '?' + params : ''));
         },
 
@@ -185,7 +260,7 @@
     var CustomerAPI = {
 
         getAll: function (filtros) {
-            var params = new URLSearchParams(filtros || {}).toString();
+            var params = buildListParams(filtros);
             return apiFetch('/customers' + (params ? '?' + params : ''));
         },
 
@@ -217,7 +292,7 @@
     // -------------------------------------------------------
     var InvoiceAPI = {
         getAll: function (filtros) {
-            var params = new URLSearchParams(filtros || {}).toString();
+            var params = buildListParams(filtros);
             return apiFetch('/invoices' + (params ? '?' + params : ''));
         },
         getById: function (id) {
@@ -241,8 +316,9 @@
     // API de Compras (Módulo Compras)
     // -------------------------------------------------------
     var PurchaseAPI = {
-        getAll: function () {
-            return apiFetch('/purchases');
+        getAll: function (filtros) {
+            var params = buildListParams(filtros);
+            return apiFetch('/purchases' + (params ? '?' + params : ''));
         },
         getById: function (id) {
             return apiFetch('/purchases/' + id);
@@ -335,6 +411,7 @@
         dashboard: DashboardAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
+        normalizeListResponse: normalizeListResponse,
         BASE_URL: BASE_URL,
     };
 
