@@ -167,8 +167,8 @@ class InvoiceController extends Controller
                         'subtotal'        => $item['subtotal'],
                     ]);
 
-                    // REDUCIR STOCK
-                    $item['product']->decrement('stock', $item['cantidad']);
+                    // REDUCIR STOCK (Auditable)
+                    $item['product']->registrarSalida($item['cantidad'], $authUser->id, "Venta Factura #{$invoice->numero_factura}");
                 }
 
                 // 4. GENERAR ASIENTO CONTABLE AUTOMÁTICO
@@ -239,9 +239,10 @@ class InvoiceController extends Controller
                 $invoice->loadMissing('items');
 
                 foreach ($invoice->items as $item) {
-                    Product::where('id', $item->product_id)
-                        ->lockForUpdate()
-                        ->increment('stock', $item->cantidad);
+                    $producto = Product::lockForUpdate()->find($item->product_id);
+                    if ($producto) {
+                        $producto->registrarEntrada($item->cantidad, $request->user()?->id, "Anulación de Factura #{$invoice->numero_factura}");
+                    }
                 }
 
                 $lineaAnulacion = '[' . now()->format('Y-m-d H:i:s') . '] Anulación: ' . trim($validated['motivo_anulacion']);

@@ -170,8 +170,8 @@ class PurchaseController extends Controller
                     if ($purchase->estado === 'Recibida') {
                         $product = Product::lockForUpdate()->find($item['product_id']);
                         if ($product) {
-                            // Actualizar stock y costo usando Costo Promedio Ponderado (CPP)
-                            $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario']);
+                            // Actualizar stock y costo usando Costo Promedio Ponderado (CPP) y registrar en Kardex
+                            $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario'], $authUser->id, "Cálculo PMP por Orden #{$purchase->numero_orden}");
                         }
                     }
                 }
@@ -227,7 +227,7 @@ class PurchaseController extends Controller
                             throw new \RuntimeException('Producto no encontrado para la compra.');
                         }
 
-                        $product->aplicarCostoPromedioPonderado($item->cantidad, $item->precio_unitario);
+                        $product->aplicarCostoPromedioPonderado($item->cantidad, $item->precio_unitario, $request->user()?->id, "Cálculo PMP por recepción de Orden #{$purchase->numero_orden}");
                     }
                 }
 

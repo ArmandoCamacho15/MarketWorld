@@ -157,9 +157,9 @@ class ProductController extends Controller
             'nombre'        => 'sometimes|required|string|max:200',
             'descripcion'   => 'nullable|string',
             'categoria'     => 'nullable|string|max:100',
-            // 'precio_compra' intentionally excluded from general update validation
+            // 'precio_compra' y 'stock' excluidos intencionalmente para evitar ajustes manuales
             'precio_venta'  => 'sometimes|required|numeric|min:0',
-            'stock'         => 'sometimes|required|integer|min:0',
+            // 'stock' se modifica únicamente a través de Compras o Ajustes de Inventario
             'stock_minimo'  => 'nullable|integer|min:0',
             'iva'           => 'nullable|numeric|min:0',
             'unidad'        => 'nullable|string|max:50',

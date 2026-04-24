@@ -432,9 +432,6 @@
                     </div>
                     
                         <div class="btn-group w-100 mt-3" role="group">
-                        <button class="btn btn-sm btn-outline-primary btn-adjust-stock" data-product-id="${product.id}">
-                            <i class="bi bi-plus-minus"></i> Stock
-                        </button>
                         ${ (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser && MarketWorld.data.getCurrentUser() && MarketWorld.data.getCurrentUser().rol === 'Administrador') ? `
                         <button class="btn btn-sm btn-outline-info btn-adjust-cost" data-product-id="${product.id}">
                             <i class="bi bi-currency-dollar"></i> Costo
@@ -788,6 +785,15 @@
         document.getElementById('productProveedor').value = product.proveedor;
         document.getElementById('productActivo').checked = product.activo;
         
+        // El stock no es editable en productos existentes
+        var stockInput = document.getElementById('productStock');
+        if (stockInput) {
+            stockInput.readOnly = true;
+            stockInput.style.backgroundColor = '#e9ecef';
+            stockInput.style.cursor = 'not-allowed';
+            stockInput.title = 'El stock solo se modifica mediante compras';
+        }
+        
         document.getElementById('productModalLabel').textContent = 'Editar Producto';
         
         // ======= CALCULAR MARGEN =======
@@ -976,6 +982,15 @@
         document.getElementById('productUnidad').value = 'Unidad';
         document.getElementById('productProveedor').value = '';
         document.getElementById('productActivo').checked = true;
+        
+        // El stock inicial SÍ es editable al crear un producto nuevo
+        var stockInput = document.getElementById('productStock');
+        if (stockInput) {
+            stockInput.readOnly = false;
+            stockInput.style.backgroundColor = '';
+            stockInput.style.cursor = '';
+            stockInput.title = 'Stock inicial del producto';
+        }
         
         var margenSpan = document.getElementById('margenCalculado');
         if (margenSpan) margenSpan.textContent = '0%';
