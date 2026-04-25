@@ -337,7 +337,7 @@
                     setProductsState(products, 'local');
                     inventoryPaginationState.isServerMode = false;
                     inventoryPaginationState.page = 1;
-                    inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / itemsPerPage));
+                    inventoryPaginationState.lastPage = Math.max(1, Math.ceil(products.length / inventoryPaginationState.perPage));
                     inventoryPaginationState.total = products.length;
                     displayProducts(products);
                     updatePaginationUI(inventoryPaginationState.lastPage);
@@ -351,7 +351,7 @@
         setProductsState(localProducts, 'local');
         inventoryPaginationState.isServerMode = false;
         inventoryPaginationState.page = 1;
-        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(localProducts.length / itemsPerPage));
+        inventoryPaginationState.lastPage = Math.max(1, Math.ceil(localProducts.length / inventoryPaginationState.perPage));
         inventoryPaginationState.total = localProducts.length;
         displayProducts(localProducts);
         updatePaginationUI(inventoryPaginationState.lastPage);
@@ -367,14 +367,18 @@
         
         container.innerHTML = '';
         
-        if (products.length === 0) {
-            container.innerHTML = '<div class="col-12"><div class="alert alert-info">No hay productos registrados</div></div>';
+        if (!products || products.length === 0) {
+            container.innerHTML = '<div class="col-12"><div class="alert alert-info text-center"><i class="bi bi-info-circle me-2"></i> No hay productos que coincidan con los filtros</div></div>';
             return;
         }
         
         products.forEach(function(product) {
-            var productCard = createProductCard(product);
-            container.appendChild(productCard);
+            try {
+                var productCard = createProductCard(product);
+                container.appendChild(productCard);
+            } catch (err) {
+                console.error('Error renderizando producto:', product, err);
+            }
         });
     }
 
@@ -432,15 +436,21 @@
                     </div>
                     
                         <div class="btn-group w-100 mt-3" role="group">
-                        ${ (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser && MarketWorld.data.getCurrentUser() && MarketWorld.data.getCurrentUser().rol === 'Administrador') ? `
-                        <button class="btn btn-sm btn-outline-info btn-adjust-cost" data-product-id="${product.id}">
-                            <i class="bi bi-currency-dollar"></i> Costo
+                        <button class="btn btn-sm btn-outline-primary btn-view-product" data-product-id="${product.id}" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info btn-adjust-stock" data-product-id="${product.id}" title="Ajustar stock">
+                            <i class="bi bi-box"></i>
+                        </button>
+                        ${ (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser && (MarketWorld.data.getCurrentUser() || {}).rol === 'Administrador') ? `
+                        <button class="btn btn-sm btn-outline-dark btn-adjust-cost" data-product-id="${product.id}" title="Ajustar costo">
+                            <i class="bi bi-currency-dollar"></i>
                         </button>
                         ` : '' }
-                        <button class="btn btn-sm btn-outline-warning btn-edit-product" data-product-id="${product.id}">
-                            <i class="bi bi-pencil"></i> Editar
+                        <button class="btn btn-sm btn-outline-warning btn-edit-product" data-product-id="${product.id}" title="Editar">
+                            <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger btn-delete-product" data-product-id="${product.id}">
+                        <button class="btn btn-sm btn-outline-danger btn-delete-product" data-product-id="${product.id}" title="Eliminar">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -519,7 +529,9 @@
             var productId = target.getAttribute('data-product-id');
             if (!productId) return;
             
-            if (target.classList.contains('btn-edit-product')) {
+            if (target.classList.contains('btn-view-product')) {
+                viewProduct(parseInt(productId));
+            } else if (target.classList.contains('btn-edit-product')) {
                 editProduct(parseInt(productId));
             } else if (target.classList.contains('btn-adjust-cost')) {
                 openAdjustCostModal(parseInt(productId));
@@ -562,71 +574,57 @@
             var form = document.getElementById('adjustCostForm');
             if (!form) return;
             form.addEventListener('submit', function(e) {
-            e.preventDefault();
+                e.preventDefault();
 
-            var pid = document.getElementById('adjustProductId').value;
-            var newCost = parseFloat(document.getElementById('newCostInput').value);
-            var reason = document.getElementById('adjustReason').value.trim();
+                var pid = document.getElementById('adjustProductId').value;
+                var newCost = parseFloat(document.getElementById('newCostInput').value);
+                var reason = document.getElementById('adjustReason').value.trim();
 
-            if (isNaN(newCost) || newCost < 0) {
-                alert('Ingresa un costo válido');
-                return;
-            }
-            if (!reason) {
-                alert('Ingresa el motivo del ajuste');
-                return;
-            }
-
-            var token = localStorage.getItem('marketworld_auth_token');
-            if (!token) {
-                alert('No hay token de autenticación. Inicia sesión nuevamente.');
-                return;
-            }
-
-            var submitBtn = form.querySelector('button[type="submit"]');
-            var originalText = submitBtn ? submitBtn.innerHTML : null;
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Registrando...';
-            }
-
-            var endpoint = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.BASE_URL) ?
-                (MarketWorld.api.BASE_URL + '/products/' + pid + '/adjust-cost') :
-                ('/api/v1/products/' + pid + '/adjust-cost');
-
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({ new_cost: newCost, reason: reason })
-            })
-            .then(function(res) { return res.json().then(function(body) { return { ok: res.ok, status: res.status, body: body }; }); })
-            .then(function(resp) {
-                if (!resp.ok) {
-                    var msg = (resp.body && resp.body.message) ? resp.body.message : 'Error al ajustar costo';
-                    throw new Error(msg);
+                if (isNaN(newCost) || newCost < 0) {
+                    alert('Ingresa un costo válido');
+                    return;
+                }
+                if (!reason) {
+                    alert('Ingresa el motivo del ajuste');
+                    return;
                 }
 
-                alert(resp.body.message || 'Ajuste registrado correctamente');
-                var modalEl = document.getElementById('adjustCostModal');
-                var modal = bootstrap.Modal.getInstance(modalEl);
-                if (modal) modal.hide();
-                // Recargar productos desde API
-                loadProducts();
-            })
-            .catch(function(err) {
-                console.error('Ajuste fallo:', err && err.message ? err.message : err);
-                alert('No se pudo registrar el ajuste: ' + (err && err.message ? err.message : 'error'));
-            })
-            .finally(function() {
+                var submitBtn = form.querySelector('button[type="submit"]');
+                var originalText = submitBtn ? submitBtn.innerHTML : null;
                 if (submitBtn) {
-                    submitBtn.disabled = false;
-                    if (originalText) submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Registrando...';
                 }
-            });
+
+                if (hasProductApi()) {
+                    MarketWorld.api.products.adjustCost(pid, { new_cost: newCost, reason: reason })
+                        .then(function(response) {
+                            if (response.success) {
+                                alert(response.message || 'Ajuste registrado correctamente');
+                                var modalEl = document.getElementById('adjustCostModal');
+                                var modal = bootstrap.Modal.getInstance(modalEl);
+                                if (modal) modal.hide();
+                                loadProducts();
+                            } else {
+                                alert('Error: ' + (response.message || 'No se pudo registrar el ajuste'));
+                            }
+                        })
+                        .catch(function(err) {
+                            showApiError(err, 'No se pudo registrar el ajuste de costo.');
+                        })
+                        .finally(function() {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                if (originalText) submitBtn.innerHTML = originalText;
+                            }
+                        });
+                } else {
+                    alert('Funcionalidad no disponible en modo local');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (originalText) submitBtn.innerHTML = originalText;
+                    }
+                }
             });
         };
 
@@ -764,14 +762,117 @@
         }
     }
 
-    // ======= EDITAR PRODUCTO =======
-    function editProduct(id) {
-        var product = getProductById(id);
-        if (!product) {
-            alert('Producto no encontrado');
+    // ======= VER DETALLE DE PRODUCTO =======
+    function viewProduct(id) {
+        if (!hasProductApi()) {
+            alert('Funcionalidad no disponible en modo local');
             return;
         }
-        
+
+        MarketWorld.api.products.getById(id)
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var p = response.data;
+                    var container = document.getElementById('detailContent');
+                    if (!container) return;
+
+                    var statusBadge = (p.estado === 'Activo') ? 
+                        '<span class="badge bg-success">Activo</span>' : 
+                        '<span class="badge bg-secondary">Inactivo</span>';
+
+                    container.innerHTML = `
+                        <div class="col-md-5 text-center mb-3">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.nombre)}&size=200&background=random" class="img-fluid rounded shadow-sm" alt="${p.nombre}">
+                        </div>
+                        <div class="col-md-7">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h4 class="mb-0">${p.nombre}</h4>
+                                ${statusBadge}
+                            </div>
+                            <p class="text-muted mb-3">SKU: <strong>${p.sku}</strong></p>
+                            <div class="mb-3">
+                                <h6>Descripción</h6>
+                                <p>${p.descripcion || 'Sin descripción'}</p>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Categoría</small>
+                                    <strong>${p.categoria || 'Sin categoría'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Unidad</small>
+                                    <strong>${p.unidad || 'Unidad'}</strong>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Precio Venta</small>
+                                    <strong class="text-success fs-5">$${formatCurrency(p.precio_venta)}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Costo Actual</small>
+                                    <strong>$${formatCurrency(p.precio_compra)}</strong>
+                                </div>
+                            </div>
+                            <div class="row mb-3 p-2 bg-light rounded">
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Stock</small>
+                                    <strong class="${p.stock <= p.stock_minimo ? 'text-danger' : 'text-success'}">${p.stock}</strong>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Mínimo</small>
+                                    <strong>${p.stock_minimo}</strong>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Proveedor</small>
+                                    <strong>${p.proveedor || 'N/A'}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    var btnEdit = document.getElementById('btnEditFromDetail');
+                    if (btnEdit) {
+                        btnEdit.onclick = function() {
+                            var modal = bootstrap.Modal.getInstance(document.getElementById('productDetailModal'));
+                            if (modal) modal.hide();
+                            editProduct(p.id);
+                        };
+                    }
+
+                    var detailModal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+                    detailModal.show();
+                }
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo cargar el detalle del producto.');
+            });
+    }
+
+    // ======= EDITAR PRODUCTO =======
+    function editProduct(id) {
+        if (!hasProductApi()) {
+            // Fallback local si no hay API
+            var product = getProductById(id);
+            if (!product) return;
+            populateProductForm(product);
+            return;
+        }
+
+        // Bloquear UI o mostrar spinner si fuera necesario
+        MarketWorld.api.products.getById(id)
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var p = mapApiProductToFrontend(response.data);
+                    populateProductForm(p);
+                }
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo obtener la información actualizada del producto.');
+            });
+    }
+
+    function populateProductForm(product) {
         document.getElementById('productId').value = product.id;
         document.getElementById('productCodigo').value = product.codigo;
         document.getElementById('productNombre').value = product.nombre;
@@ -1622,12 +1723,13 @@
         }
 
         if (inventoryPaginationState.isServerMode) {
-            currentPage = inventoryPaginationState.page;
-            itemsPerPage = inventoryPaginationState.perPage;
+            var currentPage = inventoryPaginationState.page;
+            var itemsPerPage = inventoryPaginationState.perPage;
             originalDisplayProducts(products);
             return;
         }
         
+        var itemsPerPage = inventoryPaginationState.perPage;
         var totalPages = Math.ceil(products.length / itemsPerPage);
         updatePaginationUI(totalPages);
         

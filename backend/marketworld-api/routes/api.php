@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\CostAdjustmentController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\CRMController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,15 @@ Route::prefix('v1')->group(function () {
         // Valorización por producto (precio_compra * stock)
         Route::get('products/valuation', [ProductController::class, 'valuation']);
         Route::apiResource('products', ProductController::class);
+
+        // === CRM ===
+        Route::prefix('crm')->group(function () {
+            Route::get('clientes', [CRMController::class, 'clientes']);
+            Route::get('oportunidades', [CRMController::class, 'oportunidades']);
+            Route::post('oportunidades', [CRMController::class, 'crearOportunidad']);
+            Route::put('oportunidades/{id}', [CRMController::class, 'actualizarOportunidad']);
+            Route::delete('oportunidades/{id}', [CRMController::class, 'eliminarOportunidad']);
+        });
 
         // === Clientes (CRM / Facturación) ===
         Route::apiResource('customers', CustomerController::class);

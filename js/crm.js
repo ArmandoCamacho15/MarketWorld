@@ -162,7 +162,7 @@
                 requestParams.estado = crmCustomerListState.estado;
             }
 
-            const response = await MarketWorld.api.customers.getAll(requestParams);
+            const response = await MarketWorld.api.crm.clientes(requestParams);
             const parsed = normalizeApiListResponse(response, {
                 current_page: crmCustomerListState.page,
                 per_page: crmCustomerListState.perPage,
@@ -285,73 +285,175 @@
         showClientSheet(clientName);
     }
 
-    function viewClientDetails(card) {
+    async function viewClientDetails(card) {
+        const clientId = card.getAttribute('data-client-id');
         const clientName = card.querySelector('h5').textContent;
-        console.log(`👁️ Ver detalles de: ${clientName}`);
+        if (!clientId) return;
         
-        // ======= CREAR MODAL DE DETALLES =======
-        const modal = document.createElement('div');
-        modal.className = 'modal fade show';
-        modal.style.display = 'block';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Detalles de ${clientName}</h5>
-                        <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Información Personal</h6>
-                                <p><strong>Email:</strong> ${card.querySelector('[class*="bi-envelope"]').parentElement.textContent.trim()}</p>
-                                <p><strong>Teléfono:</strong> ${card.querySelector('[class*="bi-telephone"]').parentElement.textContent.trim()}</p>
-                                <p><strong>Ciudad:</strong> ${card.querySelector('[class*="bi-geo-alt"]').parentElement.textContent.trim()}</p>
+        try {
+            const res = await MarketWorld.api.customers.getById(clientId);
+            if (!res.success) {
+                if (MarketWorld.notifications) MarketWorld.notifications.show('No se pudo cargar el cliente', 'error');
+                return;
+            }
+            const cliente = res.data;
+            const facturas = cliente.invoices || [];
+            
+            let facturasHtml = '';
+            if (facturas.length > 0) {
+                facturasHtml = facturas.map(f => `<tr><td>${f.issue_date || 'N/A'}</td><td>${f.invoice_number || f.id}</td><td>$${parseFloat(f.total_amount || 0).toLocaleString()}</td><td>${f.status || ''}</td></tr>`).join('');
+            } else {
+                facturasHtml = `<tr><td colspan="4" class="text-center">No hay compras registradas.</td></tr>`;
+            }
+
+            const modalHtml = `
+                <div class="modal fade" id="clientDetailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Detalles de ${cliente.nombre}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="col-md-6">
-                                <h6>Estadísticas</h6>
-                                <p><strong>Total Compras:</strong> $15,250</p>
-                                <p><strong>Última Compra:</strong> 15/06/2025</p>
-                                <p><strong>Compras Realizadas:</strong> 12</p>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Información Personal</h6>
+                                        <p><strong>Documento:</strong> ${cliente.tipo_documento || 'CC'} ${cliente.documento || ''}</p>
+                                        <p><strong>Email:</strong> ${cliente.email || 'N/A'}</p>
+                                        <p><strong>Teléfono:</strong> ${cliente.telefono || 'N/A'}</p>
+                                        <p><strong>Ciudad:</strong> ${cliente.ciudad || 'N/A'}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Estadísticas / CRM</h6>
+                                        <p><strong>Segmento:</strong> ${cliente.segmento || 'N/A'}</p>
+                                        <p><strong>Límite de Crédito:</strong> $${parseFloat(cliente.limite_credito || 0).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                <h6>Historial de Compras</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead><tr><th>Fecha</th><th>Factura</th><th>Monto</th><th>Estado</th></tr></thead>
+                                        <tbody>${facturasHtml}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button class="btn btn-primary btn-edit-client-modal">Editar Cliente</button>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cerrar</button>
-                        <button class="btn btn-primary">Editar Cliente</button>
+                </div>
+            `;
+            
+            const existingModal = document.getElementById('clientDetailsModal');
+            if (existingModal) existingModal.remove();
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modalEl = document.getElementById('clientDetailsModal');
+            const bsModal = new bootstrap.Modal(modalEl);
+            
+            modalEl.querySelector('.btn-edit-client-modal').addEventListener('click', () => {
+                bsModal.hide();
+                showEditClientModal(cliente);
+            });
+            
+            modalEl.addEventListener('hidden.bs.modal', () => { modalEl.remove(); });
+            bsModal.show();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function showEditClientModal(cliente) {
+        const modalHtml = `
+            <div class="modal fade" id="clientEditModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Editar Cliente: ${cliente.nombre}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editClientForm">
+                                <div class="mb-3">
+                                    <label>Nombre</label>
+                                    <input type="text" class="form-control" name="nombre" value="${cliente.nombre}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label>Email</label>
+                                    <input type="email" class="form-control" name="email" value="${cliente.email || ''}">
+                                </div>
+                                <div class="mb-3">
+                                    <label>Teléfono</label>
+                                    <input type="text" class="form-control" name="telefono" value="${cliente.telefono || ''}">
+                                </div>
+                                <div class="mb-3">
+                                    <label>Ciudad</label>
+                                    <input type="text" class="form-control" name="ciudad" value="${cliente.ciudad || ''}">
+                                </div>
+                                <div class="mb-3">
+                                    <label>Segmento</label>
+                                    <select class="form-select" name="segmento">
+                                        <option value="Premium" ${cliente.segmento === 'Premium' ? 'selected' : ''}>Premium</option>
+                                        <option value="Frecuente" ${cliente.segmento === 'Frecuente' ? 'selected' : ''}>Frecuente</option>
+                                        <option value="Corporativo" ${cliente.segmento === 'Corporativo' ? 'selected' : ''}>Corporativo</option>
+                                        <option value="Nuevo" ${cliente.segmento === 'Nuevo' ? 'selected' : ''}>Nuevo</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button class="btn btn-success btn-save-client">Guardar Cambios</button>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
         
-        document.body.appendChild(modal);
-    }
-
-    function contactClient(card) {
-        const clientName = card.querySelector('h5').textContent;
-        const email = card.querySelector('[class*="bi-envelope"]').parentElement.textContent.trim();
+        const existingModal = document.getElementById('clientEditModal');
+        if (existingModal) existingModal.remove();
         
-        console.log(`📧 Contactar a: ${clientName} (${email})`);
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modalEl = document.getElementById('clientEditModal');
+        const bsModal = new bootstrap.Modal(modalEl);
         
-        const action = confirm(`¿Deseas enviar un email a ${clientName}?`);
-        if (action) {
-            alert(`✅ Email enviado a ${email}`);
-        }
-    }
-
-    function showClientSheet(clientName) {
-        console.log(`📄 Mostrando ficha completa de: ${clientName}`);
-        // ======= CARGAR DATOS COMPLETOS DEL CLIENTE =======
+        modalEl.querySelector('.btn-save-client').addEventListener('click', async () => {
+            const form = document.getElementById('editClientForm');
+            const data = {
+                nombre: form.nombre.value,
+                email: form.email.value,
+                telefono: form.telefono.value,
+                ciudad: form.ciudad.value,
+                segmento: form.segmento.value
+            };
+            try {
+                const res = await MarketWorld.api.customers.update(cliente.id, data);
+                if (res.success) {
+                    if (MarketWorld.notifications) MarketWorld.notifications.show('Cliente actualizado', 'success');
+                    bsModal.hide();
+                    loadCustomersFromAPI();
+                } else {
+                    alert('Error al actualizar: ' + (res.message || ''));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+        
+        modalEl.addEventListener('hidden.bs.modal', () => { modalEl.remove(); });
+        bsModal.show();
     }
 
     // ======= FILTROS DE CLIENTES =======
     function initClientFilters() {
-        const btnFilter = document.querySelector('.btn-primary');
-        
-        if (btnFilter && btnFilter.textContent.includes('Filtrar')) {
-            btnFilter.addEventListener('click', applyClientFilters);
-        }
+        const buttons = document.querySelectorAll('.btn-primary');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Filtrar')) {
+                btn.addEventListener('click', applyClientFilters);
+            }
+        });
     }
 
     function applyClientFilters() {
@@ -375,7 +477,7 @@
 
     // ======= GESTIÓN DE OPORTUNIDADES =======
     function initOpportunityManagement() {
-        const opportunityRows = document.querySelectorAll('.data-table tbody tr');
+        const opportunityRows = document.querySelectorAll('#oportunidades .data-table tbody tr');
         
         opportunityRows.forEach(row => {
             row.style.cursor = 'pointer';
@@ -396,25 +498,216 @@
                 filterOpportunitiesByStage(stage);
             });
         });
-    }
 
-    function selectOpportunity(oppName, row) {
-        selectedOpportunity = oppName;
-        console.log(`💼 Oportunidad seleccionada: ${oppName}`);
-        
-        // ======= RESALTAR FILA =======
-        document.querySelectorAll('.data-table tbody tr').forEach(r => {
-            r.style.backgroundColor = '';
+        // ======= BOTÓN NUEVA OPORTUNIDAD =======
+        const buttons = document.querySelectorAll('.btn-primary');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Nueva Oportunidad')) {
+                btn.addEventListener('click', showCreateOpportunityModal);
+            }
         });
-        row.style.backgroundColor = '#f0f6ff';
-        
-        // ======= MOSTRAR SEGUIMIENTO =======
-        showOpportunityTracking(oppName);
+
+        loadOpportunitiesFromAPI();
     }
 
-    function showOpportunityTracking(oppName) {
-        console.log(`📈 Mostrando seguimiento de: ${oppName}`);
-        // ======= MOSTRAR SEGUIMIENTO DETALLADO =======
+    async function loadOpportunitiesFromAPI() {
+        try {
+            if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.crm) {
+                console.warn('[CRM] API CRM no disponible.');
+                return;
+            }
+            const respuesta = await MarketWorld.api.crm.oportunidades();
+            if (respuesta.success) {
+                renderizarOportunidades(respuesta.data);
+            }
+        } catch (error) {
+            console.error('[API] Error al cargar oportunidades:', error);
+        }
+    }
+
+    function showCreateOpportunityModal() {
+        const modalHtml = `
+            <div class="modal fade" id="createOppModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Nueva Oportunidad</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="createOppForm">
+                                <div class="mb-3">
+                                    <label>Título</label>
+                                    <input type="text" class="form-control" name="titulo" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label>ID del Cliente (opcional)</label>
+                                    <input type="number" class="form-control" name="customer_id">
+                                </div>
+                                <div class="mb-3">
+                                    <label>Valor Estimado</label>
+                                    <input type="number" step="0.01" class="form-control" name="valor_estimado" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label>Etapa</label>
+                                    <select class="form-select" name="etapa">
+                                        <option value="prospecto">Prospecto</option>
+                                        <option value="contactado">Contactado</option>
+                                        <option value="propuesta">Propuesta</option>
+                                        <option value="negociacion">Negociación</option>
+                                        <option value="ganado">Ganado</option>
+                                        <option value="perdido">Perdido</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label>Fecha Estimada Cierre</label>
+                                    <input type="date" class="form-control" name="fecha_estimada_cierre">
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button class="btn btn-primary btn-save-opp">Crear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('createOppModal');
+        if (existingModal) existingModal.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modalEl = document.getElementById('createOppModal');
+        const bsModal = new bootstrap.Modal(modalEl);
+        
+        modalEl.querySelector('.btn-save-opp').addEventListener('click', async () => {
+            const form = document.getElementById('createOppForm');
+            const data = {
+                titulo: form.titulo.value,
+                customer_id: form.customer_id.value || null,
+                valor_estimado: parseFloat(form.valor_estimado.value) || 0,
+                etapa: form.etapa.value,
+                fecha_estimada_cierre: form.fecha_estimada_cierre.value || null
+            };
+            try {
+                const res = await MarketWorld.api.crm.crearOportunidad(data);
+                if (res.success) {
+                    if (MarketWorld.notifications) MarketWorld.notifications.show('Oportunidad creada', 'success');
+                    bsModal.hide();
+                    loadOpportunitiesFromAPI();
+                } else {
+                    alert('Error: ' + (res.message || ''));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+        
+        modalEl.addEventListener('hidden.bs.modal', () => { modalEl.remove(); });
+        bsModal.show();
+    }
+
+    function renderizarOportunidades(oportunidades) {
+        const tbody = document.querySelector('#oportunidades .data-table tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (!oportunidades || oportunidades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay oportunidades registradas.</td></tr>';
+            return;
+        }
+
+        const stages = ['prospecto', 'contactado', 'propuesta', 'negociacion', 'ganado', 'perdido'];
+
+        oportunidades.forEach(opp => {
+            let progressClass = 'bg-success';
+            let progressValue = 50;
+
+            if (opp.etapa === 'ganado') {
+                progressValue = 100;
+            } else if (opp.etapa === 'perdido') {
+                progressClass = 'bg-danger';
+                progressValue = 0;
+            } else if (opp.etapa === 'prospecto') {
+                progressValue = 10;
+                progressClass = 'bg-secondary';
+            } else if (opp.etapa === 'contactado') {
+                progressValue = 30;
+                progressClass = 'bg-info';
+            } else if (opp.etapa === 'propuesta') {
+                progressValue = 60;
+                progressClass = 'bg-warning';
+            } else if (opp.etapa === 'negociacion') {
+                progressValue = 80;
+                progressClass = 'bg-primary';
+            }
+
+            const tr = document.createElement('tr');
+            
+            const stageOptions = stages.map(s => `<option value="${s}" ${s === opp.etapa ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('');
+
+            tr.innerHTML = `
+                <td>${opp.titulo}</td>
+                <td>${opp.customer ? opp.customer.nombre : 'Sin Cliente'}</td>
+                <td>$${parseFloat(opp.valor_estimado).toLocaleString()}</td>
+                <td>
+                    <select class="form-select form-select-sm stage-select" data-id="${opp.id}">
+                        ${stageOptions}
+                    </select>
+                </td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar ${progressClass}" role="progressbar" style="width: ${progressValue}%;"></div>
+                    </div>
+                    <div class="small text-center">${progressValue}%</div>
+                </td>
+                <td>${opp.fecha_estimada_cierre || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger btn-delete-opp" data-id="${opp.id}"><i class="bi bi-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Eventos para cambiar etapa y eliminar
+        tbody.querySelectorAll('.stage-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const id = e.target.getAttribute('data-id');
+                const newStage = e.target.value;
+                try {
+                    const res = await MarketWorld.api.crm.actualizarOportunidad(id, { etapa: newStage });
+                    if (res.success) {
+                        if (MarketWorld.notifications) MarketWorld.notifications.show('Etapa actualizada', 'success');
+                        loadOpportunitiesFromAPI();
+                    } else {
+                        if (MarketWorld.notifications) MarketWorld.notifications.show(res.message || 'Error', 'error');
+                        // revertir visualmente si hay error y es posible
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.btn-delete-opp').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                if (confirm('¿Estás seguro de eliminar esta oportunidad?')) {
+                    try {
+                        const res = await MarketWorld.api.crm.eliminarOportunidad(id);
+                        if (res.success) {
+                            if (MarketWorld.notifications) MarketWorld.notifications.show('Oportunidad eliminada', 'success');
+                            loadOpportunitiesFromAPI();
+                        } else {
+                            if (MarketWorld.notifications) MarketWorld.notifications.show(res.message || 'Error', 'error');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            });
+        });
     }
 
     function filterOpportunitiesByStage(stage) {
@@ -424,11 +717,12 @@
 
     // ======= SEGMENTACIÓN DE CLIENTES =======
     function initSegmentation() {
-        const btnNewSegment = document.querySelector('.btn-primary');
-        
-        if (btnNewSegment && btnNewSegment.textContent.includes('Nuevo Segmento')) {
-            btnNewSegment.addEventListener('click', createNewSegment);
-        }
+        const buttons = document.querySelectorAll('.btn-primary');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Nuevo Segmento')) {
+                btn.addEventListener('click', createNewSegment);
+            }
+        });
         
         // ======= BOTONES EDITAR/ELIMINAR SEGMENTOS =======
         const editButtons = document.querySelectorAll('.btn-outline-warning');
@@ -459,11 +753,12 @@
 
     // ======= CAMPAÑAS DE MARKETING =======
     function initCampaigns() {
-        const btnNewCampaign = document.querySelector('.btn-primary');
-        
-        if (btnNewCampaign && btnNewCampaign.textContent.includes('Nueva Campaña')) {
-            btnNewCampaign.addEventListener('click', createCampaign);
-        }
+        const buttons = document.querySelectorAll('.btn-primary');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Nueva Campaña')) {
+                btn.addEventListener('click', createCampaign);
+            }
+        });
         
         // ======= CHECKBOXES DE CANALES =======
         const channelCheckboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -518,62 +813,3 @@
     }
 
 })();
-
-
-
-let clientes = [
-    {
-        id: 1,
-        nombre: 'Juan Pérez García',
-        documento: 'CC 1234567890',
-        email: 'juan.perez@email.com',
-        telefono: '(601) 234 5678',
-        ciudad: 'Bogotá',
-        tipo: 'Persona Natural',
-        segmento: 'Premium',
-        estado: 'Activo'
-    }
-];
-
-let nextClientId = 2;
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log(' Sistema CRM iniciado');
-    
-    const btnNuevoCliente = document.querySelector('.btn-primary');
-    
-    if (btnNuevoCliente) {
-        btnNuevoCliente.addEventListener('click', function() {
-            console.log('➕ Botón Nuevo Cliente clickeado');
-            alert('Funcionalidad de agregar cliente en desarrollo');
-        });
-    }
-});
-
-function agregarCliente(datosCliente) {
-    const nuevoCliente = {
-        id: nextClientId++,
-        ...datosCliente,
-        estado: 'Activo'
-    };
-    
-    clientes.push(nuevoCliente);
-    console.log(' Cliente agregado:', nuevoCliente);
-}
-
-function editarCliente(id) {
-    const cliente = clientes.find(c => c.id === id);
-    if (cliente) {
-        console.log('✏️ Editando cliente:', cliente);
-    }
-}
-
-function eliminarCliente(id) {
-    if (confirm('¿Eliminar cliente?')) {
-        clientes = clientes.filter(c => c.id !== id);
-        console.log('🗑️ Cliente eliminado:', id);
-    }
-}
-
-window.editarCliente = editarCliente;
-window.eliminarCliente = eliminarCliente;

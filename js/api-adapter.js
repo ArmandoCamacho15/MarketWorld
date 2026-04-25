@@ -256,6 +256,13 @@
         stockBajo: function () {
             return apiFetch('/products/stock-bajo');
         },
+
+        adjustCost: function (id, data) {
+            return apiFetch('/products/' + id + '/adjust-cost', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
     };
 
     // -------------------------------------------------------
@@ -426,6 +433,32 @@
         }
     };
 
+    var CrmAPI = {
+        clientes: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/crm/clientes' + (query ? '?' + query : ''));
+        },
+        oportunidades: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/crm/oportunidades' + (query ? '?' + query : ''));
+        },
+        crearOportunidad: function (data) {
+            return apiFetch('/crm/oportunidades', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        actualizarOportunidad: function (id, data) {
+            return apiFetch('/crm/oportunidades/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        eliminarOportunidad: function (id) {
+            return apiFetch('/crm/oportunidades/' + id, { method: 'DELETE' });
+        }
+    };
+
     // -------------------------------------------------------
     // Exportar bajo el namespace global MarketWorld.api
     // -------------------------------------------------------
@@ -437,6 +470,7 @@
         purchases: PurchaseAPI,
         dashboard: DashboardAPI,
         reports: ReportAPI,
+        crm:       CrmAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         normalizeListResponse: normalizeListResponse,
