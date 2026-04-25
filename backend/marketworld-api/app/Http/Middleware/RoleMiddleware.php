@@ -13,15 +13,41 @@ class RoleMiddleware
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
-     * @param  string  $role
+     * @param  string  ...$roles
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!$request->user() || !$request->user()->hasRole($role)) {
+        $user = $request->user();
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permisos suficientes para acceder a esta ruta (Rol requerido: ' . $role . ').'
+                'message' => 'No autenticado.',
+                'data' => null,
+                'errors' => null,
+            ], 401);
+        }
+
+        $requiredRoles = collect($roles)
+            ->flatMap(static function (string $role): array {
+                return preg_split('/[|,]/', $role) ?: [];
+            })
+            ->map(static function (string $role): string {
+                return trim($role);
+            })
+            ->filter(static function (string $role): bool {
+                return $role !== '';
+            })
+            ->values()
+            ->all();
+
+        if (empty($requiredRoles) || !$user->hasAnyRole($requiredRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para realizar esta acción.',
+                'data' => null,
+                'errors' => null,
             ], 403);
         }
 

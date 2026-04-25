@@ -110,6 +110,10 @@
         return new URLSearchParams(normalized).toString();
     }
 
+    function buildQueryParams(params) {
+        return new URLSearchParams(Object.assign({}, params || {})).toString();
+    }
+
     function normalizeListResponse(response, fallback) {
         var fallbackMeta = Object.assign({
             total: 0,
@@ -399,6 +403,29 @@
         }
     };
 
+    var ReportAPI = {
+        salesSummary: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/sales-summary' + (query ? '?' + query : ''));
+        },
+        inventoryUtility: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/inventory-utility' + (query ? '?' + query : ''));
+        },
+        ventas: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/ventas' + (query ? '?' + query : ''));
+        },
+        inventario: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/inventario' + (query ? '?' + query : ''));
+        },
+        financiero: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/financiero' + (query ? '?' + query : ''));
+        }
+    };
+
     // -------------------------------------------------------
     // Exportar bajo el namespace global MarketWorld.api
     // -------------------------------------------------------
@@ -409,6 +436,7 @@
         invoices:  InvoiceAPI,
         purchases: PurchaseAPI,
         dashboard: DashboardAPI,
+        reports: ReportAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         normalizeListResponse: normalizeListResponse,

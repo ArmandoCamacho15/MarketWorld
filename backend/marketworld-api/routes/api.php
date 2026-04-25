@@ -37,6 +37,10 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:Administrador')->group(function () {
             Route::get('reports/sales-summary', [ReportController::class, 'salesSummary']);
             Route::get('reports/inventory-utility', [ReportController::class, 'inventoryUtility']);
+            // Dia 11: endpoints nuevos de reportes reales (compatibilidad temporal con legacy activa)
+            Route::get('reports/ventas', [ReportController::class, 'ventas']);
+            Route::get('reports/inventario', [ReportController::class, 'inventario']);
+            Route::get('reports/financiero', [ReportController::class, 'financiero']);
             // Ajustes de costo (registro y auditoría) - Solo Administrador
             Route::post('products/{id}/adjust-cost', [CostAdjustmentController::class, 'store']);
         });
