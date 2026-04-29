@@ -21,8 +21,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'apellido',
+        'telefono',
         'email',
         'password',
+        'estado',
     ]; // Se elimina api_token de fillable
 
     /**

@@ -353,6 +353,13 @@
     // -------------------------------------------------------
     var AuthAPI = {
 
+        register: function (data) {
+            return apiFetch('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+
         login: function (email, password) {
             return initCsrfCookie()
                 .then(function () {
@@ -459,6 +466,31 @@
         }
     };
 
+    var AdminUsersAPI = {
+        getAll: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/admin/users' + (query ? '?' + query : ''));
+        },
+        getById: function (id) {
+            return apiFetch('/admin/users/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/admin/users', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/admin/users/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        deactivate: function (id) {
+            return apiFetch('/admin/users/' + id, { method: 'DELETE' });
+        },
+    };
+
     // -------------------------------------------------------
     // Exportar bajo el namespace global MarketWorld.api
     // -------------------------------------------------------
@@ -471,6 +503,7 @@
         dashboard: DashboardAPI,
         reports: ReportAPI,
         crm:       CrmAPI,
+        adminUsers: AdminUsersAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         normalizeListResponse: normalizeListResponse,

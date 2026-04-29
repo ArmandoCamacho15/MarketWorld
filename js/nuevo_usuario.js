@@ -74,34 +74,37 @@
         
         if (hasErrors) return;
         
-        // --- Verificar email existente ---
-        if (MarketWorld.data.findUserByEmail(email.value.trim())) {
-            MarketWorld.utils.showModal('Email Registrado', 'Este correo electrónico ya se encuentra vinculado a una cuenta.', 'error');
-            showFieldError(email, 'Email ya registrado');
-            return;
-        }
-        
         // --- Registrar usuario ---
         setLoadingState(btnRegister, true);
-        
-        setTimeout(function() {
-            var result = MarketWorld.data.registerUser({
-                nombre: firstName.value.trim(),
-                apellido: lastName.value.trim(),
-                email: email.value.trim(),
-                password: password.value
-            });
-            
-            if (result.success) {
-                MarketWorld.utils.showModal('¡Registro Exitoso!', 'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.', 'success');
-                setTimeout(function() {
-                    window.location.href = 'Login.html';
-                }, 1500);
-            } else {
+        if (!MarketWorld.api || !MarketWorld.api.adminUsers) {
+            setLoadingState(btnRegister, false);
+            MarketWorld.utils.showModal('Error al registrar', 'API de usuarios no disponible.', 'error');
+            return;
+        }
+
+        MarketWorld.api.auth.register({
+            nombre: firstName.value.trim(),
+            apellido: lastName.value.trim(),
+            email: email.value.trim(),
+            telefono: phone.value.trim(),
+            password: password.value,
+        })
+            .then(function(result) {
+                if (result && result.success) {
+                    MarketWorld.utils.showModal('¡Registro Exitoso!', 'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.', 'success');
+                    setTimeout(function() {
+                        window.location.href = 'Login.html';
+                    }, 1500);
+                } else {
+                    setLoadingState(btnRegister, false);
+                    MarketWorld.utils.showModal('Error al registrar', (result && result.message) ? result.message : 'No se pudo registrar', 'error');
+                }
+            })
+            .catch(function(error) {
                 setLoadingState(btnRegister, false);
-                MarketWorld.utils.showModal('Error al registrar', result.message, 'error');
-            }
-        }, 1000);
+                var message = (error && error.body && error.body.message) ? error.body.message : error.message;
+                MarketWorld.utils.showModal('Error al registrar', message, 'error');
+            });
     }
 
     // --- Validar email ---

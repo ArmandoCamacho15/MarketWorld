@@ -3,12 +3,57 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
+    /**
+     * Registrar un usuario público con rol fijo Usuario.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:80',
+            'apellido' => 'required|string|max:80',
+            'email' => 'required|email|unique:users,email',
+            'telefono' => 'required|string|max:20',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['nombre'] . ' ' . $validated['apellido'],
+            'apellido' => $validated['apellido'],
+            'telefono' => $validated['telefono'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'estado' => 'Activo',
+        ]);
+
+        $role = Role::where('name', 'Usuario')->first();
+        if ($role) {
+            $user->syncRoles([$role->name]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario registrado correctamente.',
+            'data'    => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'rol' => $user->getRoleNames()->first() ?? 'Usuario',
+                ],
+            ],
+            'errors'  => null,
+        ], 201);
+    }
+
     /**
      * Iniciar sesión con Sanctum usando sesión por cookie HttpOnly.
      */

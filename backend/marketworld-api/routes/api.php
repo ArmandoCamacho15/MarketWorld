@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\CostAdjustmentController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\CRMController;
+use App\Http\Controllers\Api\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,7 @@ Route::get('/health', function () {
 Route::prefix('v1')->group(function () {
 
     // === Autenticación ===
+    Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
     
     // Rutas protegidas con Sanctum
@@ -50,6 +52,11 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
+        });
+
+        // === Administracion ===
+        Route::middleware('role:Administrador')->prefix('admin')->group(function () {
+            Route::apiResource('users', UserManagementController::class);
         });
 
         // === Productos (Inventario) ===

@@ -14,23 +14,26 @@ class RolesAndPermissionsSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Crear permisos básicos
-        Permission::create(['name' => 'ver reportes']);
-        Permission::create(['name' => 'gestionar compras']);
-        Permission::create(['name' => 'gestionar ventas']);
-        Permission::create(['name' => 'gestionar inventario']);
+        $verReportes = Permission::firstOrCreate(['name' => 'ver reportes']);
+        $gestionarCompras = Permission::firstOrCreate(['name' => 'gestionar compras']);
+        $gestionarVentas = Permission::firstOrCreate(['name' => 'gestionar ventas']);
+        $gestionarInventario = Permission::firstOrCreate(['name' => 'gestionar inventario']);
 
         // Crear roles y asignar permisos
         
         // Administrador: Todo
-        $role = Role::create(['name' => 'Administrador']);
-        $role->givePermissionTo(Permission::all());
+        $role = Role::firstOrCreate(['name' => 'Administrador']);
+        $role->syncPermissions(Permission::all());
 
         // Vendedor: Solo ventas y ver inventario
-        $role = Role::create(['name' => 'Vendedor']);
-        $role->givePermissionTo(['gestionar ventas', 'gestionar inventario']);
+        $role = Role::firstOrCreate(['name' => 'Vendedor']);
+        $role->syncPermissions([$gestionarVentas, $gestionarInventario]);
 
         // Bodeguero: Solo inventario y compras
-        $role = Role::create(['name' => 'Bodeguero']);
-        $role->givePermissionTo(['gestionar inventario', 'gestionar compras']);
+        $role = Role::firstOrCreate(['name' => 'Bodeguero']);
+        $role->syncPermissions([$gestionarInventario, $gestionarCompras]);
+
+        // Usuario: sin permisos especiales
+        Role::firstOrCreate(['name' => 'Usuario']);
     }
 }

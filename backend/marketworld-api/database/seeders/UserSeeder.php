@@ -14,8 +14,10 @@ class UserSeeder extends Seeder
             ['email' => 'admin@marketworld.com'],
             [
                 'name' => 'Admin MarketWorld',
+                'apellido' => 'Sistema',
                 // Evita exponer credenciales fijas en código fuente.
                 'password' => Hash::make(env('ADMIN_DEFAULT_PASSWORD', 'CambiarEnProduccion2026!')),
+                'estado' => 'Activo',
             ]
         );
 

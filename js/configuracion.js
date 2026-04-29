@@ -3,6 +3,8 @@
 (function() {
     'use strict';
 
+    var usersCache = [];
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Configuracion cargado');
         initUserManagement();
@@ -24,22 +26,37 @@
 
     // --- Cargar lista de usuarios ---
     function loadUsers() {
-        var users = MarketWorld.data.getUsers();
         var container = document.getElementById('usersList');
-        
         if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (users.length === 0) {
-            container.innerHTML = '<div class="alert alert-info">No hay usuarios registrados</div>';
+
+        if (!MarketWorld.api || !MarketWorld.api.adminUsers) {
+            container.innerHTML = '<div class="alert alert-warning">API de usuarios no disponible.</div>';
             return;
         }
-        
-        users.forEach(function(user) {
-            var userCard = createUserCard(user);
-            container.appendChild(userCard);
-        });
+
+        container.innerHTML = '<div class="alert alert-info">Cargando usuarios...</div>';
+
+        MarketWorld.api.adminUsers.getAll({ per_page: 100 })
+            .then(function(response) {
+                var parsed = MarketWorld.api.normalizeListResponse(response, { per_page: 100, current_page: 1 });
+                usersCache = parsed.items || [];
+
+                container.innerHTML = '';
+
+                if (!usersCache.length) {
+                    container.innerHTML = '<div class="alert alert-info">No hay usuarios registrados</div>';
+                    return;
+                }
+
+                usersCache.forEach(function(user) {
+                    var userCard = createUserCard(user);
+                    container.appendChild(userCard);
+                });
+            })
+            .catch(function(error) {
+                console.error('[CRM] Error al cargar usuarios:', error);
+                container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar los usuarios.</div>';
+            });
     }
 
     // --- Crear tarjeta de usuario ---
@@ -182,32 +199,39 @@
             userData.password = password;
         }
 
-        var result;
-        if (userId) {
-            result = MarketWorld.data.updateUser(userId, userData);
-        } else {
-            result = MarketWorld.data.registerUser(userData);
-            
-            // Notificar nuevo usuario registrado
-            if (result.success && typeof MarketWorld.notifications !== 'undefined') {
-                MarketWorld.notifications.notifyNewUser(nombre + ' ' + apellido);
-            }
+        if (!MarketWorld.api || !MarketWorld.api.adminUsers) {
+            alert('API de usuarios no disponible');
+            return;
         }
 
-        if (result.success) {
-            alert(result.message);
-            loadUsers();
-            var modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
-            if (modal) modal.hide();
-        } else {
-            alert('Error: ' + result.message);
-        }
+        var request = userId
+            ? MarketWorld.api.adminUsers.update(userId, userData)
+            : MarketWorld.api.adminUsers.create(userData);
+
+        request
+            .then(function(result) {
+                if (result && result.success) {
+                    if (!userId && typeof MarketWorld.notifications !== 'undefined') {
+                        MarketWorld.notifications.notifyNewUser(nombre + ' ' + apellido);
+                    }
+                    alert(result.message || 'Usuario guardado');
+                    loadUsers();
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
+                    if (modal) modal.hide();
+                } else {
+                    alert('Error: ' + (result && result.message ? result.message : 'No se pudo guardar'));
+                }
+            })
+            .catch(function(error) {
+                var message = (error && error.body && error.body.message) ? error.body.message : error.message;
+                alert('Error: ' + message);
+            });
     }
 
     // Editar usuario
     function editUser(id) {
         console.log('editUser llamado con id:', id);
-        var user = MarketWorld.data.findUserById(id);
+        var user = usersCache.find(function(item) { return item.id === id; });
         console.log('Usuario encontrado:', user);
         if (!user) {
             alert('Usuario no encontrado');
@@ -231,36 +255,49 @@
     // Cambiar estado
     function toggleStatus(id) {
         console.log('toggleStatus llamado con id:', id);
-        var user = MarketWorld.data.findUserById(id);
+        var user = usersCache.find(function(item) { return item.id === id; });
         console.log('Usuario encontrado:', user);
         if (!user) return;
         
         var accion = user.estado === 'Activo' ? 'desactivar' : 'activar';
         if (confirm('¿Seguro que deseas ' + accion + ' a ' + user.nombre + '?')) {
-            var result = MarketWorld.data.toggleUserStatus(id);
-            if (result.success) {
-                loadUsers();
-            } else {
-                alert('Error: ' + result.message);
-            }
+            var nuevoEstado = user.estado === 'Activo' ? 'Inactivo' : 'Activo';
+            MarketWorld.api.adminUsers.update(id, { estado: nuevoEstado })
+                .then(function(result) {
+                    if (result && result.success) {
+                        loadUsers();
+                    } else {
+                        alert('Error: ' + (result && result.message ? result.message : 'No se pudo actualizar'));
+                    }
+                })
+                .catch(function(error) {
+                    var message = (error && error.body && error.body.message) ? error.body.message : error.message;
+                    alert('Error: ' + message);
+                });
         }
     }
 
     // Eliminar usuario
     function deleteUserConfirm(id) {
         console.log('deleteUserConfirm llamado con id:', id);
-        var user = MarketWorld.data.findUserById(id);
+        var user = usersCache.find(function(item) { return item.id === id; });
         console.log('Usuario encontrado:', user);
         if (!user) return;
         
         if (confirm('¿ELIMINAR permanentemente a ' + user.nombre + ' ' + user.apellido + '?\n\nEsta acción no se puede deshacer.')) {
-            var result = MarketWorld.data.deleteUser(id);
-            if (result.success) {
-                alert(result.message);
-                loadUsers();
-            } else {
-                alert('Error: ' + result.message);
-            }
+            MarketWorld.api.adminUsers.deactivate(id)
+                .then(function(result) {
+                    if (result && result.success) {
+                        alert(result.message || 'Usuario desactivado');
+                        loadUsers();
+                    } else {
+                        alert('Error: ' + (result && result.message ? result.message : 'No se pudo desactivar'));
+                    }
+                })
+                .catch(function(error) {
+                    var message = (error && error.body && error.body.message) ? error.body.message : error.message;
+                    alert('Error: ' + message);
+                });
         }
     }
 
@@ -295,7 +332,7 @@
         var filterEstado = document.getElementById('filterEstado').value.toLowerCase();
         var filterSearch = document.getElementById('filterSearch').value.toLowerCase();
         
-        var users = MarketWorld.data.getUsers();
+        var users = usersCache.slice();
         
         var filteredUsers = users.filter(function(user) {
             var matchRol = !filterRol || user.rol.toLowerCase() === filterRol;
