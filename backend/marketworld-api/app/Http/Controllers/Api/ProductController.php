@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,8 +17,19 @@ class ProductController extends Controller
         $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
         $query = Product::query();
 
+        $categoryFilter = null;
+
+        if ($request->filled('categoria_id')) {
+            $category = Category::find($request->categoria_id);
+            $categoryFilter = $category ? $category->nombre : '__invalid__';
+        }
+
         if ($request->filled('categoria')) {
-            $query->where('categoria', $request->categoria);
+            $categoryFilter = $request->categoria;
+        }
+
+        if ($categoryFilter !== null) {
+            $query->where('categoria', trim($categoryFilter));
         }
 
         if ($request->filled('estado')) {

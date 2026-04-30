@@ -3,25 +3,19 @@
     'use strict';
 
     let salesChart, categoriesChart, incomeExpenseChart;
-    const INVOICES_STORAGE_KEY = 'marketworld_invoices';
-    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
 
     document.addEventListener('DOMContentLoaded', async () => {
         console.log(' Módulo Dashboard cargado (Producción)');
         
-        await sincronizarDashboardConApi();
         // Inicializar
         initCharts();
         initDateFilters();
         initKPIs();
         initCalendar();
         renderRecentTransactions();
-        applyRealtimeDashboardData();
-        
-        // Cargar datos reales de la API (endpoint consolidado, si existe)
+
+        // Cargar datos reales de la API (endpoint consolidado)
         fetchDashboardStats();
-        // Obtener valorización detallada por producto y compararla con el cálculo local
-        try { fetchProductsValuation(); } catch (e) { console.warn('fetchProductsValuation fallo:', e); }
         
         // --- Inicializar sistema de notificaciones ---
         if (typeof MarketWorld.notifications !== 'undefined') {
@@ -29,74 +23,6 @@
         }
     });
 
-    function extractDataArray(payload) {
-        if (Array.isArray(payload)) return payload;
-        if (payload && Array.isArray(payload.data)) return payload.data;
-        if (payload && payload.data && Array.isArray(payload.data.data)) return payload.data.data;
-        return [];
-    }
-
-    // Trae la valorización por producto desde el backend y compara con el cálculo local
-    async function fetchProductsValuation() {
-        try {
-            if (typeof MarketWorld === 'undefined' || !MarketWorld.api) {
-                // intentar fetch directo
-            }
-            var token = localStorage.getItem('marketworld_auth_token');
-            if (!token) return;
-
-            var headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
-            var res = await fetch('http://127.0.0.1:8000/api/v1/products/valuation', { headers });
-            if (!res.ok) {
-                console.warn('No se pudo obtener valorización por producto desde API:', res.status);
-                return;
-            }
-
-            var body = await res.json();
-            var apiProducts = Array.isArray(body.data) ? body.data : (Array.isArray(body) ? body : []);
-            if (!apiProducts || apiProducts.length === 0) return;
-
-            // Mapear por SKU o id
-            var apiById = new Map();
-            apiProducts.forEach(function(p) { apiById.set(String(p.id), p); });
-
-            var local = getProducts() || [];
-            var discrepancies = [];
-
-            local.forEach(function(lp) {
-                var id = String(lp.id || lp.id);
-                var apiP = apiById.get(id);
-                if (!apiP) return;
-
-                var apiVal = parseFloat(apiP.valuation || 0) || 0;
-                var unitCost = (typeof lp.costo === 'number' && !isNaN(lp.costo)) ? lp.costo : (parseFloat(lp.costo) || 0);
-                if (!unitCost) unitCost = (typeof lp.precio === 'number' && !isNaN(lp.precio)) ? lp.precio : (parseFloat(lp.precio) || 0);
-                var stock = parseFloat(lp.stock || 0) || 0;
-                var localVal = unitCost * stock;
-
-                var diff = Math.abs(localVal - apiVal);
-                var pct = apiVal > 0 ? (diff / apiVal) * 100 : (localVal > 0 ? 100 : 0);
-
-                if (pct > 2 || diff > 1000) {
-                    discrepancies.push({ id: lp.id, sku: lp.codigo || lp.sku || '', nombre: lp.nombre, stock: stock, localVal: Math.round(localVal), apiVal: Math.round(apiVal), diff: Math.round(diff), pct: Number(pct.toFixed(2)) });
-                }
-            });
-
-            if (discrepancies.length > 0) {
-                var msg = 'Discrepancias por producto detectadas: ' + discrepancies.length + '. Revisa consola para detalles.';
-                if (typeof MarketWorld !== 'undefined' && MarketWorld.utils && typeof MarketWorld.utils.showNotification === 'function') {
-                    MarketWorld.utils.showNotification(msg, 'warning', 10000);
-                } else {
-                    alert(msg);
-                }
-                console.table(discrepancies);
-            } else {
-                console.log('[Valuation] No se detectaron discrepancias significativas entre API y cálculo local.');
-            }
-        } catch (e) {
-            console.warn('Error trayendo valorización por producto:', e && e.message ? e.message : e);
-        }
-    }
 
     // Función para imprimir el contenido del modal (misma firma que en facturación)
     function imprimirFactura() {
@@ -127,255 +53,11 @@
     }
     window.imprimirFactura = imprimirFactura;
 
-    function parseInvoiceDate(invoice) {
-        const raw = invoice.created_at || invoice.fecha || invoice.fechaCreacion || invoice.updated_at;
-        const d = raw ? new Date(raw) : null;
-        return d instanceof Date && !isNaN(d.getTime()) ? d : null;
-    }
-
-    function parseInvoiceTotal(invoice) {
-        const value = parseFloat(invoice.total || invoice.monto_total || 0);
-        return isNaN(value) ? 0 : value;
-    }
-
-    function getActiveInvoices() {
-        const invoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
-            ? MarketWorld.data.getInvoices()
-            : [];
-
-        return invoices.filter(function(inv) {
-            const estado = String(inv && inv.estado ? inv.estado : '').toLowerCase();
-            return estado !== 'anulada' && estado !== 'cancelada';
-        });
-    }
-
-    function getProducts() {
-        return (typeof MarketWorld !== 'undefined' && MarketWorld.data)
-            ? MarketWorld.data.getProducts()
-            : [];
-    }
-
-    async function sincronizarDashboardConApi() {
-        try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) return;
-
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            };
-
-            const [productsRes, invoicesRes] = await Promise.all([
-                fetch('http://127.0.0.1:8000/api/v1/products', { headers }),
-                fetch('http://127.0.0.1:8000/api/v1/invoices', { headers })
-            ]);
-
-            if (productsRes.ok) {
-                const productsBody = await productsRes.json();
-                const apiProducts = extractDataArray(productsBody);
-                if (apiProducts.length > 0 && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                    const localProducts = MarketWorld.data.getProducts();
-                    const byCode = new Map();
-
-                    localProducts.forEach(function(product) {
-                        if (product && product.codigo) {
-                            byCode.set(String(product.codigo).toLowerCase(), product);
-                        }
-                    });
-
-                    apiProducts.forEach(function(apiProduct) {
-                        const mapped = {
-                            id: apiProduct.id,
-                            codigo: apiProduct.sku || '',
-                            nombre: apiProduct.nombre || '',
-                            descripcion: apiProduct.descripcion || '',
-                            categoria: apiProduct.categoria || 'General',
-                            precio: parseFloat(apiProduct.precio_venta || 0),
-                            costo: parseFloat(apiProduct.precio_compra || 0),
-                            stock: parseInt(apiProduct.stock || 0, 10),
-                            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
-                            unidad: apiProduct.unidad || 'Unidad',
-                            proveedor: apiProduct.proveedor || '',
-                            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
-                            activo: (apiProduct.estado || 'Activo') === 'Activo'
-                        };
-
-                        if (mapped.codigo) {
-                            byCode.set(String(mapped.codigo).toLowerCase(), mapped);
-                        }
-                    });
-
-                    var mergedProducts = Array.from(byCode.values());
-                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(mergedProducts));
-
-                    // Diagnóstico: log de sincronización y conteo de stock bajo
-                    try {
-                        const stored = mergedProducts;
-                        const lowStockCount = stored.filter(p => (parseInt(p.stock || 0, 10) || 0) <= (parseInt(p.stockMinimo || 0, 10) || 0) && p.activo).length;
-                        console.log('[Dashboard sync] apiProducts:', apiProducts.length, 'localProducts(before):', localProducts.length, 'merged:', stored.length, 'lowStockCount:', lowStockCount);
-                        if (stored.length > 0) {
-                            console.log('[Dashboard sync] sample product types:', Object.keys(stored[0]).reduce((acc,k)=>{acc[k]=typeof stored[0][k];return acc;},{}));
-                        }
-                    } catch (e) {
-                        console.warn('[Dashboard sync] diagnóstico fallido:', e.message || e);
-                    }
-                }
-            }
-
-            if (invoicesRes.ok) {
-                const invoicesBody = await invoicesRes.json();
-                const apiInvoices = extractDataArray(invoicesBody);
-                if (apiInvoices.length > 0) {
-                    const merged = [];
-                    const byNumber = new Map();
-                    const localInvoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
-                        ? MarketWorld.data.getInvoices()
-                        : [];
-
-                    localInvoices.forEach(function(inv) {
-                        const key = String(inv.numero_factura || inv.numero || inv.id || '').toLowerCase();
-                        if (key) byNumber.set(key, inv);
-                    });
-
-                    // Filtrar facturas de prueba (QA/TEST) y mapear
-                    apiInvoices.forEach(function(apiInv) {
-                        const rawNumber = String(apiInv.numero_factura || apiInv.numero || apiInv.id || '');
-                        const rawCustomer = String(apiInv.cliente_nombre || apiInv.customer_name || (apiInv.customer && apiInv.customer.nombre) || '');
-                        // Omitir facturas de prueba por patrón en número o cliente
-                        if (/qa|test|inv-test|test-/i.test(rawNumber) || /qa|test/i.test(rawCustomer)) {
-                            return;
-                        }
-
-                        const mapped = {
-                            id: apiInv.id,
-                            numero_factura: apiInv.numero_factura || apiInv.numero || '',
-                            fechaCreacion: apiInv.created_at || apiInv.fecha || new Date().toISOString(),
-                            fecha: apiInv.fecha || apiInv.created_at || new Date().toISOString(),
-                            total: parseFloat(apiInv.total || apiInv.total_amount || 0),
-                            estado: apiInv.estado || 'Pagada',
-                            cliente_nombre: apiInv.cliente_nombre || apiInv.customer_name || (apiInv.customer && apiInv.customer.nombre) || 'Consumidor Final',
-                            items: apiInv.items || apiInv.lines || []
-                        };
-
-                        const key = String(mapped.numero_factura || mapped.id || '').toLowerCase();
-                        if (key) {
-                            byNumber.set(key, mapped);
-                        }
-                    });
-
-                    byNumber.forEach(function(value) {
-                        merged.push(value);
-                    });
-
-                    // Ordenar por fecha desc y mantener las 10 más recientes
-                    merged.sort(function(a,b) {
-                        const da = new Date(a.fecha || a.fechaCreacion || 0).getTime() || 0;
-                        const db = new Date(b.fecha || b.fechaCreacion || 0).getTime() || 0;
-                        return db - da;
-                    });
-                    const recent = merged.slice(0, 10);
-                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(recent));
-                }
-            }
-        } catch (error) {
-            console.warn('No se pudieron sincronizar datos del dashboard desde API:', error.message || error);
-        }
-    }
-
-    function applyRealtimeDashboardData() {
-        const invoices = getActiveInvoices();
-        const products = getProducts();
-
-        updateKpisFromRealtimeData(invoices, products);
-        updateSalesChartFromInvoices(invoices);
-        renderRecentTransactions(invoices);
-    }
-
-    function updateKpisFromRealtimeData(invoices, products) {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        const monthlySales = invoices
-            .filter(function(inv) {
-                const d = parseInvoiceDate(inv);
-                return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-            })
-            .reduce(function(sum, inv) { return sum + parseInvoiceTotal(inv); }, 0);
-
-        const totalStock = products.reduce(function(sum, p) {
-            return sum + (parseInt(p && p.stock, 10) || 0);
-        }, 0);
-
-        document.querySelectorAll('.kpi-card').forEach(function(card) {
-            const labelEl = card.querySelector('.kpi-label');
-            const valueEl = card.querySelector('.kpi-value');
-            const trendEl = card.querySelector('.kpi-trend');
-            if (!labelEl || !valueEl) return;
-
-            const label = labelEl.textContent.trim().toLowerCase();
-            if (label === 'ventas totales') {
-                valueEl.textContent = `$${Math.round(monthlySales).toLocaleString('es-CO')}`;
-                if (trendEl) trendEl.textContent = 'Mes actual';
-            }
-
-            if (label === 'productos en stock') {
-                valueEl.textContent = Math.round(totalStock).toLocaleString('es-CO');
-                if (trendEl) trendEl.textContent = 'Actualizado';
-            }
-        });
-    }
-
-    function updateSalesChartFromInvoices(invoices) {
-        if (!salesChart) return;
-
-        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        const now = new Date();
-        const year = now.getFullYear();
-        const totals = new Array(12).fill(0);
-
-        invoices.forEach(function(inv) {
-            const d = parseInvoiceDate(inv);
-            if (!d || d.getFullYear() !== year) return;
-            totals[d.getMonth()] += parseInvoiceTotal(inv);
-        });
-
-        salesChart.data.labels = months;
-        salesChart.data.datasets[0].label = `Ventas ${year}`;
-        salesChart.data.datasets[0].data = totals;
-        salesChart.update();
-    }
 
     async function fetchDashboardStats() {
         try {
             if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.dashboard) {
                 console.warn('Adaptador de API no disponible para Dashboard stats');
-                // intentar fetch directo al backend si hay token
-                const token = localStorage.getItem('marketworld_auth_token');
-                if (!token) {
-                    console.warn('No hay token de autenticación disponible para solicitar stats directas.');
-                    return;
-                }
-
-                try {
-                    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
-                    const res = await fetch('http://127.0.0.1:8000/api/v1/products/stock-bajo', { headers });
-                    if (res.ok) {
-                        const body = await res.json();
-                        const products = Array.isArray(body.data) ? body.data : (Array.isArray(body) ? body : []);
-                        const stats = {
-                            low_stock_count: products.length,
-                            products_low: products
-                        };
-                        console.log('Dashboard: obtenido low_stock directamente del endpoint:', stats.low_stock_count);
-                        updateDashboardUI(stats);
-                        return;
-                    } else {
-                        console.warn('Fetch directo a /products/stock-bajo falló con status', res.status);
-                    }
-                } catch (err) {
-                    console.warn('Error al intentar fetch directo de low_stock:', err && err.message ? err.message : err);
-                }
                 return;
             }
 
@@ -392,29 +74,6 @@
                 console.warn('Error llamando MarketWorld.api.dashboard.getStats():', e && e.message ? e.message : e);
             }
 
-            // Si adaptador no funcionó, intentar fetch directo a products/stock-bajo
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) {
-                console.warn('No hay token para solicitar datos directos al backend.');
-                return;
-            }
-
-            try {
-                const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
-                const res2 = await fetch('http://127.0.0.1:8000/api/v1/products/stock-bajo', { headers });
-                if (res2.ok) {
-                    const body2 = await res2.json();
-                    const products = Array.isArray(body2.data) ? body2.data : (Array.isArray(body2) ? body2 : []);
-                    const stats2 = { low_stock_count: products.length, products_low: products };
-                    console.log('Dashboard: fallback directo low_stock count=', stats2.low_stock_count);
-                    updateDashboardUI(stats2);
-                    return;
-                } else {
-                    console.warn('Fetch fallback a /products/stock-bajo falló con status', res2.status);
-                }
-            } catch (err) {
-                console.warn('Error en fetch fallback de low_stock:', err && err.message ? err.message : err);
-            }
         } catch (error) {
             console.error('Error fetching dashboard stats via adapter:', error);
         }
@@ -422,18 +81,6 @@
 
     function updateDashboardUI(data) {
         if (!data) return;
-
-        // Si el backend no envía low_stock_count, calcular desde el almacenamiento local
-        if (typeof data.low_stock_count === 'undefined' || data.low_stock_count === null) {
-            try {
-                const localProducts = getProducts() || [];
-                const computed = localProducts.filter(p => (parseInt(p.stock || 0, 10) || 0) <= (parseInt(p.stockMinimo || p.stock_minimo || 0, 10) || 0) && (p.activo === undefined ? true : !!p.activo)).length;
-                data.low_stock_count = computed;
-                console.log('[Dashboard] low_stock_count calculado localmente:', computed);
-            } catch (e) {
-                data.low_stock_count = 0;
-            }
-        }
 
         // Actualizar KPIs con IDs específicos si existen, o por etiquetas
         const kpiCards = document.querySelectorAll('.kpi-card');
@@ -489,8 +136,7 @@
             var combinedLowMinEl = document.getElementById('kpiLowStockMin');
 
             if (combinedCard && combinedProductsEl && combinedLowCountEl && combinedLowMinEl) {
-                var productsLocal = getProducts() || [];
-                var productsForThreshold = Array.isArray(data.products_low) && data.products_low.length ? data.products_low : productsLocal;
+            var productsForThreshold = Array.isArray(data.products_low) ? data.products_low : [];
 
                 // calcular un valor de referencia para "stock mínimo" (mínimo entre los stockMinimo conocidos)
                 var minThreshold = productsForThreshold.reduce(function(acc, p) {
@@ -506,8 +152,6 @@
                 // también actualizar el número total de productos
                 if (data.total_products !== undefined) {
                     combinedProductsEl.textContent = parseInt(data.total_products, 10).toLocaleString();
-                } else {
-                    combinedProductsEl.textContent = (productsLocal || []).length.toLocaleString();
                 }
 
                 // resaltar visualmente si hay stock bajo
@@ -520,22 +164,13 @@
         } catch (e) {
             console.warn('No se pudo actualizar tarjeta combinada de inventario:', e && e.message ? e.message : e);
         }
-        // Asegurar que cada KPI muestre datos reales (API -> fallback local)
+        // Asegurar que cada KPI muestre datos reales (API)
         try {
             // Ventas
             var elSales = document.getElementById('kpiSales');
             if (elSales) {
                 if (data.sales_month !== undefined) {
                     elSales.textContent = `$${parseFloat(data.sales_month).toLocaleString('es-CO')}`;
-                } else {
-                    // fallback: calcular ventas del mes desde facturas locales
-                    var invoices = getActiveInvoices();
-                    var now = new Date();
-                    var monthly = invoices.filter(function(inv) {
-                        var d = parseInvoiceDate(inv);
-                        return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                    }).reduce(function(sum, inv) { return sum + parseInvoiceTotal(inv); }, 0);
-                    elSales.textContent = `$${Math.round(monthly).toLocaleString('es-CO')}`;
                 }
             }
 
@@ -544,27 +179,6 @@
             if (elInventoryValue) {
                 if (data.inventory_value !== undefined) {
                     elInventoryValue.textContent = `$${parseFloat(data.inventory_value).toLocaleString('es-CO')}`;
-                    // Comparar valor reportado por API vs cálculo local
-                    try {
-                        compareInventoryValues(parseFloat(data.inventory_value) || 0);
-                    } catch (e) {
-                        console.warn('compareInventoryValues fallo:', e && e.message ? e.message : e);
-                    }
-                } else {
-                    // calcular fallback desde productos locales
-                    try {
-                        var prod = getProducts();
-                        var invVal = (prod || []).reduce(function(sum, p) {
-                            var stock = parseFloat(p.stock || p.cantidad || 0) || 0;
-                            var costo = parseFloat(p.costo || p.precio_compra || p.precio || 0) || 0;
-                            return sum + (stock * costo);
-                        }, 0);
-                        elInventoryValue.textContent = `$${Math.round(invVal).toLocaleString('es-CO')}`;
-                        // Si no hay valor por API, aún ejecutar comparación con 0 (no reportado)
-                        try { compareInventoryValues(null); } catch (e) { /* ignore */ }
-                    } catch (e) {
-                        elInventoryValue.textContent = `$0`;
-                    }
                 }
             }
 
@@ -573,8 +187,6 @@
             if (elClients) {
                 if (data.total_customers !== undefined) {
                     elClients.textContent = parseInt(data.total_customers, 10).toLocaleString();
-                } else if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.getCustomers === 'function') {
-                    elClients.textContent = (MarketWorld.data.getCustomers() || []).length.toLocaleString();
                 }
             }
 
@@ -583,45 +195,10 @@
             if (elProducts) {
                 if (data.total_products !== undefined) {
                     elProducts.textContent = parseInt(data.total_products, 10).toLocaleString();
-                } else {
-                    elProducts.textContent = (getProducts() || []).length.toLocaleString();
                 }
             }
         } catch (e) {
             console.warn('No se pudo sincronizar valores KPI por id:', e && e.message ? e.message : e);
-        }
-    }
-
-    // Comparar inventory_value del backend con el cálculo local y mostrar alerta si difieren.
-    function compareInventoryValues(apiValue) {
-        var products = getProducts() || [];
-        var localValue = products.reduce(function(sum, p) {
-            var unitCost = (typeof p.costo === 'number' && !isNaN(p.costo)) ? p.costo : (parseFloat(p.costo) || 0);
-            if (!unitCost) unitCost = (typeof p.precio === 'number' && !isNaN(p.precio)) ? p.precio : (parseFloat(p.precio) || 0);
-            var stock = parseFloat(p.stock || 0) || 0;
-            return sum + (unitCost * stock);
-        }, 0);
-
-        // Si apiValue es null o undefined no mostrar alerta, solo registrar
-        if (apiValue === null || typeof apiValue === 'undefined') {
-            console.log('[Dashboard] API inventory_value no disponible; cálculo local =', Math.round(localValue));
-            return;
-        }
-
-        var diff = Math.abs(localValue - apiValue);
-        var pct = apiValue > 0 ? (diff / apiValue) : (localValue > 0 ? 1 : 0);
-
-        // Umbral: 2% o diferencia absoluta > 1000
-        if (pct > 0.02 || diff > 1000) {
-            var message = 'Discrepancia detectada entre backend y cálculo local del valor de inventario. Backend: $' + Math.round(apiValue).toLocaleString('es-CO') + ', Local: $' + Math.round(localValue).toLocaleString('es-CO') + '. Revisa precios de compra y sincronización.';
-            console.warn('Dashboard discrepancy:', message);
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.utils && typeof MarketWorld.utils.showNotification === 'function') {
-                MarketWorld.utils.showNotification(message, 'warning', 10000);
-            } else {
-                alert(message);
-            }
-        } else {
-            console.log('[Dashboard] inventory_value consistente. diferencia=', Math.round(diff));
         }
     }
 
@@ -831,22 +408,10 @@
         const tbody = document.querySelector('.transaction-table tbody');
         if (!tbody) return;
 
-        // Si data viene de la API, tiene una estructura distinta que getActiveInvoices() local
+        // Datos mapeados desde DashboardController backend
         let transactions = [];
-        
         if (Array.isArray(optionalData)) {
-            // Datos mapeados desde DashboardController backend
             transactions = optionalData;
-        } else {
-            // Fallback a local storage si no hay API
-            const invoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
-                ? MarketWorld.data.getInvoices()
-                : [];
-                
-            transactions = invoices.filter(function(inv) {
-                const estado = String(inv && inv.estado ? inv.estado : '').toLowerCase();
-                return estado !== 'anulada' && estado !== 'cancelada';
-            }).slice(0, 5);
         }
 
         if (transactions.length === 0) {
@@ -917,11 +482,14 @@
 
             // Si no obtuvimos datos vía adaptador, intentar fetch directo
             if (!invoiceData) {
-                const token = localStorage.getItem('marketworld_auth_token');
-                const headers = { 'Accept': 'application/json' };
-                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const baseUrl = (MarketWorld && MarketWorld.api && MarketWorld.api.BASE_URL)
+                    ? MarketWorld.api.BASE_URL
+                    : 'http://127.0.0.1:8000/api/v1';
                 try {
-                    const resp = await fetch((MarketWorld && MarketWorld.api && MarketWorld.api.BASE_URL ? MarketWorld.api.BASE_URL : 'http://127.0.0.1:8000/api/v1') + '/invoices/' + invoiceId, { headers });
+                    const resp = await fetch(baseUrl + '/invoices/' + invoiceId, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
                     if (resp.ok) {
                         const body = await resp.json();
                         invoiceData = body && (body.data || body) ? (body.data || body) : null;

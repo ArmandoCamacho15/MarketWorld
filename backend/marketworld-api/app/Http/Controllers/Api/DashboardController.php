@@ -7,8 +7,6 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Customer;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -46,10 +44,16 @@ class DashboardController extends Controller
                 'purchases_month' => Purchase::whereMonth('fecha', $today->month)
                     ->whereYear('fecha', $today->year)
                     ->sum('total'),
-                'low_stock_count' => Product::whereRaw('stock <= stock_minimo')->count(),
+                'low_stock_count' => Product::whereColumn('stock', '<=', 'stock_minimo')->count(),
                 'total_products' => Product::count(),
                 // Valor total del inventario (stock * costo unitario)
-                'inventory_value' => (float) Product::select(DB::raw('SUM((stock * IFNULL(precio_compra,0))) as total'))->pluck('total')->first() ?: 0,
+                'inventory_value' => (float) Product::query()
+                    ->get(['stock', 'precio_compra'])
+                    ->sum(function ($product) {
+                        $stock = (float) $product->stock;
+                        $cost = (float) ($product->precio_compra ?? 0);
+                        return $stock * $cost;
+                    }),
                 'total_customers' => Customer::count(),
                 'recent_sales' => Invoice::with(['seller', 'customer'])
                     ->latest()

@@ -245,8 +245,9 @@ Cada tabla cuenta con índices para optimizar las consultas frecuentes:
 
 ### Crear la base de datos
 
-```sql
-mysql -u root -p < marketworld_base_de_datos/schema/marketworld_schema.sql
+```bash
+# Fuente oficial del esquema: migrations de Laravel
+php artisan migrate --seed
 ```
 
 ### Conectar a la base de datos
@@ -271,6 +272,8 @@ SHOW TABLES;
 
 ## Notas
 
+- La fuente oficial del esquema es `backend/marketworld-api/database/migrations`
+- El SQL en `marketworld_base_de_datos/schema/marketworld_schema.sql` es solo referencia historica y no se usa para nuevos entornos
 - Todas las tablas usan el motor InnoDB para soporte de transacciones
 - Las contraseñas deben almacenarse encriptadas (bcrypt recomendado)
 - Los campos de fecha usan TIMESTAMP para registro automático
