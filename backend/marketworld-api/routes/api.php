@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\DashboardController;
@@ -46,6 +48,7 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/financiero', [ReportController::class, 'financiero']);
             // Ajustes de costo (registro y auditoría) - Solo Administrador
             Route::post('products/{id}/adjust-cost', [CostAdjustmentController::class, 'store']);
+            Route::get('cost-adjustments', [CostAdjustmentController::class, 'index']);
         });
 
         // Auth
@@ -64,6 +67,8 @@ Route::prefix('v1')->group(function () {
         // Valorización por producto (precio_compra * stock)
         Route::get('products/valuation', [ProductController::class, 'valuation']);
         Route::apiResource('products', ProductController::class);
+        Route::apiResource('categories', CategoryController::class);
+        Route::apiResource('inventory-movements', InventoryMovementController::class)->only(['index', 'store']);
 
         // === CRM ===
         Route::prefix('crm')->group(function () {

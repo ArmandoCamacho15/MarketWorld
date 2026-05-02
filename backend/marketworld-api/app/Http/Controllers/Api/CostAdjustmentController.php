@@ -10,6 +10,23 @@ use Illuminate\Http\Request;
 
 class CostAdjustmentController extends Controller
 {
+    /**
+     * Display a listing of cost adjustments.
+     */
+    public function index(): JsonResponse
+    {
+        $adjustments = CostAdjustment::with(['product', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ajustes de costo listados',
+            'data'    => $adjustments,
+            'errors'  => null
+        ]);
+    }
+
     // POST /api/v1/products/{id}/adjust-cost
     public function store(Request $request, int $id): JsonResponse
     {
