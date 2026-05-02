@@ -591,7 +591,26 @@
                     <section class="tab-pane fade" id="ajustes" role="tabpanel">
                         <div class="content-container">
                             <h2 class="section-title">Ajustes de Inventario</h2>
-                            <p class="text-muted">Realiza ajustes manuales al stock de productos</p>
+                            <p class="text-muted">Historial de ajustes de costo realizados por administradores.</p>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Costo Anterior</th>
+                                            <th>Nuevo Costo</th>
+                                            <th>Cambio</th>
+                                            <th>Usuario</th>
+                                            <th>Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="costAdjustmentsList">
+                                        <!-- Se llena con JS -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -761,6 +780,40 @@
                         <div class="text-end">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Registrar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para ajuste rápido de stock -->
+    <div class="modal fade" id="stockAdjustmentModal" tabindex="-1" aria-labelledby="stockAdjustmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="stockAdjustmentModalLabel">Ajuste de Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="stockAdjustmentForm">
+                        <input type="hidden" id="stockAdjProductId">
+                        <div class="mb-3">
+                            <label class="form-label">Producto</label>
+                            <div id="stockAdjProductName" class="form-control-plaintext fw-bold"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stockAdjCurrent" class="form-label">Stock Actual</label>
+                            <input type="number" class="form-control" id="stockAdjCurrent" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stockAdjNew" class="form-label">Nuevo Stock *</label>
+                            <input type="number" class="form-control" id="stockAdjNew" min="0" required>
+                            <div class="form-text">Ingresa el valor total final del stock.</div>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Actualizar Stock</button>
                         </div>
                     </form>
                 </div>
