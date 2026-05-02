@@ -17,6 +17,15 @@
         total: 0,
     };
 
+    function setSafeHtml(element, html) {
+        if (!element) return;
+        if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.insertarHTMLSeguro === 'function') {
+            MarketWorld.utils.insertarHTMLSeguro(element, html);
+            return;
+        }
+        element.textContent = String(html || '');
+    }
+
     // --- Inicialización ---
     document.addEventListener('DOMContentLoaded', async function() {
         if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
@@ -190,7 +199,7 @@
         const last = Math.max(1, purchaseHistoryState.lastPage);
 
         if (last <= 1) {
-            container.innerHTML = '';
+            setSafeHtml(container, '');
             return;
         }
 
@@ -206,7 +215,7 @@
 
         pageItems.push('<li class="page-item' + (current >= last ? ' disabled' : '') + '"><a class="page-link" href="#" data-purchase-page="next">Siguiente</a></li>');
 
-        container.innerHTML = '<ul class="pagination mb-0">' + pageItems.join('') + '</ul>';
+        setSafeHtml(container, '<ul class="pagination mb-0">' + pageItems.join('') + '</ul>');
     }
 
     function mapEstadoFiltroToApi(value) {
@@ -292,7 +301,7 @@
             if (!sel) return;
 
             const firstOpt = sel.querySelector('option');
-            sel.innerHTML = '';
+            setSafeHtml(sel, '');
             if (firstOpt) sel.appendChild(firstOpt);
 
             suppliers.forEach(s => {
@@ -373,12 +382,18 @@
             return;
         }
 
-        container.innerHTML = resultados.map(p => `
-            <div class="autocomplete-item" data-id="${p.id}" onclick="seleccionarProducto(${p.id})">
+        setSafeHtml(container, resultados.map(p => `
+            <div class="autocomplete-item" data-id="${p.id}" data-product-id="${p.id}">
                 <div class="fw-bold">${p.nombre}</div>
                 <div class="small text-muted">SKU: ${p.codigo} | Precio: ${formatMoney(p.precio)} | Stock: ${p.stock}</div>
             </div>
-        `).join('');
+        `).join(''));
+        container.querySelectorAll('.autocomplete-item[data-product-id]').forEach(item => {
+            item.addEventListener('click', () => {
+                const id = parseInt(item.getAttribute('data-product-id'), 10);
+                if (!isNaN(id)) window.seleccionarProducto(id);
+            });
+        });
         container.style.display = 'block';
     }
 
@@ -437,17 +452,17 @@
         if (!tbody) return;
 
         if (carrito.length === 0) {
-            tbody.innerHTML = `
+            setSafeHtml(tbody, `
                 <tr id="emptyCartRow">
                     <td colspan="5" class="text-center text-muted py-4">
                         <i class="bi bi-cart-x fs-3"></i>
                         <p class="mb-0 mt-2">No hay productos agregados</p>
                     </td>
-                </tr>`;
+                </tr>`);
             return;
         }
 
-        tbody.innerHTML = carrito.map((item, idx) => `
+        setSafeHtml(tbody, carrito.map((item, idx) => `
             <tr>
                 <td>
                     <div class="d-flex align-items-center">
@@ -460,24 +475,55 @@
                 </td>
                 <td>
                     <input type="number" class="form-control form-control-sm" value="${item.precioUnitario.toFixed(2)}" 
-                        min="0" step="0.01" style="width:100px;" onchange="actualizarPrecioCarrito(${idx}, this.value)">
+                        min="0" step="0.01" style="width:100px;" data-cart-action="set-price" data-index="${idx}">
                 </td>
                 <td>
                     <div class="d-flex align-items-center gap-1">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidadCarrito(${idx}, -1)">-</button>
+                        <button class="btn btn-sm btn-outline-secondary" data-cart-action="decrease" data-index="${idx}">-</button>
                         <input type="number" class="form-control form-control-sm text-center" value="${item.cantidad}" 
-                            min="1" style="width:60px;" onchange="actualizarCantidadCarrito(${idx}, this.value)">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidadCarrito(${idx}, 1)">+</button>
+                            min="1" style="width:60px;" data-cart-action="set-qty" data-index="${idx}">
+                        <button class="btn btn-sm btn-outline-secondary" data-cart-action="increase" data-index="${idx}">+</button>
                     </div>
                 </td>
                 <td class="fw-bold">${formatMoney(item.subtotal)}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${idx})">
+                    <button class="btn btn-sm btn-outline-danger" data-cart-action="remove" data-index="${idx}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `).join(''));
+
+        tbody.querySelectorAll('[data-cart-action="set-price"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const idx = parseInt(input.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) window.actualizarPrecioCarrito(idx, input.value);
+            });
+        });
+        tbody.querySelectorAll('[data-cart-action="set-qty"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const idx = parseInt(input.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) window.actualizarCantidadCarrito(idx, input.value);
+            });
+        });
+        tbody.querySelectorAll('[data-cart-action="decrease"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) window.cambiarCantidadCarrito(idx, -1);
+            });
+        });
+        tbody.querySelectorAll('[data-cart-action="increase"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) window.cambiarCantidadCarrito(idx, 1);
+            });
+        });
+        tbody.querySelectorAll('[data-cart-action="remove"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) window.eliminarDelCarrito(idx);
+            });
+        });
     }
 
     window.actualizarPrecioCarrito = function (idx, valor) {
@@ -528,7 +574,7 @@
 
     // --- Registrar compra ---
     async function registrarCompra() {
-        const btnSave = document.querySelector('button[onclick="registrarCompra()"]');
+        const btnSave = document.getElementById('btnRegistrarCompra');
         
         // Validaciones
         const proveedorId = document.getElementById('selectProveedor')?.value;
@@ -552,7 +598,7 @@
         const originalText = btnSave ? btnSave.innerHTML : '';
         if (btnSave) {
             btnSave.disabled = true;
-            btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+            setSafeHtml(btnSave, '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
         }
 
         try {
@@ -621,7 +667,7 @@
         } finally {
             if (btnSave) {
                 btnSave.disabled = false;
-                btnSave.innerHTML = originalText;
+                setSafeHtml(btnSave, originalText);
             }
         }
     }
@@ -684,15 +730,15 @@
                 purchaseHistoryState.total = parsed.meta.total;
 
                 const purchases = parsed.items;
-            tbody.innerHTML = '';
+            setSafeHtml(tbody, '');
 
             if (purchases.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay compras registradas</td></tr>';
+                setSafeHtml(tbody, '<tr><td colspan="8" class="text-center text-muted py-4">No hay compras registradas</td></tr>');
                 renderPurchaseHistoryPagination();
                 return;
             }
 
-            tbody.innerHTML = purchases.map(p => {
+            setSafeHtml(tbody, purchases.map(p => {
                 const fecha = new Date(p.fecha).toLocaleDateString('es-CO');
                 const badgeClass = getBadgeClass(p.estado);
                 const proveedorNombre = (p.supplier && p.supplier.nombre) || p.proveedor || p.proveedorNombre || 'Sin proveedor';
@@ -707,12 +753,19 @@
                         <td>${p.observaciones || '-'}</td>
                         <td>-</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="verDetalleCompra(${p.id})">
+                            <button class="btn btn-sm btn-outline-primary btn-ver-compra" data-purchase-id="${p.id}">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </td>
                     </tr>`;
-            }).join('');
+            }).join(''));
+
+            tbody.querySelectorAll('.btn-ver-compra[data-purchase-id]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.getAttribute('data-purchase-id'), 10);
+                    if (!isNaN(id)) window.verDetalleCompra(id);
+                });
+            });
 
             renderPurchaseHistoryPagination();
             actualizarKPIs();
@@ -803,7 +856,7 @@
         const totalPagado = pagosCompra.reduce((sum, p) => sum + (p.monto || 0), 0);
 
         const body = document.getElementById('detalleCompraBody');
-        body.innerHTML = `
+        setSafeHtml(body, `
             <div class="row mb-3">
                 <div class="col-md-6">
                     <h6>Información de la Orden</h6>
@@ -879,7 +932,7 @@
                     </table>
                 </div>
             ` : '<div class="alert alert-info mt-3">No hay pagos registrados para esta orden.</div>'}
-        `;
+        `);
 
         const modal = new bootstrap.Modal(document.getElementById('modalDetalleCompra'));
         modal.show();
@@ -978,16 +1031,16 @@
         if (!tbody) return;
 
         if (suppliers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No se encontraron proveedores</td></tr>';
+            setSafeHtml(tbody, '<tr><td colspan="5" class="text-center text-muted py-4">No se encontraron proveedores</td></tr>');
             return;
         }
 
-        tbody.innerHTML = suppliers.map(s => {
+        setSafeHtml(tbody, suppliers.map(s => {
             const compras = MarketWorld.data.getPurchasesBySupplier(s.id).length;
             const saldo = calcularSaldoProveedor(s.id);
 
             return `
-                <tr style="cursor:pointer;" onclick="verDetalleProveedor(${s.id})">
+                <tr style="cursor:pointer;" data-supplier-action="view" data-supplier-id="${s.id}">
                     <td>
                         <div class="fw-bold">${s.nombre}</div>
                         <div class="text-muted small">NIT ${s.nit}</div>
@@ -1000,18 +1053,36 @@
                     <td>${compras}</td>
                     <td class="fw-bold ${saldo <= 0 ? 'text-success' : 'text-danger'}">${formatMoney(saldo)}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" onclick="event.stopPropagation(); verDetalleProveedor(${s.id})">
+                        <button class="btn btn-sm btn-outline-primary me-1" title="Ver detalle" data-supplier-action="view" data-supplier-id="${s.id}">
                             <i class="bi bi-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-info me-1" title="Editar" onclick="event.stopPropagation(); editarProveedor(${s.id})">
+                        <button class="btn btn-sm btn-outline-info me-1" title="Editar" data-supplier-action="edit" data-supplier-id="${s.id}">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="event.stopPropagation(); eliminarProveedor(${s.id})">
+                        <button class="btn btn-sm btn-outline-danger" title="Eliminar" data-supplier-action="delete" data-supplier-id="${s.id}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 </tr>`;
-        }).join('');
+        }).join(''));
+
+        tbody.querySelectorAll('[data-supplier-action][data-supplier-id]').forEach(el => {
+            el.addEventListener('click', (event) => {
+                const action = el.getAttribute('data-supplier-action');
+                const id = parseInt(el.getAttribute('data-supplier-id'), 10);
+                if (isNaN(id)) return;
+                if (action === 'view') {
+                    window.verDetalleProveedor(id);
+                    return;
+                }
+                event.stopPropagation();
+                if (action === 'edit') {
+                    window.editarProveedor(id);
+                } else if (action === 'delete') {
+                    window.eliminarProveedor(id);
+                }
+            });
+        });
     }
 
     function calcularSaldoProveedor(supplierId) {
@@ -1039,7 +1110,7 @@
         const numCompras = MarketWorld.data.getPurchasesBySupplier(id).length;
 
         const body = document.getElementById('detalleProveedorBody');
-        body.innerHTML = `
+        setSafeHtml(body, `
             <div class="text-center mb-4">
                 <div class="fw-bold fs-4">${supplier.nombre}</div>
                 <div class="text-muted">NIT ${supplier.nit}</div>
@@ -1077,11 +1148,19 @@
                 </div>
             </div>
             <div class="d-grid gap-2 mt-3">
-                <button class="btn btn-outline-info btn-sm" onclick="editarProveedor(${id})">
+                <button class="btn btn-outline-info btn-sm" id="btnEditarProveedorDetalle" data-supplier-id="${id}">
                     <i class="bi bi-pencil me-1"></i> Editar
                 </button>
             </div>
-        `;
+        `);
+
+        const btnEditarDetalle = document.getElementById('btnEditarProveedorDetalle');
+        if (btnEditarDetalle) {
+            btnEditarDetalle.addEventListener('click', () => {
+                const supplierId = parseInt(btnEditarDetalle.getAttribute('data-supplier-id'), 10);
+                if (!isNaN(supplierId)) window.editarProveedor(supplierId);
+            });
+        }
     };
 
     window.editarProveedor = function (id) {
@@ -1191,7 +1270,7 @@
         if (!container) return;
 
         if (!proveedorId) {
-            container.innerHTML = '<p class="text-muted small mb-0">Seleccione un proveedor</p>';
+            setSafeHtml(container, '<p class="text-muted small mb-0">Seleccione un proveedor</p>');
             return;
         }
 
@@ -1199,11 +1278,11 @@
             .filter(p => p.saldo > 0 && p.estado !== 'Cancelado');
 
         if (compras.length === 0) {
-            container.innerHTML = '<p class="text-muted small mb-0">No hay compras pendientes de pago</p>';
+            setSafeHtml(container, '<p class="text-muted small mb-0">No hay compras pendientes de pago</p>');
             return;
         }
 
-        container.innerHTML = compras.map(p => {
+        setSafeHtml(container, compras.map(p => {
             const venc = p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString('es-CO') : '-';
             return `
                 <div class="form-check mb-1">
@@ -1212,7 +1291,7 @@
                         ${p.numeroOrden} - ${formatMoney(p.saldo)} (Vence: ${venc})
                     </label>
                 </div>`;
-        }).join('');
+        }).join(''));
 
         // Listener para actualizar monto
         container.querySelectorAll('.compra-pago-check').forEach(cb => {
@@ -1343,9 +1422,9 @@
         }
 
         if (payments.length === 0) {
-            container.innerHTML = '<p class="text-center text-muted py-4">No hay pagos registrados</p>';
+            setSafeHtml(container, '<p class="text-center text-muted py-4">No hay pagos registrados</p>');
         } else {
-            container.innerHTML = payments.map(p => {
+            setSafeHtml(container, payments.map(p => {
                 const fecha = new Date(p.fechaPago).toLocaleDateString('es-CO');
                 const esCompleto = p.tipo === 'Completo';
 
@@ -1359,7 +1438,7 @@
                         <div>${p.metodoPago}${p.referenciaTransaccion ? ' | Ref: ' + p.referenciaTransaccion : ''}</div>
                         <div class="text-muted small">${p.proveedorNombre}</div>
                     </article>`;
-            }).join('');
+            }).join(''));
         }
 
         // Total pagado
@@ -1577,13 +1656,29 @@
                 const body = document.getElementById('detalleCompraBody');
                 if (!body) return;
                 const win = window.open('', '_blank');
-                win.document.write(`
-                    <html><head><title>Orden de Compra</title>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                    <style>body{padding:20px;}</style></head>
-                    <body>${body.innerHTML}<script>setTimeout(()=>window.print(),500);<\/script></body></html>
-                `);
-                win.document.close();
+                if (!win) return;
+                const doc = win.document;
+
+                doc.title = 'Orden de Compra';
+                const head = doc.head || doc.getElementsByTagName('head')[0] || doc.createElement('head');
+                if (!doc.head) doc.documentElement.insertBefore(head, doc.body || null);
+
+                const link = doc.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+                head.appendChild(link);
+
+                const style = doc.createElement('style');
+                style.textContent = 'body{padding:20px;}';
+                head.appendChild(style);
+
+                const bodyEl = doc.body || doc.createElement('body');
+                if (!doc.body) doc.documentElement.appendChild(bodyEl);
+                setSafeHtml(bodyEl, body.innerHTML || '');
+
+                const script = doc.createElement('script');
+                script.textContent = 'setTimeout(()=>window.print(),500);';
+                bodyEl.appendChild(script);
             });
         }
 
@@ -1667,7 +1762,7 @@
                     <div>Total: <strong>${formatMoney(purchaseData && purchaseData.total ? purchaseData.total : 0)}</strong></div>
                     <div class="mt-2"><em>Puede aceptar para limpiar el formulario y actualizar la información, o cancelar para permanecer en la vista.</em></div>
                 `;
-                detailsEl.innerHTML = html;
+                setSafeHtml(detailsEl, html);
             }
 
             const bsModal = new bootstrap.Modal(modalEl, { keyboard: true });
@@ -1716,10 +1811,17 @@
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo} alert-dismissible fade show alert-auto`;
         alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `
-            ${mensaje}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        `;
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = String(mensaje || '');
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'alert');
+        closeButton.setAttribute('aria-label', 'Cerrar');
+
+        alertDiv.appendChild(messageSpan);
+        alertDiv.appendChild(closeButton);
         main.insertBefore(alertDiv, main.firstChild);
 
         setTimeout(() => {
