@@ -25,6 +25,15 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function setSafeHtml(element, html) {
+    if (!element) return;
+    if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.insertarHTMLSeguro === 'function') {
+        MarketWorld.utils.insertarHTMLSeguro(element, html);
+        return;
+    }
+    element.textContent = String(html || '');
+}
+
 function normalizeApiListResponse(response, fallbackMeta) {
     if (typeof MarketWorld !== 'undefined' &&
         MarketWorld.api &&
@@ -72,7 +81,7 @@ function renderInvoiceHistoryPagination() {
     const last = Math.max(1, invoiceHistoryState.lastPage);
 
     if (last <= 1) {
-        container.innerHTML = '';
+        setSafeHtml(container, '');
         return;
     }
 
@@ -87,7 +96,7 @@ function renderInvoiceHistoryPagination() {
     }
 
     items.push('<li class="page-item' + (current >= last ? ' disabled' : '') + '"><a class="page-link" href="#" data-invoice-page="next">Siguiente</a></li>');
-    container.innerHTML = '<ul class="pagination mb-0">' + items.join('') + '</ul>';
+    setSafeHtml(container, '<ul class="pagination mb-0">' + items.join('') + '</ul>');
 }
 
 function initInvoiceHistoryEvents() {
@@ -203,6 +212,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // --- Mostrar productos disponibles ---
     mostrarProductosDisponibles();
+
+    const btnImprimirFactura = document.getElementById('btnImprimirFactura');
+    if (btnImprimirFactura) {
+        btnImprimirFactura.addEventListener('click', imprimirFactura);
+    }
     
     // --- Buscar y agregar productos ---
     const btnBuscarProducto = document.getElementById('btnBuscarProducto');
@@ -407,17 +421,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        tbody.innerHTML = '';
+        setSafeHtml(tbody, '');
         
         if (carrito.length === 0) {
-            tbody.innerHTML = `
+            setSafeHtml(tbody, `
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">
                         <i class="bi bi-cart-x fs-1"></i>
                         <p class="mt-2">No hay productos en el carrito</p>
                     </td>
                 </tr>
-            `;
+            `);
             return;
         }
         
@@ -427,7 +441,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const ivaItem = totalItem - baseItem;
             const tr = document.createElement('tr');
             
-            tr.innerHTML = `
+            setSafeHtml(tr, `
                 <td>
                     <div class="d-flex align-items-center">
                         <i class="bi bi-box-seam me-2 text-primary fs-5"></i>
@@ -440,13 +454,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <td class="fw-semibold">$${item.precio.toLocaleString('es-CO')}</td>
                 <td>
                     <div class="input-group" style="max-width: 130px;">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)" type="button">
+                        <button class="btn btn-sm btn-outline-secondary" data-cart-action="decrease" data-index="${index}" type="button">
                             <i class="bi bi-dash"></i>
                         </button>
                         <input type="number" class="form-control form-control-sm text-center" 
                                value="${item.cantidad}" min="1" max="${item.stock}"
-                               onchange="actualizarCantidad(${index}, this.value)" style="width: 60px;">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)" type="button">
+                               data-cart-action="set-qty" data-index="${index}" style="width: 60px;">
+                        <button class="btn btn-sm btn-outline-secondary" data-cart-action="increase" data-index="${index}" type="button">
                             <i class="bi bi-plus"></i>
                         </button>
                     </div>
@@ -454,13 +468,49 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <td>${item.iva}% <small class="text-muted">(inc.)</small></td>
                 <td class="fw-bold text-primary">$${totalItem.toLocaleString('es-CO')}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar" type="button">
+                    <button class="btn btn-sm btn-outline-danger" data-cart-action="remove" data-index="${index}" title="Eliminar" type="button">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
-            `;
+            `);
             
             tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('[data-cart-action="set-qty"]').forEach(function(input) {
+            input.addEventListener('change', function() {
+                const idx = parseInt(input.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) {
+                    window.actualizarCantidad(idx, input.value);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('[data-cart-action="decrease"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) {
+                    window.cambiarCantidad(idx, -1);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('[data-cart-action="increase"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) {
+                    window.cambiarCantidad(idx, 1);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('[data-cart-action="remove"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) {
+                    window.eliminarDelCarrito(idx);
+                }
+            });
         });
         
         console.log('🔄 Carrito renderizado. Items:', carrito.length);
@@ -594,9 +644,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function renderClienteSuggestions(items, termino) {
         if (!suggestionsCliente) return;
-        suggestionsCliente.innerHTML = '';
+        setSafeHtml(suggestionsCliente, '');
         if (!items || items.length === 0) {
-            suggestionsCliente.innerHTML = `
+            setSafeHtml(suggestionsCliente, `
                 <div class="no-suggestions p-2">
                     <div>No se encontró el cliente.</div>
                     <div class="mt-2"><button class="btn btn-sm btn-link" id="irCrearCliente">Crear cliente en Factura Completa</button></div>
@@ -627,7 +677,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const el = document.createElement('div');
             el.className = 'suggestion-item p-2';
             el.style.cursor = 'pointer';
-            el.innerHTML = `<div class="fw-semibold">${c.nombre}</div><div class="small text-muted">${c.documento}${c.email ? ' · ' + c.email : ''}</div>`;
+            setSafeHtml(el, `<div class="fw-semibold">${c.nombre}</div><div class="small text-muted">${c.documento}${c.email ? ' · ' + c.email : ''}</div>`);
             el.addEventListener('click', function() {
                 selectCliente(c);
                 suggestionsCliente.style.display = 'none';
@@ -669,7 +719,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             clearClienteSelection();
             const term = this.value.trim();
             if (tTimeout) clearTimeout(tTimeout);
-            if (term.length < 2) { suggestionsCliente.style.display = 'none'; suggestionsCliente.innerHTML = ''; return; }
+            if (term.length < 2) { suggestionsCliente.style.display = 'none'; setSafeHtml(suggestionsCliente, ''); return; }
             tTimeout = setTimeout(async function() {
                 const items = await buscarCliente(term);
                 renderClienteSuggestions(items, term);
@@ -683,7 +733,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             clearClienteSelection();
             const term = this.value.trim();
             if (dTimeout) clearTimeout(dTimeout);
-            if (term.length < 2) { suggestionsCliente.style.display = 'none'; suggestionsCliente.innerHTML = ''; return; }
+            if (term.length < 2) { suggestionsCliente.style.display = 'none'; setSafeHtml(suggestionsCliente, ''); return; }
             dTimeout = setTimeout(async function() {
                 const items = await buscarCliente(term);
                 renderClienteSuggestions(items, term);
@@ -708,9 +758,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateClienteBadge() {
         if (!clienteSelectedBadge) return;
         if (selectedCliente) {
-            clienteSelectedBadge.innerHTML = `<span class="badge bg-primary">ID ${selectedCliente.id}</span> <strong class="ms-2">${selectedCliente.nombre}</strong> <div class="small text-muted">${selectedCliente.documento || ''}</div>`;
+            setSafeHtml(clienteSelectedBadge, `<span class="badge bg-primary">ID ${selectedCliente.id}</span> <strong class="ms-2">${selectedCliente.nombre}</strong> <div class="small text-muted">${selectedCliente.documento || ''}</div>`);
         } else {
-            clienteSelectedBadge.innerHTML = '<small class="text-muted">Ningún cliente seleccionado</small>';
+            setSafeHtml(clienteSelectedBadge, '<small class="text-muted">Ningún cliente seleccionado</small>');
         }
     }
 
@@ -858,7 +908,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         btnLimpiarCliente.addEventListener('click', function() {
             if (inputClienteNombre) inputClienteNombre.value = '';
             if (inputClienteDocumento) inputClienteDocumento.value = '';
-            if (suggestionsCliente) { suggestionsCliente.style.display = 'none'; suggestionsCliente.innerHTML = ''; }
+            if (suggestionsCliente) { suggestionsCliente.style.display = 'none'; setSafeHtml(suggestionsCliente, ''); }
             clearClienteSelection();
             updateClienteBadge();
             mostrarNotificacion('Campos de cliente limpiados', 'info');
@@ -886,7 +936,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // También limpiar campos rápidos y selección
             if (inputClienteNombre) inputClienteNombre.value = '';
             if (inputClienteDocumento) inputClienteDocumento.value = '';
-            if (suggestionsCliente) { suggestionsCliente.style.display = 'none'; suggestionsCliente.innerHTML = ''; }
+            if (suggestionsCliente) { suggestionsCliente.style.display = 'none'; setSafeHtml(suggestionsCliente, ''); }
             clearClienteSelection();
             updateClienteBadge();
             mostrarNotificacion('Formulario de cliente limpiado', 'info');
@@ -1107,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const container = document.getElementById('productosDisponibles');
         if (!container) return;
 
-        container.innerHTML = '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>';
+        setSafeHtml(container, '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>');
 
         // CORRECCIÓN: Intentar cargar productos frescos desde API primero; fallback a localStorage
         var productosList = [];
@@ -1160,8 +1210,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const col = document.createElement('div');
             col.className = 'col-md-4 col-6';
 
-            col.innerHTML = `
-                <div class="card h-100 producto-card" style="cursor: pointer;" onclick="agregarProductoRapido(${producto.id})">
+            setSafeHtml(col, `
+                <div class="card h-100 producto-card" style="cursor: pointer;" data-product-id="${producto.id}">
                     <div class="card-body text-center p-2">
                         <i class="bi bi-box-seam text-primary fs-2"></i>
                         <h6 class="card-title small mt-2 mb-1">${escapeHtml(producto.nombre)}</h6>
@@ -1170,12 +1220,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <span class="badge ${producto.stock > 20 ? 'bg-success' : producto.stock > 5 ? 'bg-warning' : 'bg-danger'} small">Stock: ${producto.stock}</span>
                     </div>
                 </div>
-            `;
+            `);
 
             grid.appendChild(col);
         });
 
         container.appendChild(grid);
+        container.querySelectorAll('.producto-card[data-product-id]').forEach(function(card) {
+            card.addEventListener('click', function() {
+                const id = parseInt(card.getAttribute('data-product-id'), 10);
+                if (!isNaN(id)) {
+                    window.agregarProductoRapido(id);
+                }
+            });
+        });
     }
     
     // Agregar producto rápido
@@ -1249,10 +1307,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const notification = document.createElement('div');
         notification.className = `alert alert-${tipo} alert-dismissible fade show position-fixed`;
         notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${mensaje}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = String(mensaje || '');
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'alert');
+
+        notification.appendChild(messageSpan);
+        notification.appendChild(closeButton);
         
         document.body.appendChild(notification);
         
@@ -1289,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Si hay menos de 2 caracteres, ocultar sugerencias
             if (termino.length < 2) {
                 suggestionsContainer.style.display = 'none';
-                suggestionsContainer.innerHTML = '';
+                setSafeHtml(suggestionsContainer, '');
                 return;
             }
             
@@ -1347,13 +1411,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Si no hay resultados
             if (productosFiltrados.length === 0) {
-                suggestionsContainer.innerHTML = '<div class="no-suggestions">No se encontraron productos</div>';
+                setSafeHtml(suggestionsContainer, '<div class="no-suggestions">No se encontraron productos</div>');
                 suggestionsContainer.style.display = 'block';
                 return;
             }
             
             // Mostrar sugerencias
-            suggestionsContainer.innerHTML = '';
+            setSafeHtml(suggestionsContainer, '');
             suggestionsContainer.style.display = 'block';
             
             productosFiltrados.slice(0, 5).forEach(producto => {
@@ -1364,7 +1428,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const nombreResaltado = resaltarTexto(producto.nombre, termino);
                 const codigoResaltado = resaltarTexto(producto.codigo, termino);
                 
-                suggestionItem.innerHTML = `
+                setSafeHtml(suggestionItem, `
                     <div class="suggestion-name">${nombreResaltado}</div>
                     <div class="suggestion-details">
                         <span class="suggestion-sku">Código: ${codigoResaltado}</span>
@@ -1373,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             Stock: ${producto.stock}
                         </span>
                     </div>
-                `;
+                `);
                 
                 // Al hacer clic, seleccionar el producto sin agregarlo aún.
                 suggestionItem.addEventListener('click', function() {
@@ -1383,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     inputCantidadProducto.value = inputCantidadProducto.value || 1;
                     mostrarNotificacion(`Seleccionado: ${producto.nombre}. Ahora presiona Agregar.`, 'info');
                     suggestionsContainer.style.display = 'none';
-                    suggestionsContainer.innerHTML = '';
+                    setSafeHtml(suggestionsContainer, '');
                 });
                 
                 suggestionsContainer.appendChild(suggestionItem);
@@ -1508,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const termino = this.value.trim().toLowerCase();
             if (termino.length < 2) {
                 suggestionsCompleto.style.display = 'none';
-                suggestionsCompleto.innerHTML = '';
+                setSafeHtml(suggestionsCompleto, '');
                 return;
             }
 
@@ -1521,12 +1585,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             );
 
             if (productosFiltrados.length === 0) {
-                suggestionsCompleto.innerHTML = '<div class="no-suggestions">No se encontraron productos</div>';
+                setSafeHtml(suggestionsCompleto, '<div class="no-suggestions">No se encontraron productos</div>');
                 suggestionsCompleto.style.display = 'block';
                 return;
             }
 
-            suggestionsCompleto.innerHTML = '';
+            setSafeHtml(suggestionsCompleto, '');
             suggestionsCompleto.style.display = 'block';
 
             productosFiltrados.slice(0, 5).forEach(producto => {
@@ -1534,20 +1598,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 item.className = 'suggestion-item';
                 const nombreRes = resaltarTexto(producto.nombre, termino);
                 const codigoRes = resaltarTexto(producto.codigo, termino);
-                item.innerHTML = `
+                setSafeHtml(item, `
                     <div class="suggestion-name">${nombreRes}</div>
                     <div class="suggestion-details">
                         <span class="suggestion-sku">Código: ${codigoRes}</span>
                         <span class="suggestion-price">$${producto.precio.toLocaleString('es-CO')}</span>
                         <span class="suggestion-stock ${producto.stock <= producto.stockMinimo ? 'low' : ''}">Stock: ${producto.stock}</span>
                     </div>
-                `;
+                `);
                 item.addEventListener('click', function() {
                     productoBuscadoCompleto = producto;
                     inputBuscarCompleto.value = `${String(producto.codigo || '').trim()} - ${String(producto.nombre || '').trim()}`;
                     mostrarNotificacion(`Seleccionado: ${producto.nombre}. Ahora presiona Agregar.`, 'info');
                     suggestionsCompleto.style.display = 'none';
-                    suggestionsCompleto.innerHTML = '';
+                    setSafeHtml(suggestionsCompleto, '');
                 });
                 suggestionsCompleto.appendChild(item);
             });
@@ -1565,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const container = document.getElementById('productosDisponiblesCompleto');
         if (!container) return;
 
-        container.innerHTML = '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>';
+        setSafeHtml(container, '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>');
 
         // Intentar cargar desde API primero; si falla, usar localStorage
         var productosList = [];
@@ -1618,8 +1682,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         productosDestacados.forEach(producto => {
             const col = document.createElement('div');
             col.className = 'col-md-4 col-6';
-            col.innerHTML = `
-                <div class="card h-100 producto-card" style="cursor: pointer;" onclick="seleccionarProductoCompleto(${producto.id})">
+            setSafeHtml(col, `
+                <div class="card h-100 producto-card" style="cursor: pointer;" data-product-id="${producto.id}">
                     <div class="card-body text-center p-2">
                         <i class="bi bi-box-seam text-primary fs-2"></i>
                         <h6 class="card-title small mt-2 mb-1">${escapeHtml(producto.nombre)}</h6>
@@ -1628,11 +1692,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <span class="badge ${producto.stock > 20 ? 'bg-success' : producto.stock > 5 ? 'bg-warning' : 'bg-danger'} small">Stock: ${producto.stock}</span>
                     </div>
                 </div>
-            `;
+            `);
             grid.appendChild(col);
         });
 
         container.appendChild(grid);
+        container.querySelectorAll('.producto-card[data-product-id]').forEach(function(card) {
+            card.addEventListener('click', function() {
+                const id = parseInt(card.getAttribute('data-product-id'), 10);
+                if (!isNaN(id)) {
+                    window.seleccionarProductoCompleto(id);
+                }
+            });
+        });
     }
 
     window.seleccionarProductoCompleto = function(id) {
@@ -1821,17 +1893,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             facturasHistorialCache = facturas;
             
             // Renderizar tabla
-            tbody.innerHTML = '';
+            setSafeHtml(tbody, '');
             
             if (facturas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center">No hay facturas registradas</td></tr>`;
+                setSafeHtml(tbody, `<tr><td colspan="8" class="text-center">No hay facturas registradas</td></tr>`);
                 renderInvoiceHistoryPagination();
                 return;
             }
             
             facturas.forEach(factura => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
+                setSafeHtml(tr, `
                     <td><strong>${factura.numero_factura}</strong></td>
                     <td>${new Date(factura.fecha).toLocaleDateString()}</td>
                     <td>${factura.customer_id ? 'Cliente #' + factura.customer_id : 'Venta General'}</td>
@@ -1844,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <i class="bi bi-eye"></i>
                         </button>
                     </td>
-                `;
+                `);
                 tbody.appendChild(tr);
             });
 
@@ -1995,10 +2067,10 @@ async function verDetalleFactura(facturaId) {
     if (title) title.textContent = `Factura ${numeroFactura}`;
     if (body) {
         if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.renderInvoiceHTML === 'function') {
-            body.innerHTML = MarketWorld.utils.renderInvoiceHTML(factura);
+            setSafeHtml(body, MarketWorld.utils.renderInvoiceHTML(factura));
         } else {
             // Fallback al HTML previo si no existe el renderer
-            body.innerHTML = `
+            setSafeHtml(body, `
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <h6 class="text-muted">Datos del Cliente</h6>
@@ -2051,7 +2123,7 @@ async function verDetalleFactura(facturaId) {
                         </div>
                     </div>
                 </div>
-            `;
+            `);
         }
     }
 
@@ -2087,29 +2159,38 @@ function imprimirFactura() {
     if (!contenido) return;
     
     const ventana = window.open('', '_blank', 'width=800,height=600');
-    ventana.document.write(`
-        <html>
-        <head>
-            <title>Imprimir Factura</title>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-            <style>
-                body { padding: 20px; }
-                @media print { .no-print { display: none; } }
-            </style>
-        </head>
-        <body>
-            <div class="text-center mb-4">
-                <h2>MarketWorld</h2>
-                <p class="text-muted">Sistema de Facturación</p>
-            </div>
-            ${contenido.innerHTML}
-            <div class="text-center mt-4 no-print">
-                <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
-            </div>
-        </body>
-        </html>
-    `);
-    ventana.document.close();
+    if (!ventana) return;
+
+    const doc = ventana.document;
+    doc.title = 'Imprimir Factura';
+
+    const head = doc.head || doc.getElementsByTagName('head')[0] || doc.createElement('head');
+    if (!doc.head) doc.documentElement.insertBefore(head, doc.body || null);
+
+    const link = doc.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+    head.appendChild(link);
+
+    const style = doc.createElement('style');
+    style.textContent = 'body { padding: 20px; } @media print { .no-print { display: none; } }';
+    head.appendChild(style);
+
+    const bodyEl = doc.body || doc.createElement('body');
+    if (!doc.body) doc.documentElement.appendChild(bodyEl);
+
+    const headerHtml = '<div class="text-center mb-4"><h2>MarketWorld</h2><p class="text-muted">Sistema de Facturación</p></div>';
+    setSafeHtml(bodyEl, headerHtml + (contenido.innerHTML || ''));
+
+    const buttonWrapper = doc.createElement('div');
+    buttonWrapper.className = 'text-center mt-4 no-print';
+    const printButton = doc.createElement('button');
+    printButton.type = 'button';
+    printButton.className = 'btn btn-primary';
+    printButton.textContent = 'Imprimir';
+    printButton.addEventListener('click', function() { ventana.print(); });
+    buttonWrapper.appendChild(printButton);
+    bodyEl.appendChild(buttonWrapper);
 }
 
 window.verDetalleFactura = verDetalleFactura;
