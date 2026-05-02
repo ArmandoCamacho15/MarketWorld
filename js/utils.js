@@ -52,6 +52,48 @@
     }
 
     /**
+     * Inserta HTML de forma segura usando DOMPurify.
+     * Si DOMPurify no esta disponible, se usa textContent como fallback seguro.
+     * @param {HTMLElement} elemento - Contenedor donde insertar
+     * @param {string} html - HTML a insertar
+     */
+    function insertarHTMLSeguro(elemento, html) {
+        if (!elemento) return;
+
+        var contenido = String(html || '');
+        if (typeof DOMPurify === 'undefined') {
+            elemento.textContent = contenido;
+            return;
+        }
+
+        elemento.innerHTML = DOMPurify.sanitize(contenido, {
+            ALLOWED_TAGS: [
+                'a', 'b', 'br', 'button', 'div', 'em', 'form', 'h4', 'h5', 'h6',
+                'hr', 'i', 'input', 'label', 'li', 'option', 'p', 'select',
+                'small', 'span', 'strong', 'table', 'tbody', 'td', 'textarea',
+                'th', 'thead', 'tr', 'ul'
+            ],
+            ALLOWED_ATTR: [
+                'class', 'id', 'href', 'role', 'aria-label', 'aria-hidden',
+                'aria-expanded', 'tabindex', 'type', 'title', 'name',
+                'value', 'placeholder', 'min', 'max', 'step', 'checked',
+                'selected', 'for', 'style', 'data-id', 'data-action',
+                'data-value', 'data-target'
+            ],
+            ALLOW_DATA_ATTR: true
+        });
+    }
+
+    /**
+     * Crea un nodo de texto seguro para evitar XSS.
+     * @param {string} texto - Texto a convertir
+     * @returns {Text} - Nodo de texto
+     */
+    function textoSeguro(texto) {
+        return document.createTextNode(String(texto || ''));
+    }
+
+    /**
      * Muestra una notificación toast
      * @param {string} message - Mensaje a mostrar
      * @param {string} type - Tipo: success, error, warning, info
@@ -328,6 +370,8 @@
         deepClone: deepClone,
         capitalize: capitalize
         , renderInvoiceHTML: renderInvoiceHTML
+        , insertarHTMLSeguro: insertarHTMLSeguro
+        , textoSeguro: textoSeguro
     };
 
     // Backwards-compatible global error helper (usado por login.js)
