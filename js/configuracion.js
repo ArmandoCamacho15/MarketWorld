@@ -5,6 +5,15 @@
 
     var usersCache = [];
 
+    function setSafeHtml(element, html) {
+        if (!element) return;
+        if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.insertarHTMLSeguro === 'function') {
+            MarketWorld.utils.insertarHTMLSeguro(element, html);
+            return;
+        }
+        element.textContent = String(html || '');
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Modulo Configuracion cargado');
         initUserManagement();
@@ -30,21 +39,21 @@
         if (!container) return;
 
         if (!MarketWorld.api || !MarketWorld.api.adminUsers) {
-            container.innerHTML = '<div class="alert alert-warning">API de usuarios no disponible.</div>';
+            setSafeHtml(container, '<div class="alert alert-warning">API de usuarios no disponible.</div>');
             return;
         }
 
-        container.innerHTML = '<div class="alert alert-info">Cargando usuarios...</div>';
+        setSafeHtml(container, '<div class="alert alert-info">Cargando usuarios...</div>');
 
         MarketWorld.api.adminUsers.getAll({ per_page: 100 })
             .then(function(response) {
                 var parsed = MarketWorld.api.normalizeListResponse(response, { per_page: 100, current_page: 1 });
                 usersCache = parsed.items || [];
 
-                container.innerHTML = '';
+                setSafeHtml(container, '');
 
                 if (!usersCache.length) {
-                    container.innerHTML = '<div class="alert alert-info">No hay usuarios registrados</div>';
+                    setSafeHtml(container, '<div class="alert alert-info">No hay usuarios registrados</div>');
                     return;
                 }
 
@@ -55,7 +64,7 @@
             })
             .catch(function(error) {
                 console.error('[CRM] Error al cargar usuarios:', error);
-                container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar los usuarios.</div>';
+                setSafeHtml(container, '<div class="alert alert-danger">No se pudieron cargar los usuarios.</div>');
             });
     }
 
@@ -72,7 +81,7 @@
         // Obtener iniciales para el avatar
         var iniciales = user.nombre.charAt(0) + user.apellido.charAt(0);
         
-        col.innerHTML = `
+        setSafeHtml(col, `
             <div class="user-card">
                 <div class="text-center">
                     <div class="user-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; margin: 0 auto 15px;">
@@ -105,7 +114,7 @@
                     </button>
                 </div>
             </div>
-        `;
+        `);
         
         return col;
     }
@@ -353,10 +362,10 @@
         var container = document.getElementById('usersList');
         if (!container) return;
         
-        container.innerHTML = '';
+        setSafeHtml(container, '');
         
         if (users.length === 0) {
-            container.innerHTML = '<div class="col-12"><div class="alert alert-info">No se encontraron usuarios con los filtros seleccionados</div></div>';
+            setSafeHtml(container, '<div class="col-12"><div class="alert alert-info">No se encontraron usuarios con los filtros seleccionados</div></div>');
             return;
         }
         

@@ -969,105 +969,58 @@
 
     // ======= MOSTRAR MODAL DE AJUSTE DE STOCK =======
     function showStockModal(id) {
-        var product = getProductById(id);
-        if (!product) return;
-        
-        var currentStock = product.stock;
-        var operation = prompt(
-            'Ajuste de Stock - ' + product.nombre + '\n\n' +
-            'Stock actual: ' + currentStock + ' ' + product.unidad + '\n\n' +
-            'Ingresa:\n' +
-            '+10 para agregar 10 unidades\n' +
-            '-5 para restar 5 unidades\n' +
-            '50 para establecer stock en 50'
-        );
-        
-        if (!operation) return;
-        
-        var trimmed = operation.trim();
-        var quantity, opType;
-        
-        if (trimmed.startsWith('+')) {
-            quantity = parseInt(trimmed.substring(1));
-            opType = 'add';
-        } else if (trimmed.startsWith('-')) {
-            quantity = parseInt(trimmed.substring(1));
-            opType = 'subtract';
-        } else {
-            quantity = parseInt(trimmed);
-            opType = 'set';
-        }
-        
-        if (isNaN(quantity)) {
-            alert('Cantidad inválida');
-            return;
-        }
-        
-        var newStock = currentStock;
-        if (opType === 'add') {
-            newStock += quantity;
-        } else if (opType === 'subtract') {
-            newStock -= quantity;
-        } else {
-            newStock = quantity;
-        }
+        MarketWorld.api.products.getById(id)
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var product = response.data;
+                    document.getElementById('stockAdjProductId').value = product.id;
+                    document.getElementById('stockAdjProductName').textContent = product.nombre;
+                    document.getElementById('stockAdjCurrent').value = product.stock;
+                    document.getElementById('stockAdjNew').value = product.stock;
+                    
+                    var modalEl = document.getElementById('stockAdjustmentModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo obtener el stock actual del producto.');
+            });
+    }
 
-        if (newStock < 0) {
-            alert('Error: Stock insuficiente');
-            return;
-        }
-
-        if (hasProductApi()) {
+    // Inicializar el formulario de ajuste de stock
+    (function initStockAdjForm() {
+        var form = document.getElementById('stockAdjustmentForm');
+        if (!form) return;
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var id = document.getElementById('stockAdjProductId').value;
+            var newStock = parseInt(document.getElementById('stockAdjNew').value);
+            
+            if (isNaN(newStock) || newStock < 0) {
+                alert('Por favor ingresa un stock válido');
+                return;
+            }
+            
             MarketWorld.api.products.update(id, { stock: newStock })
                 .then(function(response) {
-                    if (response.success) {
+                    if (response && response.success) {
                         alert(response.message || 'Stock actualizado correctamente');
-                        return loadProducts();
-                    }
-                })
-                .then(function() {
-                    showLowStockAlerts();
-                    updateDashboardKPIs();
-                    if (typeof MarketWorld.notifications !== 'undefined') {
-                        MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
-                        MarketWorld.notifications.checkLowStock();
+                        loadProducts();
+                        updateDashboardKPIs();
+                        showLowStockAlerts();
+                        
+                        var modalEl = document.getElementById('stockAdjustmentModal');
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
                     }
                 })
                 .catch(function(err) {
-                    if (isConnectivityError(err)) {
-                        var fallbackResult = MarketWorld.data.updateStock(id, quantity, opType);
-                        if (fallbackResult.success) {
-                            setProductsState(MarketWorld.data.getProducts(), 'local');
-                            alert(fallbackResult.message + ' (modo local)');
-                            loadProducts();
-                            showLowStockAlerts();
-                            updateDashboardKPIs();
-                            return;
-                        }
-                        alert('Error: ' + fallbackResult.message);
-                        return;
-                    }
                     showApiError(err, 'No se pudo actualizar el stock.');
                 });
-            return;
-        }
-
-        var result = MarketWorld.data.updateStock(id, quantity, opType);
-        if (result.success) {
-            setProductsState(MarketWorld.data.getProducts(), 'local');
-            alert(result.message);
-            loadProducts();
-            showLowStockAlerts();
-            updateDashboardKPIs();
-
-            if (typeof MarketWorld.notifications !== 'undefined') {
-                MarketWorld.notifications.notifyStockUpdate(product.nombre, currentStock, newStock);
-                MarketWorld.notifications.checkLowStock();
-            }
-        } else {
-            alert('Error: ' + result.message);
-        }
-    }
+        });
+    })();
 
     // ======= LIMPIAR FORMULARIO =======
     function resetProductForm() {
@@ -1099,33 +1052,45 @@
 
     // ======= CARGAR CATEGORÍAS EN SELECT =======
     function loadCategories() {
-        var categories = MarketWorld.data.getCategories();
-        var select = document.getElementById('productCategoria');
-        var filterSelect = document.getElementById('filterCategoria');
-        
-        if (select) {
-            select.innerHTML = '<option value="">Seleccionar categoría...</option>';
-            categories.forEach(function(cat) {
-                if (cat.activa) {
-                    var option = document.createElement('option');
-                    option.value = cat.nombre;
-                    option.textContent = cat.nombre;
-                    select.appendChild(option);
+        if (!MarketWorld.api || !MarketWorld.api.categories) return;
+
+        MarketWorld.api.categories.getAll()
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var categories = response.data;
+                    var select = document.getElementById('productCategoria');
+                    var filterSelect = document.getElementById('filterCategoria');
+                    
+                    if (select) {
+                        select.innerHTML = '<option value="">Seleccionar categoría...</option>';
+                        categories.forEach(function(cat) {
+                            if (cat.activo) {
+                                var option = document.createElement('option');
+                                option.value = cat.nombre;
+                                option.textContent = cat.nombre;
+                                select.appendChild(option);
+                            }
+                        });
+                    }
+                    
+                    if (filterSelect) {
+                        var currentValue = filterSelect.value;
+                        filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
+                        categories.forEach(function(cat) {
+                            if (cat.activo) {
+                                var option = document.createElement('option');
+                                option.value = cat.nombre;
+                                option.textContent = cat.nombre;
+                                filterSelect.appendChild(option);
+                            }
+                        });
+                        filterSelect.value = currentValue;
+                    }
                 }
+            })
+            .catch(function(err) {
+                console.error('Error al cargar categorías para selects:', err);
             });
-        }
-        
-        if (filterSelect) {
-            filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
-            categories.forEach(function(cat) {
-                if (cat.activa) {
-                    var option = document.createElement('option');
-                    option.value = cat.nombre;
-                    option.textContent = cat.nombre;
-                    filterSelect.appendChild(option);
-                }
-            });
-        }
     }
 
     // Inicializar filtros
@@ -1469,24 +1434,25 @@
                     
                     var imported = 0;
                     var errors = 0;
+                    var promises = [];
                     
                     products.forEach(function(product) {
-                        var result = MarketWorld.data.createProduct(product);
-                        if (result.success) {
-                            imported++;
-                        } else {
-                            errors++;
-                        }
+                        var p = MarketWorld.api.products.create(product)
+                            .then(function() { imported++; })
+                            .catch(function() { errors++; });
+                        promises.push(p);
                     });
                     
-                    hideLoadingOverlay();
-                    alert('Importación completada\\n\\n' +
-                          'Productos importados: ' + imported + '\\n' +
-                          'Errores: ' + errors);
-                    
-                    loadProducts();
-                    updateDashboardKPIs();
-                    showLowStockAlerts();
+                    Promise.all(promises).then(function() {
+                        hideLoadingOverlay();
+                        alert('Importación completada\n\n' +
+                              'Productos importados: ' + imported + '\n' +
+                              'Errores: ' + errors);
+                        
+                        loadProducts();
+                        updateDashboardKPIs();
+                        showLowStockAlerts();
+                    });
                     
                 } catch (error) {
                     hideLoadingOverlay();
@@ -1534,56 +1500,72 @@
 
     // Exportar a Excel/CSV
     function exportToExcel() {
-        var products = getProductsState();
-        
-        if (products.length === 0) {
-            alert('No hay productos para exportar');
-            return;
-        }
-        
         showLoadingOverlay('Generando archivo...');
         
-        // Generar CSV
-        var csv = 'Código,Nombre,Descripción,Categoría,Precio,Costo,Stock,Stock Mínimo,Unidad,Proveedor,Activo\\n';
-        
-        products.forEach(function(product) {
-            csv += [
-                product.codigo,
-                '"' + product.nombre + '"',
-                '"' + (product.descripcion || '') + '"',
-                product.categoria,
-                product.precio,
-                product.costo,
-                product.stock,
-                product.stockMinimo,
-                product.unidad,
-                '"' + (product.proveedor || '') + '"',
-                product.activo ? 'Sí' : 'No'
-            ].join(',') + '\\n';
-        });
-        
-        // Descargar archivo
-        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        var url = URL.createObjectURL(blob);
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'productos_' + new Date().toISOString().split('T')[0] + '.csv');
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        hideLoadingOverlay();
-        
-        if (typeof MarketWorld.notifications !== 'undefined') {
-            MarketWorld.notifications.create({
-                titulo: 'Exportación exitosa',
-                mensaje: products.length + ' productos exportados correctamente',
-                tipo: 'success'
-            });
+        var fetchProducts;
+        if (hasProductApi()) {
+            fetchProducts = MarketWorld.api.products.getAll({ per_page: 1000 })
+                .then(function(response) {
+                    var parsed = normalizeApiListResponse(response);
+                    return (parsed.items || []).map(mapApiProductToFrontend);
+                });
+        } else {
+            fetchProducts = Promise.resolve(getProductsState());
         }
+
+        fetchProducts.then(function(products) {
+            if (products.length === 0) {
+                hideLoadingOverlay();
+                alert('No hay productos para exportar');
+                return;
+            }
+            
+            // Generar CSV
+            var csv = '\uFEFF'; // BOM para Excel
+            csv += 'Código,Nombre,Descripción,Categoría,Precio Venta,Costo,Stock,Stock Mínimo,Unidad,Proveedor,Activo\n';
+            
+            products.forEach(function(product) {
+                csv += [
+                    product.codigo,
+                    '"' + (product.nombre || '').replace(/"/g, '""') + '"',
+                    '"' + (product.descripcion || '').replace(/"/g, '""') + '"',
+                    product.categoria,
+                    product.precio,
+                    product.costo,
+                    product.stock,
+                    product.stockMinimo,
+                    product.unidad,
+                    '"' + (product.proveedor || '').replace(/"/g, '""') + '"',
+                    product.activo ? 'Sí' : 'No'
+                ].join(',') + '\n';
+            });
+            
+            // Descargar archivo
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'productos_' + new Date().toISOString().split('T')[0] + '.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            hideLoadingOverlay();
+            
+            if (typeof MarketWorld.notifications !== 'undefined') {
+                MarketWorld.notifications.create({
+                    titulo: 'Exportación exitosa',
+                    mensaje: products.length + ' productos exportados correctamente',
+                    tipo: 'success'
+                });
+            }
+        }).catch(function(err) {
+            hideLoadingOverlay();
+            showApiError(err, 'No se pudo generar la exportación.');
+        });
     }
 
     // Variables de paginación
@@ -1778,10 +1760,57 @@
         updateMovementsSummary();
     }
 
-    // Cargar tab de ajustes
+    // Cargar pestaña de ajustes
     function loadAjustesTab() {
-        console.log('⚙️ Cargando ajustes...');
-        // TODO: Implementar ajustes de inventario
+        var container = document.getElementById('costAdjustmentsList');
+        if (!container) return;
+        
+        container.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
+        
+        MarketWorld.api.products.getCostAdjustments()
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var adjustments = response.data;
+                    container.innerHTML = '';
+                    
+                    if (adjustments.length === 0) {
+                        container.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay ajustes de costo registrados</td></tr>';
+                        return;
+                    }
+                    
+                    adjustments.forEach(function(adj) {
+                        var row = document.createElement('tr');
+                        
+                        var oldCost = parseFloat(adj.old_cost || 0);
+                        var newCost = parseFloat(adj.new_cost || 0);
+                        var diff = newCost - oldCost;
+                        var diffClass = diff > 0 ? 'text-danger' : 'text-success';
+                        var diffIcon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '');
+                        
+                        var userName = adj.user ? (adj.user.nombre + ' ' + (adj.user.apellido || '')) : 'Sistema';
+                        var prodName = adj.product ? adj.product.nombre : ('ID: ' + adj.product_id);
+
+                        row.innerHTML = `
+                            <td>${formatDate(adj.created_at)}</td>
+                            <td>${prodName}</td>
+                            <td>$${oldCost.toFixed(2)}</td>
+                            <td><strong>$${newCost.toFixed(2)}</strong></td>
+                            <td class="${diffClass}">${diffIcon} $${Math.abs(diff).toFixed(2)}</td>
+                            <td>${userName}</td>
+                            <td>${adj.reason || '-'}</td>
+                        `;
+                        
+                        container.appendChild(row);
+                    });
+                }
+            })
+            .catch(function(err) {
+                container.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar ajustes</td></tr>';
+            });
+    }
+
+    // --- Logout ---
+    function logout() {
     }
 
     // Variables para gráficos
@@ -2107,62 +2136,68 @@
     // ========================================
 
     function displayCategories() {
-        var categories = MarketWorld.data.getCategories();
         var container = document.getElementById('categoriesList');
-        
         if (!container) return;
         
-        container.innerHTML = '';
+        container.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
         
-        if (categories.length === 0) {
-            container.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay categorías registradas</td></tr>';
-            return;
-        }
-        
-        categories.forEach(function(category) {
-            var products = MarketWorld.data.getProducts().filter(function(p) {
-                return p.categoria === category.nombre;
+        MarketWorld.api.categories.getAll()
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var categories = response.data;
+                    container.innerHTML = '';
+                    
+                    if (categories.length === 0) {
+                        container.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay categorías registradas</td></tr>';
+                        return;
+                    }
+                    
+                    categories.forEach(function(category) {
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${category.nombre}</strong></td>
+                            <td>${category.descripcion || '<span class="text-muted">Sin descripción</span>'}</td>
+                            <td><span class="badge bg-primary">...</span></td>
+                            <td>
+                                ${category.activo ? 
+                                    '<span class="badge bg-success">Activa</span>' : 
+                                    '<span class="badge bg-secondary">Inactiva</span>'}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-warning btn-edit-category" data-category-id="${category.id}" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-delete-category" data-category-id="${category.id}" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        
+                        container.appendChild(row);
+                    });
+                    
+                    // Event listeners para botones
+                    container.querySelectorAll('.btn-edit-category').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = parseInt(this.getAttribute('data-category-id'));
+                            editCategory(id);
+                        });
+                    });
+                    
+                    container.querySelectorAll('.btn-delete-category').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = parseInt(this.getAttribute('data-category-id'));
+                            deleteCategory(id);
+                        });
+                    });
+                }
+            })
+            .catch(function(err) {
+                container.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar categorías</td></tr>';
+                showApiError(err, 'No se pudieron cargar las categorías.');
             });
-            
-            var row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>${category.nombre}</strong></td>
-                <td>${category.descripcion || '<span class="text-muted">Sin descripción</span>'}</td>
-                <td><span class="badge bg-primary">${products.length} productos</span></td>
-                <td>
-                    ${category.activa ? 
-                        '<span class="badge bg-success">Activa</span>' : 
-                        '<span class="badge bg-secondary">Inactiva</span>'}
-                </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-warning btn-edit-category" data-category-id="${category.id}" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-delete-category" data-category-id="${category.id}" title="Eliminar" ${products.length > 0 ? 'disabled' : ''}>
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            
-            container.appendChild(row);
-        });
-        
-        // Event listeners para botones
-        container.querySelectorAll('.btn-edit-category').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var id = parseInt(this.getAttribute('data-category-id'));
-                editCategory(id);
-            });
-        });
-        
-        container.querySelectorAll('.btn-delete-category').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var id = parseInt(this.getAttribute('data-category-id'));
-                deleteCategory(id);
-            });
-        });
     }
 
     function initCategoryModal() {
@@ -2198,65 +2233,68 @@
         var categoryData = {
             nombre: nombre,
             descripcion: descripcion,
-            activa: activa
+            activo: activa
         };
         
-        var result;
+        var request;
         if (id) {
-            result = MarketWorld.data.updateCategory(id, categoryData);
+            request = MarketWorld.api.categories.update(id, categoryData);
         } else {
-            result = MarketWorld.data.createCategory(categoryData);
+            request = MarketWorld.api.categories.create(categoryData);
         }
         
-        if (result.success) {
-            alert(result.message);
-            displayCategories();
-            loadCategories(); // Actualizar selects de categoría
-            
-            var modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
-            if (modal) modal.hide();
-        } else {
-            alert('Error: ' + result.message);
-        }
+        request
+            .then(function(response) {
+                if (response && response.success) {
+                    alert(response.message || 'Categoría guardada correctamente');
+                    displayCategories();
+                    loadCategories(); // Actualizar selects de categoría
+                    
+                    var modalEl = document.getElementById('categoryModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo guardar la categoría.');
+            });
     }
 
     function editCategory(id) {
-        var category = MarketWorld.data.getCategories().find(function(c) {
-            return c.id === id;
-        });
-        
-        if (!category) {
-            alert('Categoría no encontrada');
-            return;
-        }
-        
-        document.getElementById('categoryId').value = category.id;
-        document.getElementById('categoryNombre').value = category.nombre;
-        document.getElementById('categoryDescripcion').value = category.descripcion || '';
-        document.getElementById('categoryActiva').checked = category.activa;
-        
-        document.getElementById('categoryModalLabel').textContent = 'Editar Categoría';
-        
-        var modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-        modal.show();
+        MarketWorld.api.categories.getById(id)
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var category = response.data;
+                    document.getElementById('categoryId').value = category.id;
+                    document.getElementById('categoryNombre').value = category.nombre;
+                    document.getElementById('categoryDescripcion').value = category.descripcion || '';
+                    document.getElementById('categoryActiva').checked = category.activo;
+                    
+                    document.getElementById('categoryModalLabel').textContent = 'Editar Categoría';
+                    
+                    var modalEl = document.getElementById('categoryModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo obtener la información de la categoría.');
+            });
     }
 
     function deleteCategory(id) {
-        var category = MarketWorld.data.getCategories().find(function(c) {
-            return c.id === id;
-        });
-        
-        if (!category) return;
-        
-        if (confirm('¿Eliminar la categoría "' + category.nombre + '"?\\n\\nEsta acción no se puede deshacer.')) {
-            var result = MarketWorld.data.deleteCategory(id);
-            if (result.success) {
-                alert(result.message);
-                displayCategories();
-                loadCategories();
-            } else {
-                alert('Error: ' + result.message);
-            }
+        if (confirm('¿Eliminar esta categoría?\n\nEsta acción no se puede deshacer y fallará si tiene productos asociados.')) {
+            MarketWorld.api.categories.delete(id)
+                .then(function(response) {
+                    if (response && response.success) {
+                        alert(response.message || 'Categoría eliminada');
+                        displayCategories();
+                        loadCategories();
+                    }
+                })
+                .catch(function(err) {
+                    showApiError(err, 'No se pudo eliminar la categoría.');
+                });
         }
     }
 
@@ -2273,52 +2311,52 @@
 
     function displayMovements() {
         var container = document.getElementById('movementsList');
-        
         if (!container) return;
         
-        container.innerHTML = '';
+        container.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
         
-        // Obtener movimientos desde localStorage
-        var movements = MarketWorld.data.getInventoryMovements();
-        
-        // Generar datos iniciales si no existen
-        if (movements.length === 0) {
-            generateInitialMovements();
-            movements = MarketWorld.data.getInventoryMovements();
-        }
-        
-        if (movements.length === 0) {
-            container.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay movimientos registrados</td></tr>';
-            return;
-        }
-        
-        // Ordenar por fecha descendente
-        var sortedMovements = movements.slice().sort(function(a, b) {
-            return new Date(b.fecha) - new Date(a.fecha);
-        });
-        
-        // Mostrar últimos 50 movimientos
-        sortedMovements.slice(0, 50).forEach(function(mov) {
-            var row = document.createElement('tr');
-            
-            var tipoBadge = mov.tipo === 'entrada' ? 'success' : 
-                           mov.tipo === 'salida' ? 'danger' : 'warning';
-            var tipoIcon = mov.tipo === 'entrada' ? '↑' : 
-                          mov.tipo === 'salida' ? '↓' : '⚡';
-            
-            row.innerHTML = `
-                <td>${formatDate(mov.fecha)}</td>
-                <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${mov.tipo.toUpperCase()}</span></td>
-                <td>${mov.productoNombre}</td>
-                <td><strong>${mov.cantidad}</strong></td>
-                <td>${mov.stockAnterior}</td>
-                <td><strong>${mov.stockNuevo}</strong></td>
-                <td>${mov.usuario}</td>
-                <td>${mov.motivo || '<span class="text-muted">-</span>'}</td>
-            `;
-            
-            container.appendChild(row);
-        });
+        MarketWorld.api.movements.getAll()
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    var movements = response.data;
+                    container.innerHTML = '';
+                    
+                    if (movements.length === 0) {
+                        container.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay movimientos registrados</td></tr>';
+                        return;
+                    }
+                    
+                    movements.forEach(function(mov) {
+                        var row = document.createElement('tr');
+                        
+                        var tipoLabel = mov.tipo || 'Ajuste';
+                        var tipoBadge = tipoLabel === 'Entrada' ? 'success' : 
+                                       tipoLabel === 'Salida' ? 'danger' : 'warning';
+                        var tipoIcon = tipoLabel === 'Entrada' ? '↑' : 
+                                      tipoLabel === 'Salida' ? '↓' : '⚡';
+                        
+                        var userName = mov.user ? (mov.user.nombre + ' ' + (mov.user.apellido || '')) : 'Sistema';
+                        var prodName = mov.product ? mov.product.nombre : ('ID: ' + mov.product_id);
+
+                        row.innerHTML = `
+                            <td>${formatDate(mov.created_at)}</td>
+                            <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${tipoLabel.toUpperCase()}</span></td>
+                            <td>${prodName}</td>
+                            <td><strong>${mov.cantidad}</strong></td>
+                            <td>${mov.stock_anterior}</td>
+                            <td><strong>${mov.stock_nuevo}</strong></td>
+                            <td>${userName}</td>
+                            <td>${mov.motivo || '<span class="text-muted">-</span>'}</td>
+                        `;
+                        
+                        container.appendChild(row);
+                    });
+                }
+            })
+            .catch(function(err) {
+                container.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar movimientos</td></tr>';
+                console.error('Error movements:', err);
+            });
     }
 
     function generateInitialMovements() {
@@ -2420,59 +2458,31 @@
             return;
         }
         
-        var product = MarketWorld.data.findProductById(productoId);
-        if (!product) {
-            alert('Producto no encontrado');
-            return;
-        }
+        var movementData = {
+            product_id: productoId,
+            tipo: tipo,
+            cantidad: cantidad,
+            motivo: motivo || 'Registro manual'
+        };
         
-        var stockAnterior = product.stock;
-        var stockNuevo;
-        
-        if (tipo === 'entrada') {
-            stockNuevo = stockAnterior + cantidad;
-        } else if (tipo === 'salida') {
-            if (cantidad > stockAnterior) {
-                if (!confirm('La cantidad excede el stock actual (' + stockAnterior + '). ¿Continuar de todos modos?')) {
-                    return;
+        MarketWorld.api.movements.create(movementData)
+            .then(function(response) {
+                if (response && response.success) {
+                    alert(response.message || 'Movimiento registrado exitosamente');
+                    displayMovements();
+                    updateMovementsSummary();
+                    loadProducts(); // Actualizar lista de productos
+                    updateDashboardKPIs();
+                    if (typeof initMovementsChart === 'function') initMovementsChart();
+                    
+                    var modalEl = document.getElementById('movementModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
                 }
-            }
-            stockNuevo = Math.max(0, stockAnterior - cantidad);
-        } else {
-            stockNuevo = cantidad; // Ajuste directo
-        }
-        
-        // Actualizar stock del producto
-        var result = MarketWorld.data.updateStock(productoId, stockNuevo, 'set');
-        
-        if (result.success) {
-            // Registrar movimiento en localStorage
-            var movementResult = MarketWorld.data.createInventoryMovement({
-                tipo: tipo,
-                productoId: product.id,
-                productoNombre: product.nombre,
-                cantidad: cantidad,
-                stockAnterior: stockAnterior,
-                stockNuevo: stockNuevo,
-                motivo: motivo || 'Registro manual'
+            })
+            .catch(function(err) {
+                showApiError(err, 'No se pudo registrar el movimiento.');
             });
-            
-            if (movementResult.success) {
-                alert('Movimiento registrado exitosamente');
-                displayMovements();
-                updateMovementsSummary();
-                loadProducts(); // Actualizar lista de productos
-                updateDashboardKPIs();
-                initMovementsChart(); // Actualizar gráfico con datos reales
-                
-                var modal = bootstrap.Modal.getInstance(document.getElementById('movementModal'));
-                if (modal) modal.hide();
-            } else {
-                alert('Stock actualizado pero error al registrar movimiento: ' + movementResult.message);
-            }
-        } else {
-            alert('Error: ' + result.message);
-        }
     }
 
     function applyMovementFilters() {
@@ -2480,25 +2490,24 @@
         var fechaDesde = document.getElementById('filterMovFechaDesde').value;
         var fechaHasta = document.getElementById('filterMovFechaHasta').value;
         
-        var movements = MarketWorld.data.getInventoryMovements();
-        
-        var filtered = movements.filter(function(mov) {
-            var matchTipo = !tipo || mov.tipo === tipo;
-            
-            var matchFecha = true;
-            if (fechaDesde) {
-                matchFecha = matchFecha && new Date(mov.fecha) >= new Date(fechaDesde);
-            }
-            if (fechaHasta) {
-                var hasta = new Date(fechaHasta);
-                hasta.setHours(23, 59, 59);
-                matchFecha = matchFecha && new Date(mov.fecha) <= hasta;
-            }
-            
-            return matchTipo && matchFecha;
-        });
-        
-        displayFilteredMovements(filtered);
+        var apiFilters = {};
+        if (tipo) apiFilters.tipo = tipo;
+        if (fechaDesde) apiFilters.fecha_desde = fechaDesde;
+        if (fechaHasta) apiFilters.fecha_hasta = fechaHasta;
+
+        var container = document.getElementById('movementsList');
+        if (container) container.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div> Filtrando...</td></tr>';
+
+        MarketWorld.api.movements.getAll(apiFilters)
+            .then(function(response) {
+                if (response && response.success && response.data) {
+                    displayFilteredMovements(response.data);
+                }
+            })
+            .catch(function(err) {
+                if (container) container.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al aplicar filtros</td></tr>';
+                showApiError(err, 'No se pudieron filtrar los movimientos.');
+            });
     }
 
     function displayFilteredMovements(filtered) {
@@ -2515,19 +2524,23 @@
         filtered.forEach(function(mov) {
             var row = document.createElement('tr');
             
-            var tipoBadge = mov.tipo === 'entrada' ? 'success' : 
-                           mov.tipo === 'salida' ? 'danger' : 'warning';
-            var tipoIcon = mov.tipo === 'entrada' ? '↑' : 
-                          mov.tipo === 'salida' ? '↓' : '⚡';
+            var tipoLabel = mov.tipo || 'Ajuste';
+            var tipoBadge = tipoLabel === 'Entrada' ? 'success' : 
+                           tipoLabel === 'Salida' ? 'danger' : 'warning';
+            var tipoIcon = tipoLabel === 'Entrada' ? '↑' : 
+                          tipoLabel === 'Salida' ? '↓' : '⚡';
             
+            var userName = mov.user ? (mov.user.nombre + ' ' + (mov.user.apellido || '')) : 'Sistema';
+            var prodName = mov.product ? mov.product.nombre : ('ID: ' + mov.product_id);
+
             row.innerHTML = `
-                <td>${formatDate(mov.fecha)}</td>
-                <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${mov.tipo.toUpperCase()}</span></td>
-                <td>${mov.productoNombre}</td>
+                <td>${formatDate(mov.created_at)}</td>
+                <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${tipoLabel.toUpperCase()}</span></td>
+                <td>${prodName}</td>
                 <td><strong>${mov.cantidad}</strong></td>
-                <td>${mov.stockAnterior}</td>
-                <td><strong>${mov.stockNuevo}</strong></td>
-                <td>${mov.usuario}</td>
+                <td>${mov.stock_anterior}</td>
+                <td><strong>${mov.stock_nuevo}</strong></td>
+                <td>${userName}</td>
                 <td>${mov.motivo || '<span class="text-muted">-</span>'}</td>
             `;
             

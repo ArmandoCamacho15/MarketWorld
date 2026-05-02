@@ -263,6 +263,52 @@
                 body: JSON.stringify(data),
             });
         },
+        getCostAdjustments: function () {
+            return apiFetch('/cost-adjustments');
+        },
+    };
+
+    // -------------------------------------------------------
+    // API de Categorías (Módulo Inventario)
+    // -------------------------------------------------------
+    var CategoryAPI = {
+        getAll: function () {
+            return apiFetch('/categories');
+        },
+        getById: function (id) {
+            return apiFetch('/categories/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/categories', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/categories/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/categories/' + id, { method: 'DELETE' });
+        },
+    };
+
+    // -------------------------------------------------------
+    // API de Movimientos de Inventario
+    // -------------------------------------------------------
+    var MovementAPI = {
+        getAll: function (filtros) {
+            var params = buildQueryParams(filtros);
+            return apiFetch('/inventory-movements' + (params ? '?' + params : ''));
+        },
+        create: function (data) {
+            return apiFetch('/inventory-movements', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
     };
 
     // -------------------------------------------------------
@@ -497,6 +543,8 @@
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.api = {
         products:  ProductAPI,
+        categories: CategoryAPI,
+        movements: MovementAPI,
         customers: CustomerAPI,
         invoices:  InvoiceAPI,
         purchases: PurchaseAPI,
