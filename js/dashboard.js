@@ -21,7 +21,21 @@
         if (typeof MarketWorld.notifications !== 'undefined') {
             MarketWorld.notifications.init();
         }
+
+        const btnImprimirFactura = document.getElementById('btnImprimirFactura');
+        if (btnImprimirFactura) {
+            btnImprimirFactura.addEventListener('click', imprimirFactura);
+        }
     });
+
+    function setSafeHtml(element, html) {
+        if (!element) return;
+        if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.insertarHTMLSeguro === 'function') {
+            MarketWorld.utils.insertarHTMLSeguro(element, html);
+            return;
+        }
+        element.textContent = String(html || '');
+    }
 
 
     // Función para imprimir el contenido del modal (misma firma que en facturación)
@@ -30,26 +44,55 @@
         if (!contenido) return;
 
         const ventana = window.open('', '_blank', 'width=800,height=600');
-        ventana.document.write(`
-            <html>
-            <head>
-                <title>Imprimir Factura</title>
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-                <style>body{padding:20px}@media print{.no-print{display:none}}</style>
-            </head>
-            <body>
-                <div class="text-center mb-4">
-                    <h2>MarketWorld</h2>
-                    <p class="text-muted">Detalle de Factura</p>
-                </div>
-                ${contenido.innerHTML}
-                <div class="text-center mt-4 no-print">
-                    <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
-                </div>
-            </body>
-            </html>
-        `);
-        ventana.document.close();
+        if (!ventana) return;
+
+        const doc = ventana.document;
+        doc.open();
+        doc.close();
+
+        const head = doc.head || doc.createElement('head');
+        if (!doc.head) {
+            doc.documentElement.appendChild(head);
+        }
+
+        const title = doc.createElement('title');
+        title.textContent = 'Imprimir Factura';
+        head.appendChild(title);
+
+        const link = doc.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+        head.appendChild(link);
+
+        const style = doc.createElement('style');
+        style.textContent = 'body{padding:20px}@media print{.no-print{display:none}}';
+        head.appendChild(style);
+
+        const body = doc.body || doc.createElement('body');
+        if (!doc.body) {
+            doc.documentElement.appendChild(body);
+        }
+
+        const headerHtml = '<div class="text-center mb-4">' +
+            '<h2>MarketWorld</h2>' +
+            '<p class="text-muted">Detalle de Factura</p>' +
+            '</div>';
+
+        if (window.DOMPurify) {
+            setSafeHtml(body, window.DOMPurify.sanitize(headerHtml + (contenido.innerHTML || '')));
+        } else {
+            setSafeHtml(body, headerHtml + (contenido.innerHTML || ''));
+        }
+
+        const buttonWrapper = doc.createElement('div');
+        buttonWrapper.className = 'text-center mt-4 no-print';
+        const printButton = doc.createElement('button');
+        printButton.type = 'button';
+        printButton.className = 'btn btn-primary';
+        printButton.textContent = 'Imprimir';
+        printButton.addEventListener('click', function() { ventana.print(); });
+        buttonWrapper.appendChild(printButton);
+        body.appendChild(buttonWrapper);
     }
     window.imprimirFactura = imprimirFactura;
 
@@ -415,11 +458,11 @@
         }
 
         if (transactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay transacciones recientes</td></tr>';
+            setSafeHtml(tbody, '<tr><td colspan="4" class="text-center text-muted">No hay transacciones recientes</td></tr>');
             return;
         }
 
-        tbody.innerHTML = transactions.map(function(inv) {
+        setSafeHtml(tbody, transactions.map(function(inv) {
             const estado = String(inv.estado || 'Pagada');
             const total = parseFloat(inv.total || 0).toLocaleString('es-CO');
             const cliente = inv.cliente_nombre || (inv.customer ? inv.customer.nombre : 'Consumidor Final');
@@ -438,7 +481,7 @@
                 '<td class="fw-bold text-primary">$' + total + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + estado + '</span></td>' +
             '</tr>';
-        }).join('');
+        }).join(''));
 
         // Añadir manejadores para abrir modal de factura al hacer click
         Array.from(tbody.querySelectorAll('.recent-invoice-row')).forEach(function(row) {
@@ -464,7 +507,7 @@
         const bodyEl = document.getElementById('modalDetalleBody');
         if (!modalEl || !bodyEl) return;
 
-        bodyEl.innerHTML = '<div class="text-center text-muted">Cargando...</div>';
+        setSafeHtml(bodyEl, '<div class="text-center text-muted">Cargando...</div>');
         const bsModal = new bootstrap.Modal(modalEl, { keyboard: true });
         bsModal.show();
 
@@ -502,7 +545,7 @@
             }
 
             if (!invoiceData) {
-                bodyEl.innerHTML = '<div class="text-center text-danger">No se encontró la factura o no hay permiso para verla.</div>';
+                setSafeHtml(bodyEl, '<div class="text-center text-danger">No se encontró la factura o no hay permiso para verla.</div>');
                 return;
             }
 
@@ -512,7 +555,7 @@
             // Filtrar facturas de prueba por convención en número o cliente
             const num = String(invoiceData.numero_factura || invoiceData.numero || invoiceData.id || '');
             if (/qa|test|inv-test|test-/i.test(num) || /qa|test/i.test(String(invoiceData.customer_name || invoiceData.cliente_nombre || ''))) {
-                bodyEl.innerHTML = '<div class="text-center text-muted">Factura de prueba detectada y omitida.</div>';
+                setSafeHtml(bodyEl, '<div class="text-center text-muted">Factura de prueba detectada y omitida.</div>');
                 return;
             }
 
@@ -520,18 +563,18 @@
                 // Usar el renderer estandarizado si está disponible
                 if (window.MarketWorld && MarketWorld.utils && typeof MarketWorld.utils.renderInvoiceHTML === 'function') {
                     try {
-                        bodyEl.innerHTML = MarketWorld.utils.renderInvoiceHTML(invoiceData);
+                        setSafeHtml(bodyEl, MarketWorld.utils.renderInvoiceHTML(invoiceData));
                     } catch (e) {
                         console.warn('Error usando renderInvoiceHTML:', e && e.message ? e.message : e);
-                        bodyEl.innerHTML = '<div class="text-center text-danger">Error renderizando la factura.</div>';
+                        setSafeHtml(bodyEl, '<div class="text-center text-danger">Error renderizando la factura.</div>');
                     }
                 } else {
-                    bodyEl.innerHTML = '<div class="text-center text-danger">No hay renderer de factura disponible.</div>';
+                    setSafeHtml(bodyEl, '<div class="text-center text-danger">No hay renderer de factura disponible.</div>');
                 }
             // El contenido de la factura ya fue renderizado por MarketWorld.utils.renderInvoiceHTML
         } catch (err) {
             console.error('openInvoiceModal error:', err && err.message ? err.message : err);
-            bodyEl.innerHTML = '<div class="text-center text-danger">Error cargando la factura.</div>';
+            setSafeHtml(bodyEl, '<div class="text-center text-danger">Error cargando la factura.</div>');
         }
     }
 
