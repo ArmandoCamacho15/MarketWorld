@@ -15,6 +15,7 @@ class PurchaseItem extends Model
         'product_id',
         'cantidad',
         'precio_unitario', // Renombrado de costo_unitario
+        'costo_unitario',  // Mantener por compatibilidad con BD
         'subtotal'
     ];
 

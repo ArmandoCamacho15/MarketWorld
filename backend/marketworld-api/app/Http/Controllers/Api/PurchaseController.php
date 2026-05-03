@@ -163,6 +163,7 @@ class PurchaseController extends Controller
                         'product_id'      => $item['product_id'],
                         'cantidad'        => $item['cantidad'],
                         'precio_unitario' => $item['precio_unitario'],
+                        'costo_unitario'  => $item['precio_unitario'], // Asegurar compatibilidad
                         'subtotal'        => $item['subtotal'],
                     ]);
 
