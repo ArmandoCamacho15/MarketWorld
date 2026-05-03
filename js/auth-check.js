@@ -3,8 +3,8 @@
 (function(global) {
     'use strict';
 
-    var AUTH_TOKEN_KEY = 'marketworld_auth_token';
-    var AUTH_USER_KEY = 'marketworld_auth_user';
+    var AUTH_TOKEN_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_TOKEN_KEY : 'marketworld_auth_token');
+    var AUTH_USER_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY : 'marketworld_auth_user');
 
     function getStoredUser() {
         var raw = localStorage.getItem(AUTH_USER_KEY);

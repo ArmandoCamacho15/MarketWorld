@@ -12,18 +12,13 @@
     'use strict';
 
     // -------------------------------------------------------
-    // Configuración — cambia BASE_URL si tu servidor corre
-    // en otro puerto o dominio.
+    // Configuración — Centralizada en js/config.js
     // -------------------------------------------------------
-    var currentHost = (typeof window !== 'undefined' && window.location && window.location.hostname)
-        ? window.location.hostname
-        : '127.0.0.1';
-    // Permite override manual si se define antes de cargar el adaptador.
-    var BASE_URL = global.MARKETWORLD_API_BASE_URL || ('http://' + currentHost + ':8000/api/v1');
+    var BASE_URL = global.MARKETWORLD_API_BASE_URL || (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.API_URL : 'http://127.0.0.1:8000/api/v1');
     var API_ROOT = BASE_URL.replace('/api/v1', '');
     var CSRF_URL = API_ROOT + '/sanctum/csrf-cookie';
-    var AUTH_TOKEN_KEY = 'marketworld_auth_token';
-    var AUTH_USER_KEY = 'marketworld_auth_user';
+    var AUTH_TOKEN_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_TOKEN_KEY : 'marketworld_auth_token');
+    var AUTH_USER_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY : 'marketworld_auth_user');
 
     // Cabeceras comunes para JSON
     var JSON_HEADERS = {
