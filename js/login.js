@@ -20,9 +20,7 @@
     });
 
     function clearSession() {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(AUTH_USER_KEY);
-
+        // La limpieza de sesión ahora se delega al adaptador de API que maneja cookies.
         if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.logout) {
             MarketWorld.data.logout();
         }
@@ -37,8 +35,7 @@
         return MarketWorld.api.auth.me()
             .then(function(body) {
                 if (body && body.success) {
-                    var user = body.user || body.data || body;
-                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+                    // Si el servidor confirma la sesión (vía cookie), redirigimos.
                     window.location.href = 'inicio.html';
                 }
             })

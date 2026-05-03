@@ -70,22 +70,24 @@
 
     async function sincronizarInicioConApi() {
         try {
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!token) return;
-
+            // La autenticación ahora es por cookies HttpOnly, no necesitamos leer tokens del localStorage.
             const headers = {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
             };
 
-            const [productsRes, invoicesRes] = await Promise.all([
-                fetch('http://127.0.0.1:8000/api/v1/products', { headers }),
-                fetch('http://127.0.0.1:8000/api/v1/invoices', { headers })
-            ]);
+            // Usar el adaptador centralizado si está disponible para mayor seguridad y consistencia
+            const productsPromise = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products) 
+                ? MarketWorld.api.products.getAll() 
+                : fetch('http://127.0.0.1:8000/api/v1/products', { headers, credentials: 'include' }).then(r => r.json());
 
-            if (productsRes.ok && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                const body = await productsRes.json();
-                const apiProducts = extractDataArray(body);
+            const invoicesPromise = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.invoices)
+                ? MarketWorld.api.invoices.getAll()
+                : fetch('http://127.0.0.1:8000/api/v1/invoices', { headers, credentials: 'include' }).then(r => r.json());
+
+            const [productsBody, invoicesBody] = await Promise.all([productsPromise, invoicesPromise]);
+
+            if (productsBody && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
+                const apiProducts = extractDataArray(productsBody);
                 if (apiProducts.length > 0) {
                     const localProducts = MarketWorld.data.getProducts();
                     const byCode = new Map();
@@ -122,9 +124,8 @@
                 }
             }
 
-            if (invoicesRes.ok) {
-                const body = await invoicesRes.json();
-                const apiInvoices = extractDataArray(body);
+            if (invoicesBody) {
+                const apiInvoices = extractDataArray(invoicesBody);
                 if (apiInvoices.length > 0) {
                     const byNumber = new Map();
                     const localInvoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)

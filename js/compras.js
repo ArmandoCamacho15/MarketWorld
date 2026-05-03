@@ -51,8 +51,8 @@
     async function sincronizarDatosComprasConApi() {
         try {
             const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products;
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!hasApi || !token) return;
+            // No necesitamos verificar el token en localStorage; las cookies se envían solas.
+            if (!hasApi) return;
 
             const response = await MarketWorld.api.products.getAll();
             const apiProducts = Array.isArray(response && response.data) ? response.data : [];
@@ -146,7 +146,8 @@
     // --- Helpers API / Auth ---
     function hasApiAccess() {
         try {
-            return typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.purchases && MarketWorld.api.auth && !!MarketWorld.api.auth.getToken();
+            // El acceso ahora se valida por el servidor mediante cookies HttpOnly.
+            return typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.purchases && MarketWorld.api.auth;
         } catch (e) {
             return false;
         }

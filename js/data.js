@@ -444,8 +444,7 @@
 
     function logout() {
         localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-        localStorage.removeItem('marketworld_auth_token');
-        localStorage.removeItem('marketworld_auth_user');
+        // El token y el usuario ya no se guardan en localStorage por seguridad.
     }
 
     function isLoggedIn() {

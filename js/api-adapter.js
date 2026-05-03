@@ -33,16 +33,12 @@
     };
 
     function setSessionState(user) {
-        // Marcador temporal de compatibilidad para módulos aún no migrados a cookie-only.
-        localStorage.setItem(AUTH_TOKEN_KEY, 'cookie_session');
-        if (user) {
-            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-        }
+        // La sesión ahora se maneja exclusivamente por cookies HttpOnly.
+        // No guardamos tokens ni datos sensibles en localStorage para prevenir XSS.
     }
 
     function clearSessionState() {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(AUTH_USER_KEY);
+        // Limpieza de estado local si fuera necesario, pero ya no usamos localStorage para la sesión.
     }
 
     function buildHeaders(customHeaders) {
@@ -441,7 +437,8 @@
         },
 
         getToken: function () {
-            return localStorage.getItem(AUTH_TOKEN_KEY);
+            // Deprecado: el token ahora viaja en cookies HttpOnly
+            return null;
         },
     };
 

@@ -207,7 +207,9 @@
      */
     function getCurrentUser() {
         try {
-            var userData = localStorage.getItem('marketworld_user');
+            // El usuario actual se obtiene preferiblemente mediante MarketWorld.api.auth.me()
+            // Si se requiere en caché, usar una clave que no implique sesión.
+            var userData = localStorage.getItem('marketworld_user_profile');
             return userData ? JSON.parse(userData) : null;
         } catch (e) {
             return null;
@@ -218,10 +220,18 @@
      * Cierra la sesión del usuario
      */
     function logout() {
-        localStorage.removeItem('marketworld_user');
+        localStorage.removeItem('marketworld_user_profile');
         localStorage.removeItem('marketworld_auth_token');
         localStorage.removeItem('marketworld_auth_user');
-        window.location.href = 'Login.html';
+        
+        // Delegar cierre de sesión al adaptador de API para limpiar cookies en el servidor
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.auth) {
+            MarketWorld.api.auth.logout().finally(function() {
+                window.location.href = 'Login.html';
+            });
+        } else {
+            window.location.href = 'Login.html';
+        }
     }
 
     /**

@@ -17,9 +17,7 @@
     }
 
     function clearSession() {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(AUTH_USER_KEY);
-
+        // La sesión se limpia en el backend; el frontend ya no guarda tokens.
         if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.logout) {
             MarketWorld.data.logout();
         }
@@ -65,9 +63,7 @@
                 var user = (body.data) ? body.data : (body.user || null);
                 
                 if (user) {
-                    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-                    // Marcador temporal de compatibilidad para módulos aún no migrados.
-                    localStorage.setItem(AUTH_TOKEN_KEY, 'cookie_session');
+                    // Sincronizamos con el estado global para UI, pero sin persistir en disco.
                     syncUserToLegacyStore(user);
                     loadUserInfo(user);
                     return true;
@@ -119,11 +115,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initLogout();
 
-        var cachedUser = getStoredUser();
-        if (cachedUser) {
-            loadUserInfo(cachedUser);
-        }
-
+        // Verificamos sesión contra el servidor en cada carga de página protegida.
         checkSession();
     });
 

@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="no-suggestions p-2">
                     <div>No se encontró el cliente.</div>
                     <div class="mt-2"><button class="btn btn-sm btn-link" id="irCrearCliente">Crear cliente en Factura Completa</button></div>
-                </div>`;
+                </div>`);
             suggestionsCliente.style.display = 'block';
             const botonCrear = document.getElementById('irCrearCliente');
             if (botonCrear) {
@@ -1728,8 +1728,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function sincronizarProductosFacturacionConApi() {
         try {
             const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products;
-            const token = localStorage.getItem('marketworld_auth_token');
-            if (!hasApi || !token) return;
+            if (!hasApi) return;
 
             const response = await MarketWorld.api.products.getAll();
             let apiProducts = [];
@@ -1996,15 +1995,14 @@ async function verDetalleFactura(facturaId) {
     let factura = null;
 
     try {
-        const token = localStorage.getItem('marketworld_auth_token');
-        if (token) {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/invoices/${facturaId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
-            if (result && result.success && result.data) {
-                factura = result.data;
-            }
+        // La sesión se maneja mediante cookies HttpOnly.
+        const response = await fetch(`http://127.0.0.1:8000/api/v1/invoices/${facturaId}`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+        });
+        const result = await response.json();
+        if (result && result.success && result.data) {
+            factura = result.data;
         }
     } catch (error) {
         console.warn('No se pudo obtener detalle por API, usando cache:', error.message || error);
