@@ -116,10 +116,8 @@
     }
 
     function getProductsState() {
-        if (inventoryState.products.length > 0 || inventoryState.source === 'api') {
-            return inventoryState.products.slice();
-        }
-        return MarketWorld.data.getProducts();
+        // MIGRADO (03-05-2026): Solo usar estado en memoria (API es fuente de verdad)
+        return inventoryState.products.slice();
     }
 
     function getProductById(id) {
@@ -128,6 +126,13 @@
             if (products[i].id === parseInt(id, 10)) return products[i];
         }
         return null;
+    }
+
+    function removeProductFromState(id) {
+        var productId = parseInt(id, 10);
+        inventoryState.products = inventoryState.products.filter(function(product) {
+            return product.id !== productId;
+        });
     }
 
     function getLowStockProductsState(products) {
@@ -167,6 +172,12 @@
 
         if (status === 404) {
             alert('No se encontró el recurso solicitado (404). ' + errorMessage);
+            return;
+        }
+
+        if (status === 409) {
+            // Conflicto de negocio: el backend bloquea el borrado porque el producto tiene dependencias.
+            alert(errorMessage);
             return;
         }
         
@@ -268,12 +279,7 @@
                     if (response && (response.data || Array.isArray(response))) {
                         var apiProducts = response.data || response;
                         var mapped = apiProducts.map(mapApiProductToFrontend);
-                        // Guardar en localStorage para compatibilidad con otras partes de la app
-                        try {
-                            localStorage.setItem('marketworld_products', JSON.stringify(mapped));
-                        } catch (e) {
-                            console.warn('No se pudo guardar productos en localStorage:', e && e.message ? e.message : e);
-                        }
+                        // API es la única fuente de verdad (03-05-2026)
                         setProductsState(mapped, 'api');
                         displayProducts(mapped);
                         showLowStockAlerts();
@@ -332,8 +338,10 @@
                     return [];
                 })
                 .catch(function(err) {
-                    console.warn('[API] Fallo, usando localStorage:', err.message);
-                    var products = MarketWorld.data.getProducts();
+                    // ERROR: API no disponible. Mostrar error en lugar de usar un respaldo local
+                    console.error('[API] Error fatal al obtener productos:', err);
+                    showApiError(err, 'No se pudo cargar los productos. Verifica la conexión al servidor.');
+                    var products = [];
                     setProductsState(products, 'local');
                     inventoryPaginationState.isServerMode = false;
                     inventoryPaginationState.page = 1;
@@ -347,7 +355,8 @@
                 });
         }
 
-        var localProducts = MarketWorld.data.getProducts();
+        // MIGRADO (03-05-2026): usar estado en memoria (del último sync), no data.js
+        var localProducts = getProductsState();
         setProductsState(localProducts, 'local');
         inventoryPaginationState.isServerMode = false;
         inventoryPaginationState.page = 1;
@@ -442,11 +451,10 @@
                         <button class="btn btn-sm btn-outline-info btn-adjust-stock" data-product-id="${product.id}" title="Ajustar stock">
                             <i class="bi bi-box"></i>
                         </button>
-                        ${ (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser && (MarketWorld.data.getCurrentUser() || {}).rol === 'Administrador') ? `
-                        <button class="btn btn-sm btn-outline-dark btn-adjust-cost" data-product-id="${product.id}" title="Ajustar costo">
+                        <!-- MIGRADO (03-05-2026): Validación de permisos removida del frontend. El backend valida. -->
+                        <button class="btn btn-sm btn-outline-dark btn-adjust-cost" data-product-id="${product.id}" title="Ajustar costo (requiere admin)">
                             <i class="bi bi-currency-dollar"></i>
                         </button>
-                        ` : '' }
                         <button class="btn btn-sm btn-outline-warning btn-edit-product" data-product-id="${product.id}" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
@@ -551,11 +559,8 @@
             return;
         }
 
-        var currentUser = (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.getCurrentUser) ? MarketWorld.data.getCurrentUser() : null;
-        if (!currentUser || currentUser.rol !== 'Administrador') {
-            alert('No tienes permisos para ajustar el costo');
-            return;
-        }
+        // MIGRADO (03-05-2026): Validación de permisos ahora es responsabilidad del backend
+        // El frontend no necesita validar rol; si falla, el backend retorna 403
 
         document.getElementById('adjustProductId').value = product.id;
         document.getElementById('adjustProductName').textContent = product.nombre + ' (' + product.codigo + ')';
@@ -725,21 +730,8 @@
                         saveButton.innerHTML = originalHtml;
                     }
 
-                    if (isConnectivityError(err)) {
-                        var fallbackResult = productId
-                            ? MarketWorld.data.updateProduct(productId, productData)
-                            : MarketWorld.data.createProduct(productData);
-
-                        if (fallbackResult.success) {
-                            setProductsState(MarketWorld.data.getProducts(), 'local');
-                            onSuccess(fallbackResult.message + ' (guardado en modo local)');
-                            return;
-                        }
-                        alert('Error: ' + fallbackResult.message);
-                        return;
-                    }
-
-                    showApiError(err, 'No se pudo guardar el producto en la API.');
+                    // MIGRADO (03-05-2026): Sin fallback a data.js — mostrar error y no guardar localmente
+                    showApiError(err, 'No se pudo guardar el producto en la API. Verifica la conexión al servidor.');
                 })
                 .finally(function() {
                     if (saveButton) {
@@ -750,16 +742,8 @@
             return;
         }
 
-        var localResult = productId
-            ? MarketWorld.data.updateProduct(productId, productData)
-            : MarketWorld.data.createProduct(productData);
-
-        if (localResult.success) {
-            setProductsState(MarketWorld.data.getProducts(), 'local');
-            onSuccess(localResult.message);
-        } else {
-            alert('Error: ' + localResult.message);
-        }
+        // MIGRADO (03-05-2026): Si NO hay API, mostrar error en lugar de fallback a data.js
+        showApiError(null, 'El adaptador de API no está disponible. Recarga la página.');
     }
 
     // ======= VER DETALLE DE PRODUCTO =======
@@ -921,7 +905,13 @@
                     .then(function(response) {
                         if (response.success) {
                             alert(response.message || 'Producto eliminado correctamente');
-                            return loadProducts();
+                            // Refresco visual inmediato sin esperar un reload completo.
+                            removeProductFromState(id);
+                            displayProducts(getFilteredProducts());
+                            return loadProducts(Object.assign({}, inventoryPaginationState.filters, {
+                                page: inventoryPaginationState.page,
+                                per_page: inventoryPaginationState.perPage,
+                            }));
                         }
                     })
                     .then(function() {
@@ -932,38 +922,14 @@
                         }
                     })
                     .catch(function(err) {
-                        if (isConnectivityError(err)) {
-                            var fallbackResult = MarketWorld.data.deleteProduct(id);
-                            if (fallbackResult.success) {
-                                setProductsState(MarketWorld.data.getProducts(), 'local');
-                                alert(fallbackResult.message + ' (modo local)');
-                                loadProducts();
-                                showLowStockAlerts();
-                                updateDashboardKPIs();
-                                return;
-                            }
-                            alert('Error: ' + fallbackResult.message);
-                            return;
-                        }
-                        showApiError(err, 'No se pudo eliminar el producto.');
+                        // MIGRADO (03-05-2026): Sin fallback a data.js — mostrar error
+                        showApiError(err, 'No se pudo eliminar el producto. Verifica la conexión al servidor.');
                     });
                 return;
             }
 
-            var result = MarketWorld.data.deleteProduct(id);
-            if (result.success) {
-                setProductsState(MarketWorld.data.getProducts(), 'local');
-                alert(result.message);
-                loadProducts();
-                showLowStockAlerts();
-                updateDashboardKPIs();
-
-                if (typeof MarketWorld.notifications !== 'undefined') {
-                    MarketWorld.notifications.notifyProductDeleted(productName);
-                }
-            } else {
-                alert('Error: ' + result.message);
-            }
+            // MIGRADO (03-05-2026): Si NO hay API, mostrar error
+            showApiError(null, 'El adaptador de API no está disponible. Recarga la página.');
         }
     }
 
@@ -1181,7 +1147,7 @@
                 })
                 .catch(function(err) {
                     if (isConnectivityError(err)) {
-                        var products = MarketWorld.data.getProducts();
+                        var products = getProductsState();  // MIGRADO: usar estado sincronizado desde API
                         setProductsState(products, 'local');
                         inventoryPaginationState.isServerMode = false;
                         inventoryPaginationState.page = 1;
@@ -1635,7 +1601,7 @@
         var stock = document.getElementById('filterStock').value;
         var search = document.getElementById('filterSearch').value.toLowerCase();
         
-        var products = MarketWorld.data.getProducts();
+        var products = getProductsState();  // MIGRADO: usar estado sincronizado desde API
         
         return products.filter(function(product) {
             var matchCategoria = !categoria || product.categoria.toLowerCase() === categoria;
@@ -1828,6 +1794,7 @@
         initRotationChart();
         initValuationChart();
         initMovementsChart();
+        initTopProductsLists();
         
         console.log('📊 Gráficos de reportes inicializados');
     }
@@ -1844,7 +1811,7 @@
             rotationChart.destroy();
         }
         
-        var products = MarketWorld.data.getProducts();
+        var products = getProductsState();  // MIGRADO: usar estado sincronizado desde API
         var topProducts = products.slice(0, 10);
         
         rotationChart = new Chart(ctx, {
@@ -1892,7 +1859,7 @@
             valuationChart.destroy();
         }
         
-        var products = MarketWorld.data.getProducts();
+        var products = getProductsState();  // MIGRADO: usar estado sincronizado desde API
         var categories = {};
         
         products.forEach(function(product) {
@@ -1945,7 +1912,7 @@
         });
     }
 
-    // Gráfico de movimientos
+    // Gráfico de movimientos - MIGRADO a API (03-05-2026)
     function initMovementsChart() {
         var canvas = document.getElementById('movementsChart');
         if (!canvas) return;
@@ -1957,98 +1924,218 @@
             movementsChart.destroy();
         }
         
-        // Obtener movimientos reales de localStorage
-        var movements = MarketWorld.data.getInventoryMovements();
+        // Cargar movimientos desde API o usar array vacío
+        var loadMovements = function() {
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
+                return MarketWorld.api.movements.getAll({ per_page: 1000 })
+                    .then(function(response) {
+                        // Normalizar respuesta
+                        var items = response && response.data ? response.data : (Array.isArray(response) ? response : []);
+                        console.log('[API] Movimientos cargados para gráfico:', items.length);
+                        return items;
+                    })
+                    .catch(function(err) {
+                        console.warn('[API] Error al cargar movimientos para gráfico, usando array vacío:', err);
+                        return [];
+                    });
+            } else {
+                return Promise.resolve([]);
+            }
+        };
         
-        // Preparar datos de últimos 30 días
-        var days = [];
-        var entradas = [];
-        var salidas = [];
-        var ajustes = [];
-        
-        for (var i = 29; i >= 0; i--) {
-            var date = new Date();
-            date.setDate(date.getDate() - i);
-            date.setHours(0, 0, 0, 0);
+        loadMovements().then(function(movements) {
+            // Preparar datos de últimos 30 días
+            var days = [];
+            var entradas = [];
+            var salidas = [];
+            var ajustes = [];
             
-            var nextDate = new Date(date);
-            nextDate.setDate(nextDate.getDate() + 1);
-            
-            days.push(date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }));
-            
-            // Calcular movimientos de ese día
-            var entradasDia = 0;
-            var salidasDia = 0;
-            var ajustesDia = 0;
-            
-            movements.forEach(function(mov) {
-                var movDate = new Date(mov.fecha);
-                movDate.setHours(0, 0, 0, 0);
+            for (var i = 29; i >= 0; i--) {
+                var date = new Date();
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
                 
-                if (movDate.getTime() === date.getTime()) {
-                    if (mov.tipo === 'entrada') {
-                        entradasDia += mov.cantidad;
-                    } else if (mov.tipo === 'salida') {
-                        salidasDia += mov.cantidad;
-                    } else if (mov.tipo === 'ajuste') {
-                        ajustesDia += Math.abs(mov.cantidad);
+                days.push(date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }));
+                
+                // Calcular movimientos de ese día
+                var entradasDia = 0;
+                var salidasDia = 0;
+                var ajustesDia = 0;
+                
+                movements.forEach(function(mov) {
+                    var movDate = new Date(mov.created_at || mov.fecha);
+                    movDate.setHours(0, 0, 0, 0);
+                    
+                    if (movDate.getTime() === date.getTime()) {
+                        var tipo = normalizeMovementType(mov.tipo).key;
+                        if (tipo === 'entrada') {
+                            entradasDia += mov.cantidad;
+                        } else if (tipo === 'salida') {
+                            salidasDia += mov.cantidad;
+                        } else if (tipo === 'ajuste') {
+                            ajustesDia += Math.abs(mov.cantidad);
+                        }
                     }
-                }
-            });
+                });
+                
+                entradas.push(entradasDia);
+                salidas.push(salidasDia);
+                ajustes.push(ajustesDia);
+            }
             
-            entradas.push(entradasDia);
-            salidas.push(salidasDia);
-            ajustes.push(ajustesDia);
-        }
-        
-        movementsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: days,
-                datasets: [
-                    {
-                        label: 'Entradas',
-                        data: entradas,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.3
+            movementsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [
+                        {
+                            label: 'Entradas',
+                            data: entradas,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Salidas',
+                            data: salidas,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                footer: function(tooltipItems) {
+                                    var index = tooltipItems[0].dataIndex;
+                                    return 'Ajustes: ' + ajustes[index];
+                                }
+                            }
+                        }
                     },
-                    {
-                        label: 'Salidas',
-                        data: salidas,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            footer: function(tooltipItems) {
-                                var index = tooltipItems[0].dataIndex;
-                                return 'Ajustes: ' + ajustes[index];
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
                             }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
                 }
+            });
+        });
+    }
+
+    function initTopProductsLists() {
+        var topList = document.querySelector('.top-products-list');
+        var lowList = document.querySelector('.top-products-list.low-rotation');
+        if (!topList || !lowList) return;
+
+        topList.innerHTML = '<li class="text-muted">Cargando datos...</li>';
+        lowList.innerHTML = '<li class="text-muted">Cargando datos...</li>';
+
+        var products = getProductsState();
+
+        var fetchMovements = function() {
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
+                return MarketWorld.api.movements.getAll({ per_page: 1000 })
+                    .then(function(response) {
+                        return response && response.data ? response.data : (Array.isArray(response) ? response : []);
+                    })
+                    .catch(function(err) {
+                        console.warn('[Reportes] No se pudieron cargar movimientos:', err);
+                        return [];
+                    });
+            }
+            return Promise.resolve([]);
+        };
+
+        fetchMovements().then(function(movements) {
+            var totals = {};
+            products.forEach(function(product) {
+                totals[product.id] = {
+                    product: product,
+                    salidas: 0,
+                };
+            });
+
+            movements.forEach(function(mov) {
+                var tipo = normalizeMovementType(mov.tipo).key;
+                if (tipo !== 'salida') return;
+
+                var productId = mov.product_id || (mov.product && mov.product.id);
+                if (!productId) return;
+
+                if (!totals[productId]) {
+                    totals[productId] = {
+                        product: mov.product ? mapApiProductToFrontend(mov.product) : { nombre: 'Producto ' + productId, precio: 0 },
+                        salidas: 0,
+                    };
+                }
+
+                totals[productId].salidas += Number(mov.cantidad || 0);
+            });
+
+            var entries = Object.values(totals);
+            var top = entries.slice().sort(function(a, b) { return b.salidas - a.salidas; }).slice(0, 10);
+            var low = entries.slice().sort(function(a, b) { return a.salidas - b.salidas; }).slice(0, 5);
+
+            if (top.length === 0) {
+                topList.innerHTML = '<li class="text-muted">Sin movimientos de salida registrados</li>';
+            } else {
+                topList.innerHTML = top.map(function(item, index) {
+                    var product = item.product || {};
+                    var total = item.salidas || 0;
+                    var valor = (Number(product.precio || 0) * total) || 0;
+
+                    return '<li>' +
+                        '<div class="product-rank">' + (index + 1) + '</div>' +
+                        '<div class="product-info">' +
+                            '<div class="fw-bold">' + (product.nombre || 'Sin nombre') + '</div>' +
+                            '<div class="text-muted small">' + total + ' unidades vendidas</div>' +
+                        '</div>' +
+                        '<div class="product-value">$' + formatCurrency(valor) + '</div>' +
+                    '</li>';
+                }).join('');
+            }
+
+            if (low.length === 0) {
+                lowList.innerHTML = '<li class="text-muted">Sin datos para calcular rotación</li>';
+            } else {
+                lowList.innerHTML = low.map(function(item, index) {
+                    var product = item.product || {};
+                    var total = item.salidas || 0;
+
+                    return '<li>' +
+                        '<div class="product-rank">' + (index + 1) + '</div>' +
+                        '<div class="product-info">' +
+                            '<div class="fw-bold">' + (product.nombre || 'Sin nombre') + '</div>' +
+                            '<div class="text-muted small">' + total + ' unidades en 90 días</div>' +
+                        '</div>' +
+                        '<div class="text-danger">Revisar</div>' +
+                    '</li>';
+                }).join('');
             }
         });
+    }
+
+    function normalizeMovementType(tipo) {
+        var normalized = String(tipo || '').toLowerCase();
+        if (normalized === 'entrada') {
+            return { label: 'Entrada', badge: 'success', icon: '↑', key: 'entrada' };
+        }
+        if (normalized === 'salida') {
+            return { label: 'Salida', badge: 'danger', icon: '↓', key: 'salida' };
+        }
+        return { label: 'Ajuste', badge: 'warning', icon: '⚡', key: 'ajuste' };
     }
 
     // Navegación por teclado
@@ -2127,7 +2214,8 @@
     // Sobreescribir applyFilters para resetear paginación
     var originalApplyFilters = applyFilters;
     applyFilters = function() {
-        currentPage = 1;
+        // Reiniciar siempre la paginación desde la primera página al cambiar filtros.
+        inventoryPaginationState.page = 1;
         originalApplyFilters();
     };
 
@@ -2205,17 +2293,24 @@
         var form = document.getElementById('categoryForm');
         
         if (btnNueva) {
-            btnNueva.addEventListener('click', function() {
-                resetCategoryForm();
-                document.getElementById('categoryModalLabel').textContent = 'Nueva Categoría';
-            });
+            // Evitar doble binding cuando el usuario abre/cierra tabs múltiples veces.
+            if (!btnNueva.dataset.listenerBound) {
+                btnNueva.addEventListener('click', function() {
+                    resetCategoryForm();
+                    document.getElementById('categoryModalLabel').textContent = 'Nueva Categoría';
+                });
+                btnNueva.dataset.listenerBound = 'true';
+            }
         }
         
         if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveCategory();
-            });
+            if (!form.dataset.listenerBound) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveCategory();
+                });
+                form.dataset.listenerBound = 'true';
+            }
         }
     }
 
@@ -2328,19 +2423,14 @@
                     
                     movements.forEach(function(mov) {
                         var row = document.createElement('tr');
-                        
-                        var tipoLabel = mov.tipo || 'Ajuste';
-                        var tipoBadge = tipoLabel === 'Entrada' ? 'success' : 
-                                       tipoLabel === 'Salida' ? 'danger' : 'warning';
-                        var tipoIcon = tipoLabel === 'Entrada' ? '↑' : 
-                                      tipoLabel === 'Salida' ? '↓' : '⚡';
+                        var tipoInfo = normalizeMovementType(mov.tipo);
                         
                         var userName = mov.user ? (mov.user.nombre + ' ' + (mov.user.apellido || '')) : 'Sistema';
                         var prodName = mov.product ? mov.product.nombre : ('ID: ' + mov.product_id);
 
                         row.innerHTML = `
                             <td>${formatDate(mov.created_at)}</td>
-                            <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${tipoLabel.toUpperCase()}</span></td>
+                            <td><span class="badge bg-${tipoInfo.badge}">${tipoInfo.icon} ${tipoInfo.label.toUpperCase()}</span></td>
                             <td>${prodName}</td>
                             <td><strong>${mov.cantidad}</strong></td>
                             <td>${mov.stock_anterior}</td>
@@ -2359,76 +2449,42 @@
             });
     }
 
-    function generateInitialMovements() {
-        var products = MarketWorld.data.getProducts();
-        var user = MarketWorld.data.getCurrentUser();
-        var userName = user ? user.nombre + ' ' + user.apellido : 'Sistema';
-        
-        // Generar movimientos de ejemplo para los últimos 30 días
-        for (var i = 0; i < 30; i++) {
-            var date = new Date();
-            date.setDate(date.getDate() - i);
-            
-            // 2-5 movimientos por día
-            var movCount = Math.floor(Math.random() * 4) + 2;
-            
-            for (var j = 0; j < movCount; j++) {
-                var product = products[Math.floor(Math.random() * products.length)];
-                if (!product) continue;
-                
-                var tipos = ['entrada', 'salida', 'ajuste'];
-                var tipo = tipos[Math.floor(Math.random() * tipos.length)];
-                var cantidad = Math.floor(Math.random() * 20) + 1;
-                
-                var stockAnterior = product.stock;
-                var stockNuevo = tipo === 'entrada' ? 
-                    stockAnterior + cantidad : 
-                    Math.max(0, stockAnterior - cantidad);
-                
-                var motivos = {
-                    'entrada': ['Compra a proveedor', 'Devolución de cliente', 'Ajuste de inventario'],
-                    'salida': ['Venta', 'Producto defectuoso', 'Muestra'],
-                    'ajuste': ['Corrección de inventario', 'Reconciliación', 'Ajuste por auditoría']
-                };
-                
-                MarketWorld.data.createInventoryMovement({
-                    fecha: date.toISOString(),
-                    tipo: tipo,
-                    productoId: product.id,
-                    productoNombre: product.nombre,
-                    cantidad: cantidad,
-                    stockAnterior: stockAnterior,
-                    stockNuevo: stockNuevo,
-                    usuario: userName,
-                    motivo: motivos[tipo][Math.floor(Math.random() * motivos[tipo].length)]
-                });
-            }
-        }
-    }
+    // DEPRECATED (03-05-2026): Función eliminada - generación de datos fake ya no necesaria
+    // El backend es la fuente de verdad; los movimientos deben venir de /api/v1/inventory-movements
+    // function generateInitialMovements() { ... }
 
     function initMovementModal() {
         var btnNuevo = document.getElementById('btnNuevoMovimiento');
         var form = document.getElementById('movementForm');
-        var productoSelect = document.getElementById('movementProducto');
         
         if (btnNuevo) {
-            btnNuevo.addEventListener('click', function() {
-                resetMovementForm();
-                loadProductsToSelect();
-            });
+            // Evitar doble binding cuando el usuario abre/cierra tabs múltiples veces.
+            if (!btnNuevo.dataset.listenerBound) {
+                btnNuevo.addEventListener('click', function() {
+                    resetMovementForm();
+                    loadProductsToSelect();
+                });
+                btnNuevo.dataset.listenerBound = 'true';
+            }
         }
         
         if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveMovement();
-            });
+            if (!form.dataset.listenerBound) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveMovement();
+                });
+                form.dataset.listenerBound = 'true';
+            }
         }
         
         // Filtros
         var btnFiltrar = document.getElementById('btnFiltrarMovimientos');
         if (btnFiltrar) {
-            btnFiltrar.addEventListener('click', applyMovementFilters);
+            if (!btnFiltrar.dataset.listenerBound) {
+                btnFiltrar.addEventListener('click', applyMovementFilters);
+                btnFiltrar.dataset.listenerBound = 'true';
+            }
         }
     }
 
@@ -2436,7 +2492,7 @@
         var select = document.getElementById('movementProducto');
         if (!select) return;
         
-        var products = MarketWorld.data.getProducts();
+        var products = getProductsState();  // MIGRADO: usar estado sincronizado desde API
         select.innerHTML = '<option value="">Seleccionar producto...</option>';
         
         products.forEach(function(product) {
@@ -2458,9 +2514,14 @@
             return;
         }
         
+        var tipoMap = {
+            'entrada': 'Entrada',
+            'salida': 'Salida',
+            'ajuste': 'Ajuste'
+        };
         var movementData = {
             product_id: productoId,
-            tipo: tipo,
+            tipo: tipoMap[tipo] || tipo,
             cantidad: cantidad,
             motivo: motivo || 'Registro manual'
         };
@@ -2474,6 +2535,7 @@
                     loadProducts(); // Actualizar lista de productos
                     updateDashboardKPIs();
                     if (typeof initMovementsChart === 'function') initMovementsChart();
+                    if (typeof initTopProductsLists === 'function') initTopProductsLists();
                     
                     var modalEl = document.getElementById('movementModal');
                     var modal = bootstrap.Modal.getInstance(modalEl);
@@ -2491,7 +2553,14 @@
         var fechaHasta = document.getElementById('filterMovFechaHasta').value;
         
         var apiFilters = {};
-        if (tipo) apiFilters.tipo = tipo;
+        if (tipo) {
+            var tipoMap = {
+                'entrada': 'Entrada',
+                'salida': 'Salida',
+                'ajuste': 'Ajuste'
+            };
+            apiFilters.tipo = tipoMap[tipo] || tipo;
+        }
         if (fechaDesde) apiFilters.fecha_desde = fechaDesde;
         if (fechaHasta) apiFilters.fecha_hasta = fechaHasta;
 
@@ -2523,19 +2592,14 @@
         
         filtered.forEach(function(mov) {
             var row = document.createElement('tr');
-            
-            var tipoLabel = mov.tipo || 'Ajuste';
-            var tipoBadge = tipoLabel === 'Entrada' ? 'success' : 
-                           tipoLabel === 'Salida' ? 'danger' : 'warning';
-            var tipoIcon = tipoLabel === 'Entrada' ? '↑' : 
-                          tipoLabel === 'Salida' ? '↓' : '⚡';
+            var tipoInfo = normalizeMovementType(mov.tipo);
             
             var userName = mov.user ? (mov.user.nombre + ' ' + (mov.user.apellido || '')) : 'Sistema';
             var prodName = mov.product ? mov.product.nombre : ('ID: ' + mov.product_id);
 
             row.innerHTML = `
                 <td>${formatDate(mov.created_at)}</td>
-                <td><span class="badge bg-${tipoBadge}">${tipoIcon} ${tipoLabel.toUpperCase()}</span></td>
+                <td><span class="badge bg-${tipoInfo.badge}">${tipoInfo.icon} ${tipoInfo.label.toUpperCase()}</span></td>
                 <td>${prodName}</td>
                 <td><strong>${mov.cantidad}</strong></td>
                 <td>${mov.stock_anterior}</td>
@@ -2549,21 +2613,45 @@
     }
 
     function updateMovementsSummary() {
-        var movements = MarketWorld.data.getInventoryMovements();
-        
-        var entradas = movements.filter(function(m) { return m.tipo === 'entrada'; });
-        var salidas = movements.filter(function(m) { return m.tipo === 'salida'; });
-        
-        var totalEntradas = entradas.reduce(function(sum, m) { return sum + m.cantidad; }, 0);
-        var totalSalidas = salidas.reduce(function(sum, m) { return sum + m.cantidad; }, 0);
-        
-        var elEntradas = document.getElementById('totalEntradas');
-        var elSalidas = document.getElementById('totalSalidas');
-        var elTotal = document.getElementById('totalMovimientos');
-        
-        if (elEntradas) elEntradas.textContent = totalEntradas.toLocaleString('es-CO');
-        if (elSalidas) elSalidas.textContent = totalSalidas.toLocaleString('es-CO');
-        if (elTotal) elTotal.textContent = movements.length.toLocaleString('es-CO');
+        // MIGRADO (03-05-2026): Cargar movimientos desde API de forma asincrónica
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
+            MarketWorld.api.movements.getAll({ per_page: 1000 })
+                .then(function(response) {
+                    var movements = response && response.data ? response.data : (Array.isArray(response) ? response : []);
+                    
+                    var entradas = movements.filter(function(m) { return normalizeMovementType(m.tipo).key === 'entrada'; });
+                    var salidas = movements.filter(function(m) { return normalizeMovementType(m.tipo).key === 'salida'; });
+                    
+                    var totalEntradas = entradas.reduce(function(sum, m) { return sum + m.cantidad; }, 0);
+                    var totalSalidas = salidas.reduce(function(sum, m) { return sum + m.cantidad; }, 0);
+                    
+                    var elEntradas = document.getElementById('totalEntradas');
+                    var elSalidas = document.getElementById('totalSalidas');
+                    var elTotal = document.getElementById('totalMovimientos');
+                    
+                    if (elEntradas) elEntradas.textContent = totalEntradas.toLocaleString('es-CO');
+                    if (elSalidas) elSalidas.textContent = totalSalidas.toLocaleString('es-CO');
+                    if (elTotal) elTotal.textContent = movements.length.toLocaleString('es-CO');
+                })
+                .catch(function(err) {
+                    console.warn('Error al cargar resumen de movimientos:', err);
+                    // Mostrar ceros en caso de error
+                    var elEntradas = document.getElementById('totalEntradas');
+                    var elSalidas = document.getElementById('totalSalidas');
+                    var elTotal = document.getElementById('totalMovimientos');
+                    if (elEntradas) elEntradas.textContent = '0';
+                    if (elSalidas) elSalidas.textContent = '0';
+                    if (elTotal) elTotal.textContent = '0';
+                });
+        } else {
+            // API no disponible, mostrar valores por defecto
+            var elEntradas = document.getElementById('totalEntradas');
+            var elSalidas = document.getElementById('totalSalidas');
+            var elTotal = document.getElementById('totalMovimientos');
+            if (elEntradas) elEntradas.textContent = '0';
+            if (elSalidas) elSalidas.textContent = '0';
+            if (elTotal) elTotal.textContent = '0';
+        }
     }
 
     function resetMovementForm() {

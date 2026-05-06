@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class InventoryMovementController extends Controller
 {
@@ -57,59 +58,82 @@ class InventoryMovementController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'tipo'       => 'required|in:Entrada,Salida,Ajuste',
+            'tipo'       => 'required|string|in:Entrada,Salida,Ajuste,entrada,salida,ajuste',
             'cantidad'   => 'required|integer|min:1',
             'motivo'     => 'nullable|string|max:255',
         ]);
 
-        return DB::transaction(function () use ($validated, $request) {
-            $product = Product::lockForUpdate()->find($validated['product_id']);
-            $stockAnterior = $product->stock;
-            $cantidad = $validated['cantidad'];
-            $tipo = $validated['tipo'];
+        try {
+            $movement = DB::transaction(function () use ($validated, $request) {
+                $product = Product::lockForUpdate()->find($validated['product_id']);
 
-            $stockNuevo = $stockAnterior;
-            if ($tipo === 'Entrada') {
-                $stockNuevo += $cantidad;
-            } elseif ($tipo === 'Salida') {
-                $stockNuevo -= $cantidad;
-            } else { // Ajuste
-                // Para ajustes manuales, el frontend podría enviar la cantidad final o el diferencial.
-                // Aquí asumiremos que 'cantidad' es el nuevo stock si es un ajuste directo, 
-                // o mejor, seguiremos la lógica de Entrada/Salida para cambios relativos.
-                // Pero el frontend actual de MarketWorld parece usar 'Ajuste' como 'Set'.
-                $stockNuevo = $cantidad; 
+                if (!$product) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El producto seleccionado ya no existe',
+                        'data'    => null,
+                        'errors'  => ['product_id' => ['Producto no encontrado']],
+                    ], 404);
+                }
+
+                $tipo = ucfirst(strtolower($validated['tipo']));
+                $cantidad = (int) $validated['cantidad'];
+                $stockAnterior = (int) $product->stock;
+
+                $stockNuevo = $stockAnterior;
+                if ($tipo === 'Entrada') {
+                    $stockNuevo += $cantidad;
+                } elseif ($tipo === 'Salida') {
+                    $stockNuevo -= $cantidad;
+                } else {
+                    $stockNuevo = $cantidad;
+                }
+
+                if ($stockNuevo < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El stock resultante no puede ser negativo',
+                        'data'    => null,
+                        'errors'  => ['cantidad' => ['Stock insuficiente']],
+                    ], 422);
+                }
+
+                $product->stock = $stockNuevo;
+                $product->save();
+
+                $movement = InventoryMovement::create([
+                    'product_id'      => $product->id,
+                    'user_id'         => $request->user()?->id,
+                    'tipo'            => $tipo,
+                    'cantidad'        => $cantidad,
+                    'stock_anterior'  => $stockAnterior,
+                    'stock_nuevo'     => $stockNuevo,
+                    'motivo'          => $validated['motivo'] ?? 'Registro manual',
+                    'referencia_tipo' => 'Ajuste Manual',
+                ]);
+
+                return $movement->load('product');
+            });
+
+            if ($movement instanceof JsonResponse) {
+                return $movement;
             }
-
-            if ($stockNuevo < 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El stock resultante no puede ser negativo',
-                    'data'    => null,
-                    'errors'  => ['cantidad' => ['Stock insuficiente']],
-                ], 422);
-            }
-
-            $product->stock = $stockNuevo;
-            $product->save();
-
-            $movement = InventoryMovement::create([
-                'product_id'      => $product->id,
-                'user_id'         => $request->user()?->id,
-                'tipo'            => $tipo,
-                'cantidad'        => $cantidad,
-                'stock_anterior'  => $stockAnterior,
-                'stock_nuevo'     => $stockNuevo,
-                'motivo'          => $validated['motivo'] ?? 'Ajuste manual',
-                'referencia_tipo' => 'Ajuste Manual',
-            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Movimiento registrado y stock actualizado',
-                'data'    => $movement->load('product'),
+                'data'    => $movement,
                 'errors'  => null,
             ], 201);
-        });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo registrar el movimiento',
+                'data'    => null,
+                'errors'  => ['exception' => [$exception->getMessage()]],
+            ], 500);
+        }
     }
 }
