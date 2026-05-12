@@ -18,6 +18,7 @@ class Invoice extends Model
         'fecha',
         'subtotal',
         'impuestos',
+        'descuento',
         'total',
         'metodo_pago',
         'estado',
@@ -45,6 +46,6 @@ class Invoice extends Model
      */
     public function getTotalCalculadoAttribute(): float // Nuevo accessor
     {
-        return (float) ($this->subtotal + $this->impuestos);
+        return (float) ($this->subtotal + $this->impuestos - $this->descuento);
     }
 }

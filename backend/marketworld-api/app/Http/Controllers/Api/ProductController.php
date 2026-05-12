@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\InvoiceItem;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -203,7 +206,39 @@ class ProductController extends Controller
             ], 404);
         }
 
-        $product->delete();
+        if (PurchaseItem::where('product_id', $product->id)->exists() || InvoiceItem::where('product_id', $product->id)->exists()) {
+            $purchaseCount = PurchaseItem::where('product_id', $product->id)->count();
+            $invoiceCount = InvoiceItem::where('product_id', $product->id)->count();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar el producto porque ya tiene documentos asociados',
+                'data'    => null,
+                'errors'  => [
+                    'product_id' => array_values(array_filter([
+                        $purchaseCount > 0 ? 'El producto está relacionado con una o más compras' : null,
+                        $invoiceCount > 0 ? 'El producto está relacionado con una o más facturas' : null,
+                    ])),
+                ],
+            ], 409);
+        }
+
+        try {
+            $product->delete();
+        } catch (QueryException $exception) {
+            if ((string) $exception->getCode() === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede eliminar el producto porque tiene registros relacionados',
+                    'data'    => null,
+                    'errors'  => [
+                        'product_id' => ['El producto tiene compras o facturas asociadas'],
+                    ],
+                ], 409);
+            }
+
+            throw $exception;
+        }
 
         return response()->json([
             'success' => true,

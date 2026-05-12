@@ -1,7 +1,7 @@
 /**
  * api-adapter.js
  * Adaptador que conecta el frontend MarketWorld con el backend Laravel.
- * Usa la API REST primero; si falla, cae al localStorage como respaldo.
+ * Usa la API REST primero; si falla, entra en modo degradado controlado.
  *
  * USO: incluir este script ANTES de inventario.js / crm.js en el HTML.
  *
@@ -29,11 +29,11 @@
 
     function setSessionState(user) {
         // La sesión ahora se maneja exclusivamente por cookies HttpOnly.
-        // No guardamos tokens ni datos sensibles en localStorage para prevenir XSS.
+        // No guardamos tokens ni datos sensibles en el navegador para prevenir XSS.
     }
 
     function clearSessionState() {
-        // Limpieza de estado local si fuera necesario, pero ya no usamos localStorage para la sesión.
+        // Limpieza de estado local si fuera necesario, pero ya no persistimos la sesión en el navegador.
     }
 
     function buildHeaders(customHeaders) {
@@ -382,6 +382,93 @@
                 method: 'PUT',
                 body: JSON.stringify(data),
             });
+        },
+        registerPayment: function (id, data) {
+            return apiFetch('/purchases/' + id + '/payments', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        }
+    };
+
+    // -------------------------------------------------------
+    // API de Proveedores (Módulo Compras)
+    // -------------------------------------------------------
+    var SupplierAPI = {
+        getAll: function (filtros) {
+            var params = buildListParams(filtros);
+            return apiFetch('/suppliers' + (params ? '?' + params : ''));
+        },
+        getById: function (id) {
+            return apiFetch('/suppliers/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/suppliers', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/suppliers/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/suppliers/' + id, { method: 'DELETE' });
+        }
+    };
+
+    // -------------------------------------------------------
+    // API de Contabilidad (Módulo Contabilidad)
+    // -------------------------------------------------------
+    var AccountAPI = {
+        getAll: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/accounts' + (query ? '?' + query : ''));
+        },
+        getById: function (id) {
+            return apiFetch('/accounts/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/accounts', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/accounts/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/accounts/' + id, { method: 'DELETE' });
+        }
+    };
+
+    var JournalEntryAPI = {
+        getAll: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/journal-entries' + (query ? '?' + query : ''));
+        },
+        getById: function (id) {
+            return apiFetch('/journal-entries/' + id);
+        },
+        create: function (data) {
+            return apiFetch('/journal-entries', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/journal-entries/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/journal-entries/' + id, { method: 'DELETE' });
         }
     };
 
@@ -540,6 +627,9 @@
         customers: CustomerAPI,
         invoices:  InvoiceAPI,
         purchases: PurchaseAPI,
+        suppliers: SupplierAPI,
+        accounts: AccountAPI,
+        journalEntries: JournalEntryAPI,
         dashboard: DashboardAPI,
         reports: ReportAPI,
         crm:       CrmAPI,
@@ -555,7 +645,7 @@
         if (online) {
             console.log('%c[MarketWorld API] Backend conectado ✓ ' + BASE_URL, 'color:green;font-weight:bold');
         } else {
-            console.warn('[MarketWorld API] Backend NO disponible. Usando localStorage como respaldo.');
+            console.warn('[MarketWorld API] Backend NO disponible. Modo degradado activado.');
         }
     });
 

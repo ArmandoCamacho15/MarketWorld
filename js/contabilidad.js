@@ -8,6 +8,10 @@
     let balanceChart = null;
     let incomeChart = null;
     let partidasTemporales = [];
+    let contabilidadState = {
+        accounts: [],
+        journalEntries: []
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log('💰 Módulo Contabilidad - Inicializando interactividad completa');
@@ -17,13 +21,19 @@
         
         // Configurar listeners de formularios
         setupFormListeners();
-        
-        // Cargar datos iniciales
-        actualizarDashboard();
-        renderizarPlanContable();
-        cargarAsientosContables();
-        inicializarLibros();
-        inicializarImpuestos();
+
+        // Cargar datos reales desde API antes de renderizar
+        loadContabilidadStateFromAPI()
+            .catch((error) => {
+                console.error('[Contabilidad] Error cargando datos desde API:', error);
+            })
+            .finally(() => {
+                actualizarDashboard();
+                renderizarPlanContable();
+                cargarAsientosContables();
+                inicializarLibros();
+                inicializarImpuestos();
+            });
     });
 
     function initApp() {
@@ -33,10 +43,180 @@
         }
     }
 
+    function normalizeApiListResponse(response, fallbackMeta) {
+        const payload = response || {};
+        const items = Array.isArray(payload.data)
+            ? payload.data
+            : (Array.isArray(payload) ? payload : []);
+
+        return {
+            items: items,
+            meta: Object.assign({
+                total: items.length,
+                per_page: (fallbackMeta && fallbackMeta.per_page) || items.length || 15,
+                current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
+                last_page: (fallbackMeta && fallbackMeta.last_page) || 1,
+            }, payload.meta || {}),
+            success: payload.success !== false,
+            message: payload.message || ''
+        };
+    }
+
+    function setContabilidadState(accounts, journalEntries) {
+        contabilidadState.accounts = Array.isArray(accounts) ? accounts.slice() : [];
+        contabilidadState.journalEntries = Array.isArray(journalEntries) ? journalEntries.slice() : [];
+    }
+
+    async function loadContabilidadStateFromAPI() {
+        if (!MarketWorld.api || !MarketWorld.api.accounts || !MarketWorld.api.journalEntries) {
+            setContabilidadState([], []);
+            return false;
+        }
+
+        const [accountsResponse, entriesResponse] = await Promise.all([
+            MarketWorld.api.accounts.getAll(),
+            MarketWorld.api.journalEntries.getAll()
+        ]);
+
+        const accountsParsed = normalizeApiListResponse(accountsResponse);
+        const entriesParsed = normalizeApiListResponse(entriesResponse);
+
+        setContabilidadState(accountsParsed.items, entriesParsed.items);
+        return true;
+    }
+
+    function getAccounts() {
+        return contabilidadState.accounts.slice();
+    }
+
+    function getJournalEntries() {
+        return contabilidadState.journalEntries.slice();
+    }
+
+    function findAccountById(id) {
+        return contabilidadState.accounts.find(function(account) {
+            return String(account.id) === String(id);
+        }) || null;
+    }
+
+    function findAccountByCode(codigo) {
+        const normalized = String(codigo || '').trim().toLowerCase();
+        return contabilidadState.accounts.find(function(account) {
+            return String(account.codigo || '').trim().toLowerCase() === normalized;
+        }) || null;
+    }
+
+    function findJournalEntryById(id) {
+        return contabilidadState.journalEntries.find(function(entry) {
+            return String(entry.id) === String(id);
+        }) || null;
+    }
+
+    function getEntryItems(entry) {
+        if (!entry) return [];
+        if (Array.isArray(entry.items)) return entry.items;
+        if (Array.isArray(entry.partidas)) return entry.partidas;
+        return [];
+    }
+
+    function getEntryDisplayNumber(entry) {
+        if (!entry) return 'AS-00000';
+        return entry.numero || ('AS-' + String(entry.id || 0).padStart(5, '0'));
+    }
+
+    function getEntryDisplayType(entry) {
+        if (!entry) return 'Manual';
+        return entry.tipo || entry.referencia_tipo || 'Manual';
+    }
+
+    function getFinancialSummary() {
+        const summary = {
+            activos: 0,
+            pasivos: 0,
+            patrimonio: 0,
+            ingresos: 0,
+            gastos: 0,
+            utilidadNeta: 0
+        };
+
+        const accountTypeToBucket = {
+            'Activo': 'activos',
+            'Pasivo': 'pasivos',
+            'Patrimonio': 'patrimonio',
+            'Ingreso': 'ingresos',
+            'Gasto': 'gastos'
+        };
+
+        getJournalEntries().forEach(function(entry) {
+            getEntryItems(entry).forEach(function(item) {
+                const account = item.account || findAccountById(item.account_id);
+                if (!account || !account.tipo) return;
+
+                const debe = parseFloat(item.debe || 0) || 0;
+                const haber = parseFloat(item.haber || 0) || 0;
+                const delta = (account.tipo === 'Activo' || account.tipo === 'Gasto') ? (debe - haber) : (haber - debe);
+                const bucket = accountTypeToBucket[account.tipo];
+
+                if (bucket) {
+                    summary[bucket] += delta;
+                }
+            });
+        });
+
+        summary.utilidadNeta = summary.ingresos - summary.gastos;
+        return summary;
+    }
+
+    function getAccountMovements(codigo, options) {
+        const account = findAccountByCode(codigo);
+        if (!account) {
+            return { movements: [], total: 0, hasMore: false };
+        }
+
+        options = options || {};
+        const limit = options.limit || 1000;
+        const offset = options.offset || 0;
+        const startDate = options.startDate;
+        const endDate = options.endDate;
+        const normalizedCode = String(codigo || '').trim().toLowerCase();
+        const movements = [];
+
+        getJournalEntries().forEach(function(entry) {
+            if (startDate && entry.fecha < startDate) return;
+            if (endDate && entry.fecha > endDate) return;
+
+            getEntryItems(entry).forEach(function(item) {
+                const itemAccount = item.account || findAccountById(item.account_id);
+                if (!itemAccount) return;
+
+                const itemCode = String(itemAccount.codigo || itemAccount.code || '').trim().toLowerCase();
+                if (itemCode !== normalizedCode) return;
+
+                movements.push({
+                    fecha: entry.fecha,
+                    numero: getEntryDisplayNumber(entry),
+                    descripcion: entry.glosa || entry.descripcion || '',
+                    debe: parseFloat(item.debe || 0) || 0,
+                    haber: parseFloat(item.haber || 0) || 0
+                });
+            });
+        });
+
+        movements.sort(function(a, b) {
+            return new Date(a.fecha) - new Date(b.fecha);
+        });
+
+        return {
+            movements: movements.slice(offset, offset + limit),
+            total: movements.length,
+            hasMore: movements.length > (offset + limit)
+        };
+    }
+
     // --- Dashboard y gráficos ---
 
     function actualizarDashboard() {
-        const summary = MarketWorld.data.getFinancialSummary();
+        const summary = getFinancialSummary();
         const utils = MarketWorld.utils;
 
         const mapping = {
@@ -118,7 +298,7 @@
         const container = document.getElementById('accountTreeContainer');
         if (!container) return;
 
-        const accounts = MarketWorld.data.getAccounts();
+        const accounts = getAccounts();
         container.innerHTML = '';
 
         const renderNode = (parentCode, level) => {
@@ -161,7 +341,7 @@
     }
 
     function cargarDetalleCuenta(codigo) {
-        const account = MarketWorld.data.findAccountByCode(codigo);
+        const account = findAccountByCode(codigo);
         if (!account) return;
 
         currentAccount = account;
@@ -196,8 +376,8 @@
         const tfoot = document.getElementById('account-movements-foot');
         if (!tableBody) return;
 
-        const account = MarketWorld.data.findAccountByCode(codigo);
-        const result = MarketWorld.data.getAccountMovements(codigo, { limit: 100 });
+        const account = findAccountByCode(codigo);
+        const result = getAccountMovements(codigo, { limit: 100 });
         const movements = result.movements || [];
 
         if (movements.length === 0) {
@@ -352,7 +532,7 @@
         const div = document.createElement('div');
         div.className = 'input-group mb-2 partida-row';
         
-        const accounts = MarketWorld.data.getAccounts().filter(a => a.nivel === 'Subcuenta' || a.nivel === 'Cuenta');
+        const accounts = getAccounts();
         const options = accounts.map(a => `<option value="${a.codigo}">${a.codigo} - ${a.nombre}</option>`).join('');
 
         div.innerHTML = `
@@ -420,12 +600,12 @@
         }
     }
 
-    function registrarNuevoAsiento() {
+    async function registrarNuevoAsiento() {
         const fecha = document.querySelector('#asientos input[type="date"]')?.value;
-        const descripcion = document.querySelector('#asientos textarea')?.value;
+        const glosa = document.querySelector('#asientos textarea')?.value;
         const tipoAsiento = document.querySelector('#asientos select.form-select')?.value;
 
-        if (!descripcion || descripcion.trim() === '') {
+        if (!glosa || glosa.trim() === '') {
             alert('Por favor ingresa una descripción para el asiento.');
             return;
         }
@@ -437,9 +617,10 @@
             const tipo = group.querySelector('.type-select')?.value;
 
             if (cuentaCod && monto > 0) {
-                const acc = MarketWorld.data.findAccountByCode(cuentaCod);
+                const acc = findAccountByCode(cuentaCod);
                 partidas.push({
-                    cuenta: cuentaCod,
+                    account_id: acc ? acc.id : null,
+                    codigo: cuentaCod,
                     nombre: acc ? acc.nombre : '',
                     debe: tipo === 'debe' ? monto : 0,
                     haber: tipo === 'haber' ? monto : 0
@@ -452,31 +633,39 @@
             return;
         }
 
-        const result = MarketWorld.data.createJournalEntry({
+        const payload = {
             fecha,
-            descripcion,
-            tipo: tipoAsiento,
-            partidas
-        });
+            glosa,
+            referencia_tipo: tipoAsiento || 'Manual',
+            items: partidas
+                .filter(function(item) { return item.account_id; })
+                .map(function(item) {
+                    return {
+                        account_id: item.account_id,
+                        debe: item.debe,
+                        haber: item.haber
+                    };
+                })
+        };
 
-        if (result.success) {
-            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
-            
-            // Crear notificación en el sistema
-            MarketWorld.data.createNotification({
-                tipo: 'success',
-                titulo: 'Asiento Contable Registrado',
-                mensaje: `Asiento ${result.entry.numero} creado exitosamente`,
-                enlace: 'contabilidad.html'
-            });
-
-            actualizarDashboard();
-            cargarAsientosContables();
-            limpiarFormularioAsiento();
-            
-            console.log('✅ Asiento registrado:', result.entry);
-        } else {
-            alert('Error: ' + result.message);
+        try {
+            const result = await MarketWorld.api.journalEntries.create(payload);
+            if (result.success) {
+                MarketWorld.utils.showNotification('✅ Asiento Contable Registrado', 'success');
+                if (MarketWorld.notifications && MarketWorld.notifications.show) {
+                    MarketWorld.notifications.show('Asiento contable registrado', 'success');
+                }
+                await loadContabilidadStateFromAPI();
+                actualizarDashboard();
+                cargarAsientosContables();
+                limpiarFormularioAsiento();
+                console.log('✅ Asiento registrado:', result.data || result);
+            } else {
+                alert('Error: ' + (result.message || 'No se pudo crear el asiento'));
+            }
+        } catch (error) {
+            console.error('[Contabilidad] Error registrando asiento:', error);
+            alert(error && error.message ? error.message : 'Error al registrar el asiento');
         }
     }
 
@@ -484,7 +673,7 @@
         const container = document.querySelector('#asientos .col-md-8');
         if (!container) return;
 
-        const entries = MarketWorld.data.getJournalEntries();
+        const entries = getJournalEntries();
         
         // Limpiar contenedor manteniendo solo el encabezado
         const header = container.querySelector('.d-flex.justify-content-between');
@@ -503,21 +692,23 @@
             const div = document.createElement('div');
             div.className = 'journal-entry mb-3 p-3 border rounded';
             
-            const badgeClass = entry.tipo === 'Automático' ? 'bg-info' : 'bg-secondary';
+            const badgeClass = getEntryDisplayType(entry) === 'Automático' ? 'bg-info' : 'bg-secondary';
             
             let partidasHTML = '';
-            entry.partidas.forEach(p => {
+            getEntryItems(entry).forEach(p => {
+                const code = p.cuenta || (p.account && p.account.codigo) || '';
+                const name = p.nombre || (p.account && p.account.nombre) || '';
                 if (p.debe > 0) {
                     partidasHTML += `
                         <div class="row mb-1">
-                            <div class="col-md-8">${MarketWorld.utils.escapeHtml(p.cuenta)} ${MarketWorld.utils.escapeHtml(p.nombre)}</div>
+                            <div class="col-md-8">${MarketWorld.utils.escapeHtml(code)} ${MarketWorld.utils.escapeHtml(name)}</div>
                             <div class="col-md-4 text-end debit">${MarketWorld.utils.formatCurrency(p.debe)}</div>
                         </div>
                     `;
                 } else {
                     partidasHTML += `
                         <div class="row mb-1">
-                            <div class="col-md-8 ps-4">${MarketWorld.utils.escapeHtml(p.cuenta)} ${MarketWorld.utils.escapeHtml(p.nombre)}</div>
+                            <div class="col-md-8 ps-4">${MarketWorld.utils.escapeHtml(code)} ${MarketWorld.utils.escapeHtml(name)}</div>
                             <div class="col-md-4 text-end credit">${MarketWorld.utils.formatCurrency(p.haber)}</div>
                         </div>
                     `;
@@ -527,9 +718,9 @@
             div.innerHTML = `
                     <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="fw-bold">${MarketWorld.utils.escapeHtml(entry.numero)}</span>
+                        <span class="fw-bold">${MarketWorld.utils.escapeHtml(getEntryDisplayNumber(entry))}</span>
                         <span class="ms-3 text-muted">${MarketWorld.utils.formatDate(entry.fecha)}</span>
-                        <span class="ms-3 badge ${badgeClass}">${MarketWorld.utils.escapeHtml(entry.tipo)}</span>
+                        <span class="ms-3 badge ${badgeClass}">${MarketWorld.utils.escapeHtml(getEntryDisplayType(entry))}</span>
                     </div>
                     <div>
                         <button class="btn btn-sm btn-outline-danger" onclick="eliminarAsiento(${entry.id})">
@@ -537,7 +728,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="mb-2"><strong>Descripción:</strong> ${MarketWorld.utils.escapeHtml(entry.descripcion)}</div>
+                <div class="mb-2"><strong>Descripción:</strong> ${MarketWorld.utils.escapeHtml(entry.glosa || entry.descripcion || '')}</div>
             `;
 
             container.appendChild(div);
@@ -548,18 +739,24 @@
     }
 
     // Exponer función para eliminar asiento
-    window.eliminarAsiento = function(id) {
+    window.eliminarAsiento = async function(id) {
         if (!confirm('¿Estás seguro de eliminar este asiento? Esta acción revertirá los movimientos en las cuentas.')) {
             return;
         }
 
-        const result = MarketWorld.data.deleteJournalEntry(id);
-        if (result.success) {
-            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
-            actualizarDashboard();
-            cargarAsientosContables();
-        } else {
-            alert('Error: ' + result.message);
+        try {
+            const result = await MarketWorld.api.journalEntries.delete(id);
+            if (result.success) {
+                MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
+                await loadContabilidadStateFromAPI();
+                actualizarDashboard();
+                cargarAsientosContables();
+            } else {
+                alert('Error: ' + (result.message || 'No se pudo eliminar el asiento'));
+            }
+        } catch (error) {
+            console.error('[Contabilidad] Error eliminando asiento:', error);
+            alert(error && error.message ? error.message : 'Error al eliminar el asiento');
         }
     };
 
@@ -578,18 +775,23 @@
             moneda: document.getElementById('account-currency')
         };
 
-        const result = MarketWorld.data.updateAccount(currentAccount.codigo, {
+        MarketWorld.api.accounts.update(currentAccount.id, {
+            codigo: inputs.codigo?.value || currentAccount.codigo,
             nombre: inputs.nombre?.value,
             tipo: inputs.tipo?.value,
-            descripcion: inputs.descripcion?.value
+            activo: currentAccount.activo !== false
+        }).then(async function(result) {
+            if (result.success) {
+                MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
+                await loadContabilidadStateFromAPI();
+                renderizarPlanContable();
+            } else {
+                alert('Error: ' + (result.message || 'No se pudo actualizar la cuenta'));
+            }
+        }).catch(function(error) {
+            console.error('[Contabilidad] Error actualizando cuenta:', error);
+            alert(error && error.message ? error.message : 'Error al actualizar la cuenta');
         });
-
-        if (result.success) {
-            MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
-            renderizarPlanContable();
-        } else {
-            alert('Error: ' + result.message);
-        }
     }
 
     // ======= LIBROS CONTABLES =======
@@ -602,7 +804,7 @@
         const tableBody = document.querySelector('#diario tbody');
         if (!tableBody) return;
 
-        const entries = MarketWorld.data.getJournalEntries();
+        const entries = getJournalEntries();
         
         if (entries.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No hay asientos registrados</td></tr>';
@@ -613,17 +815,18 @@
         let totalHaber = 0;
 
         const rows = entries.map(entry => {
-            const subDebe = entry.partidas.reduce((sum, p) => sum + (p.debe || 0), 0);
-            const subHaber = entry.partidas.reduce((sum, p) => sum + (p.haber || 0), 0);
+            const partidas = getEntryItems(entry);
+            const subDebe = partidas.reduce((sum, p) => sum + (p.debe || 0), 0);
+            const subHaber = partidas.reduce((sum, p) => sum + (p.haber || 0), 0);
             totalDebe += subDebe;
             totalHaber += subHaber;
 
             return `
                 <tr>
-                    <td>${entry.numero}</td>
+                    <td>${getEntryDisplayNumber(entry)}</td>
                     <td>${MarketWorld.utils.formatDate(entry.fecha)}</td>
-                    <td>${entry.descripcion}</td>
-                    <td><span class="badge ${entry.tipo === 'Automático' ? 'bg-info' : 'bg-secondary'}">${entry.tipo}</span></td>
+                    <td>${entry.glosa || entry.descripcion || ''}</td>
+                    <td><span class="badge ${getEntryDisplayType(entry) === 'Automático' ? 'bg-info' : 'bg-secondary'}">${getEntryDisplayType(entry)}</span></td>
                     <td class="debit">${MarketWorld.utils.formatCurrency(subDebe)}</td>
                     <td class="credit">${MarketWorld.utils.formatCurrency(subHaber)}</td>
                     <td>
@@ -652,18 +855,18 @@
     }
 
     window.verDetalleAsiento = function(id) {
-        const entry = MarketWorld.data.findJournalEntryById(id);
+        const entry = findJournalEntryById(id);
         if (!entry) return;
 
-        let partidasHTML = entry.partidas.map(p => `
+        let partidasHTML = getEntryItems(entry).map(p => `
             <tr>
-                <td>${p.cuenta} - ${p.nombre}</td>
+                <td>${(p.cuenta || (p.account && p.account.codigo) || '')} - ${(p.nombre || (p.account && p.account.nombre) || '')}</td>
                 <td class="debit">${p.debe > 0 ? MarketWorld.utils.formatCurrency(p.debe) : ''}</td>
                 <td class="credit">${p.haber > 0 ? MarketWorld.utils.formatCurrency(p.haber) : ''}</td>
             </tr>
         `).join('');
 
-        alert(`Asiento: ${entry.numero}\nFecha: ${entry.fecha}\nDescripción: ${entry.descripcion}\n\nVer consola para detalles completos.`);
+        alert(`Asiento: ${getEntryDisplayNumber(entry)}\nFecha: ${entry.fecha}\nDescripción: ${entry.glosa || entry.descripcion || ''}\n\nVer consola para detalles completos.`);
         console.log('Detalle del asiento:', entry);
     };
 
@@ -693,10 +896,11 @@
     }
 
     function cargarLibroMayor(codigo) {
-        const account = MarketWorld.data.findAccountByCode(codigo);
+        const account = findAccountByCode(codigo);
         if (!account) return;
 
-        const movements = MarketWorld.data.getAccountMovements(codigo);
+        const result = getAccountMovements(codigo);
+        const movements = result.movements || [];
         const tableBody = document.querySelector('#mayor tbody');
         
         if (!tableBody) return;
@@ -763,7 +967,7 @@
     }
 
     function calcularImpuestos() {
-        const summary = MarketWorld.data.getFinancialSummary();
+        const summary = getFinancialSummary();
         const impuestoRenta = summary.utilidadNeta > 0 ? summary.utilidadNeta * 0.35 : 0;
         const ivaEstimado = summary.ingresos * 0.19;
 
@@ -787,13 +991,6 @@
         setTimeout(() => {
             const radicado = 'DIAN-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000);
             MarketWorld.utils.showNotification('✅ Declaración presentada exitosamente. Radicado: ' + radicado, 'success');
-            
-            MarketWorld.data.createNotification({
-                tipo: 'success',
-                titulo: 'Declaración Presentada',
-                mensaje: `Declaración tributaria radicada con número ${radicado}`,
-                enlace: 'contabilidad.html'
-            });
         }, 2000);
     }
 

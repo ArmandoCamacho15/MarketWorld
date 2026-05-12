@@ -80,6 +80,7 @@ class InvoiceController extends Controller
             'customer_id'    => 'required|exists:customers,id', // Validar existencia del cliente
             'fecha'          => 'required',
             'metodo_pago'    => 'required',
+            'descuento'      => 'nullable|numeric|min:0',
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.cantidad'   => 'required|integer|min:1',
@@ -140,7 +141,8 @@ class InvoiceController extends Controller
                 }
 
                 $impuestos = round($subtotal * 0.19, 2);
-                $total = $subtotal + $impuestos;
+                $descuento = (float) ($request->descuento ?? 0);
+                $total = $subtotal + $impuestos - $descuento;
 
                 // 2. Crear la cabecera de la factura
                 $invoice = Invoice::create([
@@ -149,6 +151,7 @@ class InvoiceController extends Controller
                     'fecha'          => $request->fecha,
                     'subtotal'       => $subtotal,
                     'impuestos'      => $impuestos,
+                    'descuento'      => $descuento,
                     'total'          => $total,
                     'metodo_pago'    => $request->metodo_pago,
                     'estado'         => $request->estado ?? 'Pagada',
@@ -235,7 +238,7 @@ class InvoiceController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($invoice, $validated) {
+            DB::transaction(function () use ($invoice, $validated, $request) {
                 $invoice->loadMissing('items');
 
                 foreach ($invoice->items as $item) {

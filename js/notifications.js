@@ -24,6 +24,7 @@
 
         // Eventos
         notificationBell.addEventListener('click', toggleDropdown);
+        notificationsList.addEventListener('click', handleNotificationAction);
         
         // --- Cerrar dropdown al hacer clic fuera ---
         document.addEventListener('click', function(e) {
@@ -100,13 +101,13 @@
         header.innerHTML = `
             <h6 class="mb-0">Notificaciones</h6>
             <div>
-                <button class="btn btn-link btn-sm p-0 me-2" onclick="MarketWorld.notifications.markAllAsRead()" title="Marcar todas como leídas">
+                <button class="btn btn-link btn-sm p-0 me-2" data-action="mark-all" title="Marcar todas como leídas">
                     <i class="bi bi-check2-all"></i>
                 </button>
-                <button class="btn btn-link btn-sm p-0 text-danger me-2" onclick="MarketWorld.notifications.deleteAllRead()" title="Eliminar leídas">
+                <button class="btn btn-link btn-sm p-0 text-danger me-2" data-action="delete-read" title="Eliminar leídas">
                     <i class="bi bi-trash3"></i>
                 </button>
-                <button class="btn btn-link btn-sm p-0 text-danger" onclick="MarketWorld.notifications.deleteAll()" title="Eliminar todas">
+                <button class="btn btn-link btn-sm p-0 text-danger" data-action="delete-all" title="Eliminar todas">
                     <i class="bi bi-trash-fill"></i>
                 </button>
             </div>
@@ -158,8 +159,8 @@
                 <div class="notification-time">${timeAgo}</div>
             </div>
             <div class="notification-actions">
-                ${!notif.leida ? '<button class="btn btn-link btn-sm p-0" onclick="MarketWorld.notifications.markAsRead(' + notif.id + ')" title="Marcar como leída"><i class="bi bi-check2"></i></button>' : ''}
-                <button class="btn btn-link btn-sm p-0" onclick="MarketWorld.notifications.deleteNotif(' + notif.id + ')" title="Eliminar"><i class="bi bi-trash"></i></button>
+                ${!notif.leida ? '<button class="btn btn-link btn-sm p-0" data-action="mark-read" data-id="' + notif.id + '" title="Marcar como leída"><i class="bi bi-check2"></i></button>' : ''}
+                <button class="btn btn-link btn-sm p-0" data-action="delete" data-id="' + notif.id + '" title="Eliminar"><i class="bi bi-trash"></i></button>
             </div>
         `;
 
@@ -174,6 +175,42 @@
         }
 
         return item;
+    }
+
+    function handleNotificationAction(event) {
+        var button = event.target.closest('button[data-action]');
+        if (!button) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        var action = button.dataset.action;
+        var rawId = button.dataset.id;
+        var notificationId = rawId ? parseInt(rawId, 10) : null;
+
+        if (action === 'mark-read' && notificationId) {
+            markAsRead(notificationId);
+            return;
+        }
+
+        if (action === 'delete' && notificationId) {
+            deleteNotif(notificationId);
+            return;
+        }
+
+        if (action === 'mark-all') {
+            markAllAsRead();
+            return;
+        }
+
+        if (action === 'delete-read') {
+            deleteAllRead();
+            return;
+        }
+
+        if (action === 'delete-all') {
+            deleteAll();
+        }
     }
 
     function getIconClass(tipo) {
