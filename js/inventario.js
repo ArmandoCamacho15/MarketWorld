@@ -1486,24 +1486,27 @@
                 return;
             }
             
-            // Generar CSV
+            // Generar CSV (unificado: separador ;, BOM, campos entrecomillados)
+            var sep = ';';
             var csv = '\uFEFF'; // BOM para Excel
-            csv += 'Código,Nombre,Descripción,Categoría,Precio Venta,Costo,Stock,Stock Mínimo,Unidad,Proveedor,Activo\n';
-            
+            csv += ['Código','Nombre','Descripción','Categoría','Precio Venta','Costo','Stock','Stock Mínimo','Unidad','Proveedor','Activo'].map(function(h){ return '"'+h+'"'; }).join(sep) + '\n';
+
             products.forEach(function(product) {
+                var precio = (product.precio != null) ? String(product.precio).replace('.', ',') : '';
+                var costo = (product.costo != null) ? String(product.costo).replace('.', ',') : '';
                 csv += [
-                    product.codigo,
+                    '"' + (product.codigo || '') + '"',
                     '"' + (product.nombre || '').replace(/"/g, '""') + '"',
                     '"' + (product.descripcion || '').replace(/"/g, '""') + '"',
-                    product.categoria,
-                    product.precio,
-                    product.costo,
-                    product.stock,
-                    product.stockMinimo,
-                    product.unidad,
+                    '"' + (product.categoria || '') + '"',
+                    '"' + precio + '"',
+                    '"' + costo + '"',
+                    '"' + (product.stock || 0) + '"',
+                    '"' + (product.stockMinimo || 0) + '"',
+                    '"' + (product.unidad || '') + '"',
                     '"' + (product.proveedor || '').replace(/"/g, '""') + '"',
-                    product.activo ? 'Sí' : 'No'
-                ].join(',') + '\n';
+                    '"' + (product.activo ? 'Sí' : 'No') + '"'
+                ].join(sep) + '\n';
             });
             
             // Descargar archivo

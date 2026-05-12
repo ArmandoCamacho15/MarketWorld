@@ -66,7 +66,7 @@
             return;
         }
 
-        elemento.innerHTML = DOMPurify.sanitize(contenido, {
+        var sanitizeConfig = {
             ALLOWED_TAGS: [
                 'a', 'b', 'br', 'button', 'div', 'em', 'form', 'h4', 'h5', 'h6',
                 'hr', 'i', 'input', 'label', 'li', 'option', 'p', 'select',
@@ -78,10 +78,32 @@
                 'aria-expanded', 'tabindex', 'type', 'title', 'name',
                 'value', 'placeholder', 'min', 'max', 'step', 'checked',
                 'selected', 'for', 'style', 'data-id', 'data-action',
-                'data-value', 'data-target'
+                'data-value', 'data-target', 'data-invoice-page',
+                'data-factura-id'
             ],
             ALLOW_DATA_ATTR: true
-        });
+        };
+
+        var tagName = (elemento.tagName || '').toUpperCase();
+        var isTableSection = (tagName === 'TBODY' || tagName === 'THEAD' || tagName === 'TFOOT' || tagName === 'TR');
+
+        // DOMPurify puede descartar tr/td cuando el fragmento se procesa fuera de contexto.
+        // Para secciones de tabla se sanitiza con envoltura temporal y luego se extrae el bloque final.
+        if (isTableSection) {
+            var wrapperTag = tagName === 'TR' ? 'tbody' : tagName.toLowerCase();
+            var wrappedContent = '<table><' + wrapperTag + '>' + contenido + '</' + wrapperTag + '></table>';
+            var sanitizedWrapped = DOMPurify.sanitize(wrappedContent, sanitizeConfig);
+            var temp = document.createElement('div');
+            temp.innerHTML = sanitizedWrapped;
+            var extracted = temp.querySelector(wrapperTag);
+
+            if (extracted) {
+                elemento.innerHTML = extracted.innerHTML;
+                return;
+            }
+        }
+
+        elemento.innerHTML = DOMPurify.sanitize(contenido, sanitizeConfig);
     }
 
     /**
@@ -307,8 +329,9 @@
 
         // Totales: intentar obtener de campos comunes o calcular
         var subtotalVal = parseFloat(inv.subtotal || inv.sub_total || inv.neto || inv.net_amount || items.reduce(function(s,i){return s + (i.subtotal||0);},0)) || 0;
-        var taxVal = parseFloat(inv.tax_total || inv.iva || inv.iva_total || inv.impuesto || inv.tax || (inv.total ? (parseFloat(inv.total||0) - subtotalVal) : 0)) || 0;
-        var totalVal = parseFloat(inv.total || inv.total_amount || inv.total_final || subtotalVal + taxVal) || 0;
+        var discountVal = parseFloat(inv.descuento || inv.discount || inv.discount_total || 0) || 0;
+        var taxVal = parseFloat(inv.tax_total || inv.iva || inv.impuestos || inv.iva_total || inv.impuesto || inv.tax || (inv.total ? (parseFloat(inv.total||0) - subtotalVal + discountVal) : 0)) || 0;
+        var totalVal = parseFloat(inv.total || inv.total_amount || inv.total_final) || (subtotalVal + taxVal - discountVal);
         var paymentMethod = inv.payment_method || inv.metodo_pago || inv.payment || (inv.payments && inv.payments.length ? inv.payments[0].method : '') || '';
 
         // Construir HTML
@@ -354,6 +377,9 @@
         html += '<div class="col-6">';
         html += '<div class="text-end"><div>Subtotal: <strong>' + formatCurrency(subtotalVal) + '</strong></div>';
         html += '<div>IVA: <strong>' + formatCurrency(taxVal) + '</strong></div>';
+        if (discountVal > 0) {
+            html += '<div>Descuento: <strong>-' + formatCurrency(discountVal) + '</strong></div>';
+        }
         html += '<hr />';
         html += '<div style="font-size:1.25rem;">TOTAL: <strong class="text-primary">' + formatCurrency(totalVal) + '</strong></div>';
         html += '</div>';

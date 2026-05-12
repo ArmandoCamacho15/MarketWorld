@@ -14,6 +14,36 @@ const invoiceHistoryState = {
     total: 0,
 };
 
+// --- Estado del catálogo en memoria ---
+let invoiceCatalogProducts = [];
+
+function getInvoiceCatalogProducts() {
+    return invoiceCatalogProducts;
+}
+
+function setInvoiceCatalogProducts(products) {
+    invoiceCatalogProducts = products || [];
+}
+
+function mapApiProductToInvoice(p) {
+    if (!p) return null;
+    return {
+        id: p.id,
+        codigo: p.sku || p.codigo || '',
+        nombre: p.nombre || p.name || '',
+        descripcion: p.descripcion || p.description || '',
+        categoria: p.categoria || p.category || 'Sin categoría',
+        precio: parseFloat(p.precio_venta || p.precio || 0) || 0,
+        costo: parseFloat(p.precio_compra || p.costo || 0) || 0,
+        stock: parseInt(p.stock || p.stock_actual || 0, 10) || 0,
+        stockMinimo: parseInt(p.stock_minimo || p.stockMinimo || 0, 10) || 0,
+        unidad: p.unidad || 'Unidad',
+        proveedor: p.proveedor || '',
+        activo: (p.estado || 'Activo') === 'Activo',
+        origin: 'api'
+    };
+}
+
 // Helper: escape HTML para mostrar nombres seguros (local a este módulo)
 function escapeHtml(str) {
     if (str === undefined || str === null) return '';
@@ -31,7 +61,8 @@ function setSafeHtml(element, html) {
         MarketWorld.utils.insertarHTMLSeguro(element, html);
         return;
     }
-    element.textContent = String(html || '');
+    // Fallback: usar innerHTML (no textContent) para renderizar HTML
+    element.innerHTML = html || '';
 }
 
 function normalizeApiListResponse(response, fallbackMeta) {
@@ -103,18 +134,25 @@ function initInvoiceHistoryEvents() {
     const btnFiltrarHistorial = document.getElementById('btnFiltrarHistorial');
     const filtroEstado = document.getElementById('filtroEstado');
     const filtroCliente = document.getElementById('filtroCliente');
+    const btnExportarHistorial = document.getElementById('btnExportarHistorial');
+
+    function runCargarHistorial() {
+        if (typeof window.cargarHistorial === 'function') {
+            window.cargarHistorial();
+        }
+    }
 
     if (btnFiltrarHistorial) {
         btnFiltrarHistorial.addEventListener('click', function() {
             invoiceHistoryState.page = 1;
-            cargarHistorial();
+            runCargarHistorial();
         });
     }
 
     if (filtroEstado) {
         filtroEstado.addEventListener('change', function() {
             invoiceHistoryState.page = 1;
-            cargarHistorial();
+            runCargarHistorial();
         });
     }
 
@@ -123,38 +161,44 @@ function initInvoiceHistoryEvents() {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 invoiceHistoryState.page = 1;
-                cargarHistorial();
+                runCargarHistorial();
             }
         });
     }
 
-    const pagination = ensureInvoiceHistoryPagination();
-    if (pagination) {
-        pagination.addEventListener('click', function(event) {
-            const link = event.target.closest('[data-invoice-page]');
-            if (!link) return;
-
-            event.preventDefault();
-            const target = link.getAttribute('data-invoice-page');
-            let nextPage = invoiceHistoryState.page;
-
-            if (target === 'prev') {
-                nextPage = Math.max(1, invoiceHistoryState.page - 1);
-            } else if (target === 'next') {
-                nextPage = Math.min(invoiceHistoryState.lastPage, invoiceHistoryState.page + 1);
-            } else {
-                const parsedPage = parseInt(target, 10);
-                if (!isNaN(parsedPage)) {
-                    nextPage = parsedPage;
-                }
-            }
-
-            if (nextPage !== invoiceHistoryState.page) {
-                invoiceHistoryState.page = nextPage;
-                cargarHistorial();
+    if (btnExportarHistorial) {
+        btnExportarHistorial.addEventListener('click', function() {
+            if (typeof window.exportarFacturasCSV === 'function') {
+                window.exportarFacturasCSV();
             }
         });
     }
+
+    // Event delegation para paginación: usar document para que funcione siempre
+    document.addEventListener('click', function(event) {
+        const link = event.target.closest('[data-invoice-page]');
+        if (!link) return;
+
+        event.preventDefault();
+        const target = link.getAttribute('data-invoice-page');
+        let nextPage = invoiceHistoryState.page;
+
+        if (target === 'prev') {
+            nextPage = Math.max(1, invoiceHistoryState.page - 1);
+        } else if (target === 'next') {
+            nextPage = Math.min(invoiceHistoryState.lastPage, invoiceHistoryState.page + 1);
+        } else {
+            const parsedPage = parseInt(target, 10);
+            if (!isNaN(parsedPage)) {
+                nextPage = parsedPage;
+            }
+        }
+
+        if (nextPage !== invoiceHistoryState.page) {
+            invoiceHistoryState.page = nextPage;
+            runCargarHistorial();
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -287,22 +331,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
 
-        const productoLocal = buscarProductoLocal(termino);
-        if (productoLocal) {
-            productoBuscadoRapido = productoLocal;
-            terminoBuscadoRapido = termino;
-            mostrarNotificacion(`Producto encontrado: ${productoLocal.nombre}. Presiona Agregar para continuar.`, 'info');
-            return productoLocal;
-        }
-        
         try {
             if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.products) {
                 throw new Error('Adaptador API no disponible');
             }
 
             const result = await MarketWorld.api.products.getAll({ search: termino });
-            console.log('Result API:', result);
-
             let products = [];
             if (Array.isArray(result.data)) {
                 products = result.data;
@@ -310,32 +344,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 products = result.data.data;
             }
 
-            // Buscar coincidencia exacta por SKU o nombre en los resultados
-            const apiProduct = products.find(p =>
-                String(p.sku || '').toLowerCase() === termino ||
+            const mapped = (products || []).map(mapApiProductToInvoice);
+            const producto = mapped.find(p =>
+                String(p.codigo || '').toLowerCase() === termino ||
                 String(p.nombre || '').toLowerCase().includes(termino)
             );
             
-            if (!apiProduct) {
+            if (!producto) {
                 alert('❌ Producto no encontrado en el servidor.');
-                productoBuscadoRapido = null;
-                terminoBuscadoRapido = '';
                 return null;
             }
-
-            const producto = {
-                id: apiProduct.id,
-                codigo: apiProduct.sku,
-                nombre: apiProduct.nombre,
-                precio: parseFloat(apiProduct.precio_venta),
-                stock: apiProduct.stock,
-                activo: apiProduct.estado === 'Activo'
-            };
             
             if (!producto.activo) {
                 alert('⚠️ Este producto está inactivo.');
-                productoBuscadoRapido = null;
-                terminoBuscadoRapido = '';
                 return null;
             }
 
@@ -691,6 +712,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         selectedCliente = cliente;
         if (inputClienteNombre) inputClienteNombre.value = cliente.nombre || '';
         if (inputClienteDocumento) inputClienteDocumento.value = cliente.documento || '';
+        updateClienteBadge();
         mostrarNotificacion(`Cliente seleccionado: ${cliente.nombre}`, 'info');
     }
 
@@ -759,8 +781,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!clienteSelectedBadge) return;
         if (selectedCliente) {
             setSafeHtml(clienteSelectedBadge, `<span class="badge bg-primary">ID ${selectedCliente.id}</span> <strong class="ms-2">${selectedCliente.nombre}</strong> <div class="small text-muted">${selectedCliente.documento || ''}</div>`);
+            if (clienteQuickNote) clienteQuickNote.style.display = 'none';
         } else {
             setSafeHtml(clienteSelectedBadge, '<small class="text-muted">Ningún cliente seleccionado</small>');
+            const isRapido = document.getElementById('modoRapido') && document.getElementById('modoRapido').checked;
+            if (clienteQuickNote && isRapido) clienteQuickNote.style.display = 'block';
         }
     }
 
@@ -1088,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
                     subtotal: subtotalBase,
                     impuestos: totalIVA,
+                    descuento: descuentoMonto,
                     total: total,
                     metodo_pago: mappedMetodoPago,
                     estado: 'Pagada',
@@ -1184,16 +1210,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     };
                 });
 
-                // Actualizar cache local para mantener consistencia
-                try {
-                    localStorage.setItem('marketworld_products', JSON.stringify(productosList));
-                } catch (e) { console.warn('No se pudo actualizar localStorage con productos API:', e && e.message ? e.message : e); }
+                // Catálogo sincronizado en memoria
+                setInvoiceCatalogProducts(productosList);
             } catch (err) {
-                console.warn('Error cargando productos desde API, usando localStorage:', err && err.message ? err.message : err);
-                productosList = MarketWorld.data.getProducts();
+                console.warn('Error cargando productos desde API:', err && err.message ? err.message : err);
+                productosList = getInvoiceCatalogProducts();
             }
         } else {
-            productosList = MarketWorld.data.getProducts();
+            productosList = getInvoiceCatalogProducts();
         }
 
         // Mostrar solo productos activos (no filtrar por origin para permitir fallback local)
@@ -1241,64 +1265,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     // - Si la entrada local está ausente o parece ser un mock/genérico, solicitar al API por ID
     // - Actualizar cache local si se obtiene un producto desde el API
     window.agregarProductoRapido = async function(id) {
-        // Intentar resolver desde la cache local primero
-        var producto = MarketWorld.data.findProductById(id);
-
-        function isLikelyMockName(name) {
-            if (!name) return true;
-            var n = String(name).toLowerCase();
-            return /\b(qa|test|mock|producto qa)\b/.test(n);
-        }
-
-        // Si no existe localmente o el nombre parece mock/genérico, intentar pedir al API
-        if (!producto || !producto.nombre || isLikelyMockName(producto.nombre)) {
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products && MarketWorld.api.products.getById) {
-                try {
-                    const res = await MarketWorld.api.products.getById(id);
-                    var apiP = res && (res.data || res) ? (res.data || res) : null;
-                    if (apiP) {
-                        producto = {
-                            id: apiP.id,
-                            codigo: apiP.sku || apiP.codigo || '',
-                            nombre: apiP.nombre || apiP.name || '',
-                            descripcion: apiP.descripcion || apiP.description || '',
-                            categoria: apiP.categoria || apiP.category || 'Sin categoría',
-                            precio: parseFloat(apiP.precio_venta || apiP.precio || 0) || 0,
-                            costo: parseFloat(apiP.precio_compra || apiP.costo || 0) || 0,
-                            stock: parseInt(apiP.stock || apiP.stock_actual || 0, 10) || 0,
-                            stockMinimo: parseInt(apiP.stock_minimo || apiP.stockMinimo || 0, 10) || 0,
-                            unidad: apiP.unidad || 'Unidad',
-                            proveedor: apiP.proveedor || '',
-                            activo: (apiP.estado || 'Activo') === 'Activo',
-                            origin: 'api'
-                        };
-
-                        // Actualizar cache local con el producto fresco
-                        try {
-                            var locals = MarketWorld.data.getProducts();
-                            var idx = locals.findIndex(function(p) {
-                                return String(p.id) === String(producto.id) || (p.codigo && String(p.codigo).toLowerCase() === String(producto.codigo).toLowerCase());
-                            });
-                            if (idx === -1) {
-                                locals.push(producto);
-                            } else {
-                                locals[idx] = Object.assign({}, locals[idx], producto);
-                            }
-                            localStorage.setItem('marketworld_products', JSON.stringify(locals));
-                        } catch (e) {
-                            console.warn('No se pudo actualizar cache local con producto API', e && e.message ? e.message : e);
-                        }
+        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products && MarketWorld.api.products.getById) {
+            try {
+                const res = await MarketWorld.api.products.getById(id);
+                const apiP = res && (res.data || res) ? (res.data || res) : null;
+                if (apiP) {
+                    const producto = mapApiProductToInvoice(apiP);
+                    if (producto.activo) {
+                        agregarAlCarrito(producto, 1);
+                    } else {
+                        alert('Producto no disponible o inactivo');
                     }
-                } catch (err) {
-                    console.warn('No se pudo obtener producto por ID desde API:', err && err.message ? err.message : err);
                 }
+            } catch (err) {
+                console.error('Error al obtener producto por ID:', err);
+                alert('No se pudo obtener el producto del servidor.');
             }
-        }
-
-        if (producto && producto.activo) {
-            agregarAlCarrito(producto, 1);
-        } else {
-            alert('Producto no disponible o inactivo');
         }
     };
     
@@ -1477,10 +1459,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        const productos = MarketWorld.data.getProducts();
+        const productos = getInvoiceCatalogProducts();
         const producto = productos.find(p =>
-            p.codigo.toLowerCase().includes(termino) ||
-            p.nombre.toLowerCase().includes(termino)
+            String(p.codigo || '').toLowerCase().includes(termino) ||
+            String(p.nombre || '').toLowerCase().includes(termino)
         );
 
         if (!producto) {
@@ -1576,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            const productos = MarketWorld.data.getProducts();
+            const productos = getInvoiceCatalogProducts();
             const productosFiltrados = productos.filter(p =>
                 p && p.activo && (
                     String(p.nombre || '').toLowerCase().includes(termino) ||
@@ -1631,32 +1613,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         setSafeHtml(container, '<h5 class="mb-3">🔥 Productos Más Vendidos</h5>');
 
-        // Intentar cargar desde API primero; si falla, usar localStorage
+        // Intentar cargar desde API primero; si falla, usar cache en memoria
         var productosList = [];
         var apiLoaded = false;
         if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products && MarketWorld.api.products.getAll) {
             try {
                 const res = await MarketWorld.api.products.getAll();
                 var apiProducts = res && (res.data || Array.isArray(res)) ? (res.data || res) : [];
-                productosList = (apiProducts || []).map(function(p) {
-                    return {
-                        id: p.id,
-                        codigo: p.sku || p.codigo || '',
-                        nombre: p.nombre || p.name || '',
-                        precio: parseFloat(p.precio_venta || p.precio || 0) || 0,
-                        stock: parseInt(p.stock || p.stock_actual || 0, 10) || 0,
-                        origin: 'api',
-                        activo: (p.estado || 'Activo') === 'Activo'
-                    };
-                });
+                productosList = (apiProducts || []).map(mapApiProductToInvoice);
                 apiLoaded = true;
-                try { localStorage.setItem('marketworld_products', JSON.stringify(productosList)); } catch (e) { /* ignore */ }
+                setInvoiceCatalogProducts(productosList);
             } catch (err) {
-                console.warn('mostrarProductosDisponiblesCompleto: API falla, usando cache local', err && err.message ? err.message : err);
-                productosList = MarketWorld.data.getProducts();
+                console.warn('mostrarProductosDisponiblesCompleto: API falla, usando cache memoria', err && err.message ? err.message : err);
+                productosList = getInvoiceCatalogProducts();
             }
         } else {
-            productosList = MarketWorld.data.getProducts();
+            productosList = getInvoiceCatalogProducts();
         }
 
         // Si cargamos desde API, priorizar productos origin:'api'; si no, mostrar los locales disponibles
@@ -1708,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     window.seleccionarProductoCompleto = function(id) {
-        const producto = MarketWorld.data.findProductById(id);
+        const producto = getInvoiceCatalogProducts().find(p => String(p.id) === String(id));
         if (!producto || !producto.activo) return;
 
         productoBuscadoCompleto = producto;
@@ -1719,8 +1691,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     function getProductosActivos() {
-        const productos = MarketWorld.data.getProducts();
-        return productos.filter(function(p) {
+        return getInvoiceCatalogProducts().filter(function(p) {
             return p && p.activo;
         });
     }
@@ -1737,53 +1708,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else if (response && response.data && Array.isArray(response.data.data)) {
                 apiProducts = response.data.data;
             }
-            if (apiProducts.length === 0) return;
-
-            const localProducts = MarketWorld.data.getProducts();
-            const byCode = new Map();
-
-            localProducts.forEach(function(product) {
-                if (product && product.codigo) {
-                    byCode.set(String(product.codigo).toLowerCase(), product);
-                }
-            });
-
-            apiProducts.forEach(function(apiProduct) {
-                const mapped = {
-                    id: apiProduct.id,
-                    codigo: apiProduct.sku || '',
-                    nombre: apiProduct.nombre || '',
-                    descripcion: apiProduct.descripcion || '',
-                    categoria: apiProduct.categoria || 'General',
-                    precio: parseFloat(apiProduct.precio_venta || 0),
-                    costo: parseFloat(apiProduct.precio_compra || 0),
-                    stock: parseInt(apiProduct.stock || 0, 10),
-                    stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
-                    unidad: apiProduct.unidad || 'Unidad',
-                    proveedor: apiProduct.proveedor || '',
-                    fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
-                    activo: (apiProduct.estado || 'Activo') === 'Activo',
-                    origin: 'api'
-                };
-
-                if (mapped.codigo) {
-                    byCode.set(String(mapped.codigo).toLowerCase(), mapped);
-                }
-            });
-
-            localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
-            // Asegurar categoría 'Alimentos' existe en el front local si aparece en productos API
-            try {
-                const localCats = MarketWorld.data.getCategories ? MarketWorld.data.getCategories() : [];
-                const hasAlimentos = localCats.some(function(c) { return String(c.nombre || '').toLowerCase() === 'alimentos'; });
-                const anyApiHasAlimentos = apiProducts.some(function(p) { return String(p.categoria || '').toLowerCase() === 'alimentos'; });
-                if (anyApiHasAlimentos && !hasAlimentos && MarketWorld.data.createCategory) {
-                    MarketWorld.data.createCategory({ nombre: 'Alimentos', descripcion: 'Productos alimenticios', activa: true });
-                    console.log('Categoría "Alimentos" creada localmente por sincronización.');
-                }
-            } catch (e) {
-                console.warn('No se pudo asegurar categoría Alimentos:', e && e.message ? e.message : e);
-            }
+            
+            const mapped = (apiProducts || []).map(mapApiProductToInvoice);
+            setInvoiceCatalogProducts(mapped);
+            
+            console.log('✅ Catálogo de facturación sincronizado con API (en memoria).');
         } catch (error) {
             console.warn('No se pudieron sincronizar productos desde API en facturación:', error.message || error);
         }
@@ -1841,6 +1770,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Cargar historial de facturas al iniciar
+    window.cargarHistorial = cargarHistorial;
+    window.exportarFacturasCSV = exportarFacturasCSV;
     initInvoiceHistoryEvents();
     cargarHistorial();
 
@@ -1876,17 +1807,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const result = await MarketWorld.api.invoices.getAll(requestFilters);
+            if (!result) throw new Error('No se recibió respuesta del servidor');
+
             const parsed = normalizeApiListResponse(result, {
                 current_page: invoiceHistoryState.page,
                 per_page: invoiceHistoryState.perPage,
             });
 
-            if (!parsed.success) return;
+            if (!parsed || !parsed.success) {
+                setSafeHtml(tbody, `<tr><td colspan="8" class="text-center text-danger">Error al procesar datos del servidor</td></tr>`);
+                return;
+            }
 
-            invoiceHistoryState.page = parsed.meta.current_page;
-            invoiceHistoryState.perPage = parsed.meta.per_page;
-            invoiceHistoryState.lastPage = parsed.meta.last_page;
-            invoiceHistoryState.total = parsed.meta.total;
+            invoiceHistoryState.page = parsed.meta.current_page || 1;
+            invoiceHistoryState.perPage = parsed.meta.per_page || 10;
+            invoiceHistoryState.lastPage = parsed.meta.last_page || 1;
+            invoiceHistoryState.total = parsed.meta.total || 0;
 
             const facturas = parsed.items;
             facturasHistorialCache = facturas;
@@ -1902,11 +1838,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             facturas.forEach(factura => {
                 const tr = document.createElement('tr');
+                const subtotal = parseFloat(factura.subtotal || 0) || 0;
+                const iva = parseFloat(factura.impuestos || 0) || 0;
+                const descuento = parseFloat(factura.descuento || 0) || 0;
+                const total = subtotal + iva - descuento;
+                
                 setSafeHtml(tr, `
                     <td><strong>${factura.numero_factura}</strong></td>
                     <td>${new Date(factura.fecha).toLocaleDateString()}</td>
                     <td>${factura.customer_id ? 'Cliente #' + factura.customer_id : 'Venta General'}</td>
-                    <td class="fw-bold">$${parseFloat(factura.total).toLocaleString('es-CO')}</td>
+                    <td class="fw-bold">$${Math.round(total).toLocaleString('es-CO')}</td>
                     <td><span class="badge bg-success">${factura.estado}</span></td>
                     <td>${factura.metodo_pago}</td>
                     <td>${factura.seller?.name || 'Sistema'}</td>
@@ -2125,73 +2066,206 @@ async function verDetalleFactura(facturaId) {
         }
     }
 
+    const modalFooter = document.querySelector('#modalDetalleFactura .modal-footer');
+    if (modalFooter) {
+        setSafeHtml(modalFooter, `
+            ${estado !== 'Anulada' ? `<button type="button" class="btn btn-danger" id="btnAnularDesdeModal"><i class="bi bi-x-circle"></i> Anular Factura</button>` : ''}
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" id="btnImprimirDesdeModal"><i class="bi bi-printer"></i> Imprimir</button>
+        `);
+        const btnAnular = document.getElementById('btnAnularDesdeModal');
+        if (btnAnular) {
+            btnAnular.onclick = () => {
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('modalDetalleFactura'));
+                if (modalInstance) modalInstance.hide();
+                anularFactura(factura.id);
+            };
+        }
+        const btnImprimir = document.getElementById('btnImprimirDesdeModal');
+        if (btnImprimir) {
+            btnImprimir.addEventListener('click', imprimirFactura);
+        }
+    }
+
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleFactura'));
     modal.show();
 }
 
-// Anular factura
-function anularFactura(facturaId) {
-    const factura = MarketWorld.data.findInvoiceById(facturaId);
+async function anularFactura(facturaId) {
+    const factura = facturasHistorialCache.find(f => String(f.id) === String(facturaId));
     if (!factura) return;
     
-    if (!confirm(`¿Anular la factura ${factura.numeroFactura}?\n\nEsta acción devolverá el stock de los productos.`)) {
+    const motivo = prompt(`¿Anular la factura ${factura.numero_factura || factura.numeroFactura}?\nIngrese el motivo de anulación (mínimo 10 caracteres):`);
+    
+    if (!motivo || motivo.length < 10) {
+        alert('⚠️ Debe ingresar un motivo válido de al menos 10 caracteres para anular.');
         return;
     }
     
-    MarketWorld.data.updateInvoice(facturaId, { estado: 'Cancelada' });
-    
-    MarketWorld.data.createNotification({
-        tipo: 'danger',
-        titulo: 'Factura Anulada',
-        mensaje: `Factura ${factura.numeroFactura} fue anulada`,
-        enlace: 'facturacion.html'
-    });
-    
-    cargarHistorial();
-    alert(`Factura ${factura.numeroFactura} anulada. Stock devuelto.`);
+    try {
+        if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.invoices) {
+            throw new Error('Adaptador API no disponible');
+        }
+
+        const result = await MarketWorld.api.invoices.update(facturaId, { 
+            estado: 'Anulada',
+            motivo_anulacion: motivo
+        });
+
+        if (result.success) {
+            mostrarNotificacion(`✅ Factura anulada exitosamente`, 'success');
+            cargarHistorial();
+        } else {
+            throw new Error(result.message || 'Error al anular la factura');
+        }
+    } catch (error) {
+        console.error('Error al anular factura:', error);
+        alert(`❌ Error: ${error.message}`);
+    }
 }
 
 // Imprimir factura
 function imprimirFactura() {
+    const modalTitle = document.getElementById('modalDetalleTitle');
     const contenido = document.getElementById('modalDetalleBody');
     if (!contenido) return;
     
-    const ventana = window.open('', '_blank', 'width=800,height=600');
-    if (!ventana) return;
+    const ventana = window.open('', '_blank', 'width=900,height=700');
+    if (!ventana) {
+        alert('Error: No se pudo abrir la ventana de impresión. Verifica los permisos del navegador.');
+        return;
+    }
 
+    const numeroFactura = modalTitle ? modalTitle.textContent : 'Factura';
     const doc = ventana.document;
-    doc.title = 'Imprimir Factura';
+    doc.title = numeroFactura;
 
-    const head = doc.head || doc.getElementsByTagName('head')[0] || doc.createElement('head');
-    if (!doc.head) doc.documentElement.insertBefore(head, doc.body || null);
+    // Crear estructura HTML básica
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${numeroFactura}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            padding: 20px; 
+            font-family: Arial, sans-serif;
+        }
+        @media print { 
+            .no-print { display: none !important; }
+            body { padding: 0; }
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { margin: 0; font-weight: bold; }
+        .header p { margin: 5px 0 0 0; color: #666; }
+        .invoice-info { margin-bottom: 30px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .info-col { flex: 1; }
+        .info-col h6 { margin-bottom: 10px; font-weight: bold; color: #333; }
+        .table { margin: 20px 0; }
+        .table th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; }
+        .totals-box { margin-top: 30px; max-width: 400px; margin-left: auto; }
+        .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .totals-row.total { border-bottom: 2px solid #333; font-weight: bold; font-size: 16px; }
+        .text-end { text-align: right; }
+        .text-muted { color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>MarketWorld</h2>
+        <p>Sistema de Facturación</p>
+    </div>
+    <div class="invoice-content">
+        ${contenido.innerHTML || '<p>No hay contenido disponible</p>'}
+    </div>
+    <div class="mt-4 text-center no-print">
+        <button class="btn btn-primary" id="btnPrintWindow">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
+        <button class="btn btn-secondary ms-2" id="btnCloseWindow">
+            <i class="bi bi-x-lg"></i> Cerrar
+        </button>
+    </div>
+</body>
+</html>`;
 
-    const link = doc.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
-    head.appendChild(link);
+    doc.write(html);
+    doc.close();
 
-    const style = doc.createElement('style');
-    style.textContent = 'body { padding: 20px; } @media print { .no-print { display: none; } }';
-    head.appendChild(style);
-
-    const bodyEl = doc.body || doc.createElement('body');
-    if (!doc.body) doc.documentElement.appendChild(bodyEl);
-
-    const headerHtml = '<div class="text-center mb-4"><h2>MarketWorld</h2><p class="text-muted">Sistema de Facturación</p></div>';
-    setSafeHtml(bodyEl, headerHtml + (contenido.innerHTML || ''));
-
-    const buttonWrapper = doc.createElement('div');
-    buttonWrapper.className = 'text-center mt-4 no-print';
-    const printButton = doc.createElement('button');
-    printButton.type = 'button';
-    printButton.className = 'btn btn-primary';
-    printButton.textContent = 'Imprimir';
-    printButton.addEventListener('click', function() { ventana.print(); });
-    buttonWrapper.appendChild(printButton);
-    bodyEl.appendChild(buttonWrapper);
+    const btnPrint = ventana.document.getElementById('btnPrintWindow');
+    if (btnPrint) {
+        btnPrint.addEventListener('click', function() { ventana.print(); });
+    }
+    const btnClose = ventana.document.getElementById('btnCloseWindow');
+    if (btnClose) {
+        btnClose.addEventListener('click', function() { ventana.close(); });
+    }
 }
 
 window.verDetalleFactura = verDetalleFactura;
 window.imprimirFactura = imprimirFactura;
+
+// Exportar facturas a CSV
+function exportarFacturasCSV() {
+    const facturas = facturasHistorialCache || [];
+    if (facturas.length === 0) {
+        alert('⚠️ No hay facturas para exportar');
+        return;
+    }
+
+    // Encabezados del CSV
+    const headers = ['Nº Factura', 'Fecha', 'Cliente', 'Subtotal', 'IVA', 'Descuento', 'Total', 'Estado', 'Método Pago', 'Vendedor'];
+    
+    // Construir filas
+    const rows = facturas.map(f => {
+        const subtotal = parseFloat(f.subtotal || 0) || 0;
+        const iva = parseFloat(f.impuestos || 0) || 0;
+        const descuento = parseFloat(f.descuento || 0) || 0;
+        const total = subtotal + iva - descuento;
+        
+        return [
+            f.numero_factura || '',
+            new Date(f.fecha || new Date()).toLocaleDateString('es-CO'),
+            f.customer?.nombre || f.clienteNombre || (f.customer_id ? `Cliente #${f.customer_id}` : 'Venta General'),
+            subtotal.toString().replace('.', ','),
+            iva.toString().replace('.', ','),
+            descuento.toString().replace('.', ','),
+            total.toString().replace('.', ','),
+            f.estado || 'Pagada',
+            f.metodo_pago || '-',
+            f.seller?.name || f.vendedor || 'Sistema'
+        ];
+    });
+
+    // Construir CSV usando punto y coma como separador (mejor para Excel en locales ES)
+    const sep = ';';
+    const csvContent = [
+        headers.map(h => `"${h}"`).join(sep),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(sep))
+    ].join('\n');
+
+    // Crear blob y descargar
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const now = new Date();
+    const timestamp = now.getFullYear() + '-' + 
+                     String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(now.getDate()).padStart(2, '0');
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `facturas_${timestamp}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarNotificacion(`✅ ${facturas.length} factura(s) exportada(s)`, 'success');
+}
 
 });

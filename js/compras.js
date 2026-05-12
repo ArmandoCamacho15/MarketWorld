@@ -63,9 +63,23 @@
     }
 
     function mapApiPurchaseToCompras(apiPurchase) {
-        const apiPayments = Array.isArray(apiPurchase.payments)
+        const supplierId = apiPurchase.supplier_id || apiPurchase.proveedorId || (apiPurchase.supplier && apiPurchase.supplier.id) || null;
+        const supplierRef = apiPurchase.supplier || null;
+        const rawPayments = Array.isArray(apiPurchase.payments)
             ? apiPurchase.payments
             : (Array.isArray(apiPurchase.pagos) ? apiPurchase.pagos : []);
+
+        const seenPayments = new Set();
+        const apiPayments = rawPayments.filter(function(payment) {
+            const paymentId = payment.id || payment.payment_id || null;
+            const key = paymentId
+                ? `id:${paymentId}`
+                : `m:${payment.monto || payment.amount || ''}|f:${payment.fecha_pago || payment.fechaPago || ''}|r:${payment.referencia_transaccion || payment.referencia || ''}`;
+            if (seenPayments.has(key)) return false;
+            seenPayments.add(key);
+            return true;
+        });
+
         const paidTotal = parseFloat(
             apiPurchase.paid_total !== undefined
                 ? apiPurchase.paid_total
@@ -87,6 +101,9 @@
             fechaVencimiento: apiPurchase.fecha_vencimiento || apiPurchase.fechaVencimiento || '',
             estado: apiPurchase.estado || 'Pendiente',
             terminosPago: apiPurchase.terminos_pago || apiPurchase.terminosPago || 'Contado',
+            proveedorId: supplierId,
+            supplier_id: supplierId,
+            supplier: supplierRef,
             proveedorNombre: (apiPurchase.supplier && apiPurchase.supplier.nombre) || apiPurchase.proveedorNombre || apiPurchase.proveedor || '',
             proveedorNit: (apiPurchase.supplier && apiPurchase.supplier.nit_ruc) || apiPurchase.proveedorNit || '',
             usuario: (apiPurchase.user && (apiPurchase.user.nombre || apiPurchase.user.username)) || apiPurchase.usuario || '',
@@ -104,6 +121,22 @@
             payments: apiPayments,
             estadoPago: saldo <= 0 && total > 0 ? 'Pagada' : (apiPurchase.estado || 'Pendiente')
         };
+    }
+
+    function getPurchaseSaldo(purchase) {
+        if (!purchase) return 0;
+        if (purchase.saldo !== undefined && purchase.saldo !== null) {
+            return parseNumber(purchase.saldo);
+        }
+        const total = parseNumber(purchase.total || 0);
+        if (purchase.paid_total !== undefined && purchase.paid_total !== null) {
+            return Math.max(total - parseNumber(purchase.paid_total), 0);
+        }
+        const paymentList = Array.isArray(purchase.payments) ? purchase.payments : (Array.isArray(purchase.pagos) ? purchase.pagos : []);
+        const paid = paymentList.reduce(function(sum, payment) {
+            return sum + parseNumber(payment.monto || payment.amount || 0);
+        }, 0);
+        return Math.max(total - paid, 0);
     }
 
     function mapApiPaymentToCompras(apiPayment) {
@@ -130,6 +163,7 @@
 
     function collectPurchasePayments(purchases) {
         const payments = [];
+        const seen = new Set();
 
         (Array.isArray(purchases) ? purchases : []).forEach(function(purchase) {
             const paymentList = Array.isArray(purchase.payments)
@@ -137,6 +171,14 @@
                 : (Array.isArray(purchase.pagos) ? purchase.pagos : []);
 
             paymentList.forEach(function(payment) {
+                const paymentId = payment.id || payment.payment_id || null;
+                const paymentKey = paymentId
+                    ? `id:${paymentId}`
+                    : `p:${purchase.id}|${payment.monto || payment.amount || ''}|${payment.fecha_pago || payment.fechaPago || ''}|${payment.referencia_transaccion || payment.referencia || ''}`;
+
+                if (seen.has(paymentKey)) return;
+                seen.add(paymentKey);
+
                 payments.push(mapApiPaymentToCompras(Object.assign({}, payment, {
                     purchase_id: purchase.id,
                     purchase: purchase,
@@ -147,6 +189,17 @@
         });
 
         return payments;
+    }
+
+    function mergePurchasesById(baseList, nextList) {
+        const map = new Map();
+        (Array.isArray(baseList) ? baseList : []).forEach(function(item) {
+            if (item && item.id !== undefined) map.set(item.id, item);
+        });
+        (Array.isArray(nextList) ? nextList : []).forEach(function(item) {
+            if (item && item.id !== undefined) map.set(item.id, item);
+        });
+        return Array.from(map.values());
     }
 
     function getPurchaseDisplayState(purchase) {
@@ -1310,8 +1363,10 @@
     function calcularSaldoProveedor(supplierId) {
         const purchases = getPurchaseCatalogPurchases().filter(function(item) {
             return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(supplierId, 10);
+        }).filter(function(p) {
+            return p.estado !== 'Cancelado' && p.estado !== 'Cancelada';
         });
-        return purchases.reduce((sum, p) => sum + (p.saldo || 0), 0);
+        return purchases.reduce((sum, p) => sum + getPurchaseSaldo(p), 0);
     }
 
     function calcularTotalComprasProveedor(supplierId) {
@@ -1555,7 +1610,7 @@
     };
 
     // --- Pagos ---
-    function cargarComprasPendientesPago(proveedorId) {
+    async function cargarComprasPendientesPago(proveedorId) {
         const container = document.getElementById('listaComprasPendientes');
         if (!container) return;
 
@@ -1564,23 +1619,46 @@
             return;
         }
 
-        const compras = getPurchaseCatalogPurchases().filter(function(item) {
+        let compras = getPurchaseCatalogPurchases().filter(function(item) {
             return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(proveedorId, 10);
-        })
-            .filter(p => p.saldo > 0 && p.estado !== 'Cancelado');
+        });
 
-        if (compras.length === 0) {
+        if (hasApiAccess() && MarketWorld.api && MarketWorld.api.purchases) {
+            try {
+                const response = await MarketWorld.api.purchases.getAll({ supplier_id: proveedorId, per_page: 200 });
+                const parsed = normalizeApiListResponse(response, { current_page: 1, per_page: 200 });
+                if (parsed.success) {
+                    const mapped = parsed.items.map(mapApiPurchaseToCompras);
+                    const merged = mergePurchasesById(getPurchaseCatalogPurchases(), mapped);
+                    setPurchaseCatalogPurchases(merged);
+                    setPurchaseCatalogPayments(collectPurchasePayments(merged));
+                    compras = merged.filter(function(item) {
+                        return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(proveedorId, 10);
+                    });
+                }
+            } catch (error) {
+                console.warn('No se pudieron cargar compras pendientes desde API:', error && error.message ? error.message : error);
+            }
+        }
+
+        const comprasPendientes = compras.filter(function(p) {
+            const saldo = getPurchaseSaldo(p);
+            return saldo > 0 && p.estado !== 'Cancelado' && p.estado !== 'Cancelada';
+        });
+
+        if (comprasPendientes.length === 0) {
             setSafeHtml(container, '<p class="text-muted small mb-0">No hay compras pendientes de pago</p>');
             return;
         }
 
-        setSafeHtml(container, compras.map(p => {
+        setSafeHtml(container, comprasPendientes.map(p => {
             const venc = p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString('es-CO') : '-';
+            const saldo = getPurchaseSaldo(p);
             return `
                 <div class="form-check mb-1">
-                    <input class="form-check-input compra-pago-check" type="checkbox" value="${p.id}" id="compraPago${p.id}" data-saldo="${p.saldo}">
+                    <input class="form-check-input compra-pago-check" type="checkbox" value="${p.id}" id="compraPago${p.id}" data-saldo="${saldo}">
                     <label class="form-check-label small" for="compraPago${p.id}">
-                        ${p.numeroOrden} - ${formatMoney(p.saldo)} (Vence: ${venc})
+                        ${p.numeroOrden} - ${formatMoney(saldo)} (Vence: ${venc})
                     </label>
                 </div>`;
         }).join(''));
@@ -1590,7 +1668,7 @@
             cb.addEventListener('change', () => {
                 let total = 0;
                 container.querySelectorAll('.compra-pago-check:checked').forEach(checked => {
-                    total += parseFloat(checked.dataset.saldo) || 0;
+                    total += parseNumber(checked.dataset.saldo) || 0;
                 });
                 const montoInput = document.getElementById('montoPagar');
                 if (montoInput) montoInput.value = total.toFixed(2);
@@ -1850,23 +1928,29 @@
         }
 
         const header = ['NumeroOrden', 'Fecha', 'Proveedor', 'Estado', 'Subtotal', 'IVA', 'Total', 'Saldo'];
+        const sep = ';';
         const rows = purchases.map(function(purchase) {
+            const subtotal = parseNumber(purchase.subtotal).toFixed(2).toString().replace('.', ',');
+            const iva = parseNumber(purchase.iva).toFixed(2).toString().replace('.', ',');
+            const total = parseNumber(purchase.total).toFixed(2).toString().replace('.', ',');
+            const saldo = parseNumber(purchase.saldo).toFixed(2).toString().replace('.', ',');
+
             return [
-                purchase.numeroOrden,
-                purchase.fechaCreacion,
-                purchase.proveedorNombre,
-                getPurchaseDisplayState(purchase),
-                parseNumber(purchase.subtotal).toFixed(2),
-                parseNumber(purchase.iva).toFixed(2),
-                parseNumber(purchase.total).toFixed(2),
-                parseNumber(purchase.saldo).toFixed(2),
+                purchase.numeroOrden || '',
+                (purchase.fechaCreacion ? new Date(purchase.fechaCreacion).toLocaleDateString('es-CO') : ''),
+                purchase.proveedorNombre || '',
+                getPurchaseDisplayState(purchase) || purchase.estado || '',
+                subtotal,
+                iva,
+                total,
+                saldo,
             ].map(function(value) {
                 return '"' + String(value).replace(/"/g, '""') + '"';
-            }).join(',');
+            }).join(sep);
         });
 
-        const csv = [header.join(','), ...rows].join('\n');
-        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const csv = ['\uFEFF' + header.map(h => '"' + h + '"').join(sep), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

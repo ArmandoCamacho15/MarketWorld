@@ -90,11 +90,27 @@ class Product extends Model
      */
     public function registrarSalida(int $cantidad, ?int $userId = null, ?string $reason = null)
     {
-        $this->decrement('stock', max(0, $cantidad));
-        
-        // Aquí se podría disparar un evento de Kardex en el futuro
-        // Event::dispatch(new StockMovement($this, -$cantidad, $userId, $reason));
-        
+        $cantidad = max(0, (int) $cantidad);
+        $stockAntes = (int) ($this->stock ?? 0);
+        $stockNuevo = max(0, $stockAntes - $cantidad);
+
+        $this->stock = $stockNuevo;
+        $this->save();
+
+        try {
+            \App\Models\InventoryMovement::create([
+                'product_id'     => $this->id,
+                'user_id'        => $userId,
+                'tipo'           => 'salida',
+                'cantidad'       => $cantidad,
+                'stock_anterior' => $stockAntes,
+                'stock_nuevo'    => $stockNuevo,
+                'motivo'         => $reason,
+            ]);
+        } catch (\Throwable $e) {
+            // No bloquear la operación principal por fallos en el log
+        }
+
         return $this;
     }
 
@@ -108,7 +124,27 @@ class Product extends Model
      */
     public function registrarEntrada(int $cantidad, ?int $userId = null, ?string $reason = null)
     {
-        $this->increment('stock', max(0, $cantidad));
+        $cantidad = max(0, (int) $cantidad);
+        $stockAntes = (int) ($this->stock ?? 0);
+        $stockNuevo = $stockAntes + $cantidad;
+
+        $this->stock = $stockNuevo;
+        $this->save();
+
+        try {
+            \App\Models\InventoryMovement::create([
+                'product_id'     => $this->id,
+                'user_id'        => $userId,
+                'tipo'           => 'entrada',
+                'cantidad'       => $cantidad,
+                'stock_anterior' => $stockAntes,
+                'stock_nuevo'    => $stockNuevo,
+                'motivo'         => $reason,
+            ]);
+        } catch (\Throwable $e) {
+            // No bloquear la operación principal por fallos en el log
+        }
+
         return $this;
     }
 }
