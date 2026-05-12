@@ -6,7 +6,10 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\CostAdjustmentController;
 use App\Http\Controllers\Api\ReportController;
@@ -92,5 +95,17 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('purchases', PurchaseController::class)
             ->only(['index', 'store', 'show', 'update'])
             ->middleware('role:Administrador|Bodeguero');
+        Route::post('purchases/{purchase}/payments', [PurchaseController::class, 'registerPayment'])
+            ->middleware('role:Administrador|Bodeguero');
+
+        // === Proveedores (Necesario para Compras) ===
+        Route::apiResource('suppliers', SupplierController::class)
+            ->middleware('role:Administrador|Bodeguero');
+
+        // === Contabilidad ===
+        Route::middleware('role:Administrador')->group(function () {
+            Route::apiResource('accounts', AccountController::class);
+            Route::apiResource('journal-entries', JournalEntryController::class);
+        });
     });
 });

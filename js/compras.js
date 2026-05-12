@@ -3,19 +3,182 @@
 (function() {
     'use strict';
 
-    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
-    const SUPPLIERS_STORAGE_KEY = 'marketworld_suppliers';
-
     // --- Estado ---
     let carrito = [];
     let productoSeleccionado = null;
     let metodoPagoSeleccionado = 'Transferencia';
+    let purchaseSearchTerm = '';
     const purchaseHistoryState = {
         page: 1,
         perPage: 10,
         lastPage: 1,
         total: 0,
     };
+    const purchaseCatalogState = {
+        products: [],
+        suppliers: [],
+        purchases: [],
+        payments: [],
+        currentUser: null,
+    };
+
+    function setPurchaseCatalogProducts(products) {
+        purchaseCatalogState.products = Array.isArray(products) ? products.slice() : [];
+    }
+
+    function setPurchaseCatalogSuppliers(suppliers) {
+        purchaseCatalogState.suppliers = Array.isArray(suppliers) ? suppliers.slice() : [];
+    }
+
+    function getPurchaseCatalogProducts() {
+        return purchaseCatalogState.products.slice();
+    }
+
+    function getPurchaseCatalogSuppliers() {
+        return purchaseCatalogState.suppliers.slice();
+    }
+
+    function setPurchaseCatalogPurchases(purchases) {
+        purchaseCatalogState.purchases = Array.isArray(purchases) ? purchases.slice() : [];
+    }
+
+    function getPurchaseCatalogPurchases() {
+        return purchaseCatalogState.purchases.slice();
+    }
+
+    function setPurchaseCatalogPayments(payments) {
+        purchaseCatalogState.payments = Array.isArray(payments) ? payments.slice() : [];
+    }
+
+    function getPurchaseCatalogPayments() {
+        return purchaseCatalogState.payments.slice();
+    }
+
+    function setCurrentPurchaseUser(user) {
+        purchaseCatalogState.currentUser = user || null;
+    }
+
+    function getCurrentPurchaseUser() {
+        return purchaseCatalogState.currentUser;
+    }
+
+    function mapApiPurchaseToCompras(apiPurchase) {
+        const apiPayments = Array.isArray(apiPurchase.payments)
+            ? apiPurchase.payments
+            : (Array.isArray(apiPurchase.pagos) ? apiPurchase.pagos : []);
+        const paidTotal = parseFloat(
+            apiPurchase.paid_total !== undefined
+                ? apiPurchase.paid_total
+                : apiPayments.reduce(function(sum, payment) {
+                    return sum + parseFloat(payment.monto || payment.amount || 0);
+                }, 0)
+        ) || 0;
+        const total = parseFloat(apiPurchase.total || 0);
+        const saldo = parseFloat(
+            apiPurchase.saldo !== undefined
+                ? apiPurchase.saldo
+                : Math.max(total - paidTotal, 0)
+        ) || 0;
+
+        return {
+            id: apiPurchase.id,
+            numeroOrden: apiPurchase.numero_orden || apiPurchase.numeroOrden || '',
+            fechaCreacion: apiPurchase.fecha || apiPurchase.created_at || apiPurchase.fechaCreacion || new Date().toISOString(),
+            fechaVencimiento: apiPurchase.fecha_vencimiento || apiPurchase.fechaVencimiento || '',
+            estado: apiPurchase.estado || 'Pendiente',
+            terminosPago: apiPurchase.terminos_pago || apiPurchase.terminosPago || 'Contado',
+            proveedorNombre: (apiPurchase.supplier && apiPurchase.supplier.nombre) || apiPurchase.proveedorNombre || apiPurchase.proveedor || '',
+            proveedorNit: (apiPurchase.supplier && apiPurchase.supplier.nit_ruc) || apiPurchase.proveedorNit || '',
+            usuario: (apiPurchase.user && (apiPurchase.user.nombre || apiPurchase.user.username)) || apiPurchase.usuario || '',
+            observaciones: apiPurchase.observaciones || '',
+            items: Array.isArray(apiPurchase.items) ? apiPurchase.items : [],
+            subtotal: parseFloat(apiPurchase.subtotal || 0),
+            iva: parseFloat(apiPurchase.iva || 0),
+            descuento: parseFloat(apiPurchase.descuento || 0),
+            envio: parseFloat(apiPurchase.envio || 0),
+            total: total,
+            paid_total: paidTotal,
+            saldo: saldo,
+            afectarInventario: apiPurchase.afectarInventario !== undefined ? apiPurchase.afectarInventario : true,
+            pagos: apiPayments,
+            payments: apiPayments,
+            estadoPago: saldo <= 0 && total > 0 ? 'Pagada' : (apiPurchase.estado || 'Pendiente')
+        };
+    }
+
+    function mapApiPaymentToCompras(apiPayment) {
+        const purchase = apiPayment.purchase || {};
+        const supplier = apiPayment.supplier || purchase.supplier || {};
+        const purchaseId = apiPayment.purchase_id || apiPayment.compraId || purchase.id || null;
+        const supplierId = apiPayment.supplier_id || apiPayment.proveedorId || supplier.id || null;
+
+        return {
+            id: apiPayment.id || Date.now(),
+            referencia: apiPayment.referencia || apiPayment.referencia_transaccion || ('PAG-' + Date.now()),
+            proveedorId: supplierId,
+            proveedorNombre: apiPayment.proveedorNombre || supplier.nombre || supplier.name || '',
+            compraId: purchaseId,
+            numeroOrden: apiPayment.numeroOrden || apiPayment.numero_orden || purchase.numero_orden || purchase.numeroOrden || '',
+            monto: parseFloat(apiPayment.monto || apiPayment.amount || 0),
+            metodoPago: apiPayment.metodoPago || apiPayment.metodo_pago || 'Transferencia',
+            referenciaTransaccion: apiPayment.referenciaTransaccion || apiPayment.referencia_transaccion || '',
+            tipo: apiPayment.tipo || 'Completo',
+            fechaPago: apiPayment.fechaPago || apiPayment.fecha_pago || new Date().toISOString(),
+            usuario: apiPayment.usuario || (apiPayment.user && (apiPayment.user.nombre || apiPayment.user.username)) || ''
+        };
+    }
+
+    function collectPurchasePayments(purchases) {
+        const payments = [];
+
+        (Array.isArray(purchases) ? purchases : []).forEach(function(purchase) {
+            const paymentList = Array.isArray(purchase.payments)
+                ? purchase.payments
+                : (Array.isArray(purchase.pagos) ? purchase.pagos : []);
+
+            paymentList.forEach(function(payment) {
+                payments.push(mapApiPaymentToCompras(Object.assign({}, payment, {
+                    purchase_id: purchase.id,
+                    purchase: purchase,
+                    supplier_id: purchase.supplier_id || (purchase.supplier && purchase.supplier.id),
+                    supplier: purchase.supplier,
+                })));
+            });
+        });
+
+        return payments;
+    }
+
+    function getPurchaseDisplayState(purchase) {
+        if (!purchase) return 'Pendiente';
+
+        const saldo = parseNumber(purchase.saldo !== undefined ? purchase.saldo : purchase.total);
+        const total = parseNumber(purchase.total);
+        const estado = String(purchase.estado || 'Pendiente');
+
+        if (total > 0 && saldo <= 0) {
+            return 'Pagada';
+        }
+
+        return estado;
+    }
+
+    function mapApiSupplierToCompras(apiSupplier) {
+        return {
+            id: apiSupplier.id,
+            nit: apiSupplier.nit_ruc || apiSupplier.nit || '',
+            nombre: apiSupplier.nombre || '',
+            contacto: apiSupplier.contacto || '',
+            email: apiSupplier.email || '',
+            telefono: apiSupplier.telefono || '',
+            direccion: apiSupplier.direccion || '',
+            ciudad: apiSupplier.ciudad || '',
+            terminosPago: apiSupplier.terminos_pago || apiSupplier.terminosPago || '30 días',
+            descuento: parseFloat(apiSupplier.descuento || 0),
+            tipo: apiSupplier.tipo || 'Regular',
+            activo: (apiSupplier.estado || 'Activo') === 'Activo'
+        };
+    }
 
     function setSafeHtml(element, html) {
         if (!element) return;
@@ -33,8 +196,8 @@
         }
 
         await sincronizarDatosComprasConApi();
+        await cargarUsuarioActual();
 
-        cargarUsuarioActual();
         initFechas();
         await initNumeroOrden();
         cargarSelectProveedores();
@@ -44,38 +207,34 @@
         cargarHistorialPagos(); // Cargar historial de pagos inicial
         initEventListeners();
         
-        // Debug: verificar que data.js está cargado
-        console.log('Compras.js inicializado. Pagos en localStorage:', MarketWorld.data.getPayments().length);
+        // Debug: validar que el módulo de compras cargó con datos servidos por API.
     });
 
     async function sincronizarDatosComprasConApi() {
         try {
-            const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products;
-            // No necesitamos verificar el token en localStorage; las cookies se envían solas.
+            const hasApi = typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products && MarketWorld.api.suppliers;
             if (!hasApi) return;
 
-            const response = await MarketWorld.api.products.getAll();
-            const apiProducts = Array.isArray(response && response.data) ? response.data : [];
-            if (apiProducts.length === 0) return;
+            const [productsResponse, suppliersResponse] = await Promise.all([
+                MarketWorld.api.products.getAll({ per_page: 100 }),
+                MarketWorld.api.suppliers.getAll({ per_page: 100 })
+            ]);
 
-            const localProducts = MarketWorld.data.getProducts();
-            const byCode = new Map();
+            const apiProducts = Array.isArray(productsResponse && productsResponse.data) ? productsResponse.data : [];
+            const apiSuppliers = Array.isArray(suppliersResponse && suppliersResponse.data) ? suppliersResponse.data : [];
+            let apiPurchases = [];
 
-            localProducts.forEach(function(product) {
-                if (product && product.codigo) {
-                    byCode.set(String(product.codigo).toLowerCase(), product);
-                }
-            });
+            try {
+                const purchasesResponse = await MarketWorld.api.purchases.getAll({ per_page: 100 });
+                apiPurchases = Array.isArray(purchasesResponse && purchasesResponse.data) ? purchasesResponse.data : [];
+            } catch (purchaseError) {
+                console.warn('No se pudieron sincronizar compras desde API en compras:', purchaseError.message || purchaseError);
+            }
 
-            apiProducts.forEach(function(apiProduct) {
-                const mapped = mapApiProductToCompras(apiProduct);
-                if (!mapped.codigo) return;
-                byCode.set(String(mapped.codigo).toLowerCase(), mapped);
-            });
-
-            const mergedProducts = Array.from(byCode.values());
-            localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(mergedProducts));
-            sincronizarProveedoresDesdeProductos(mergedProducts);
+            setPurchaseCatalogProducts(apiProducts.map(mapApiProductToCompras));
+            setPurchaseCatalogSuppliers(apiSuppliers.map(mapApiSupplierToCompras));
+            setPurchaseCatalogPurchases(apiPurchases.map(mapApiPurchaseToCompras));
+            setPurchaseCatalogPayments(collectPurchasePayments(apiPurchases));
         } catch (error) {
             console.warn('No se pudieron sincronizar productos/proveedores desde API en compras:', error.message || error);
         }
@@ -100,7 +259,7 @@
     }
 
     function sincronizarProveedoresDesdeProductos(products) {
-        const currentSuppliers = MarketWorld.data.getSuppliers();
+        const currentSuppliers = getPurchaseCatalogSuppliers();
         const names = new Set(
             currentSuppliers
                 .filter(function(s) { return s && s.nombre; })
@@ -139,7 +298,7 @@
         });
 
         if (generated.length > 0) {
-            localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(currentSuppliers.concat(generated)));
+            setPurchaseCatalogSuppliers(currentSuppliers.concat(generated));
         }
     }
 
@@ -221,6 +380,7 @@
 
     function mapEstadoFiltroToApi(value) {
         if (!value || value === 'Todos') return '';
+        if (value === 'Pagado') return '';
         if (value === 'Recibido') return 'Recibida';
         if (value === 'Cancelado') return 'Cancelada';
         return value;
@@ -228,7 +388,7 @@
 
     // --- Usuario ---
     function cargarUsuarioActual() {
-        const user = MarketWorld.data.getCurrentUser();
+        const user = getCurrentPurchaseUser();
         if (!user) return;
         const el = (id) => document.getElementById(id);
         if (el('userName')) el('userName').textContent = user.nombre || user.username;
@@ -284,17 +444,25 @@
             console.warn('No se pudo obtener compras desde API para generar número:', e);
         }
 
-        // Fallback al generador local (localStorage)
-        try {
-            el.value = MarketWorld.data.generatePurchaseNumber();
-        } catch (e) {
-            el.value = 'OC-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-5);
-        }
+        const purchases = getPurchaseCatalogPurchases();
+        const year = new Date().getFullYear();
+        let maxNum = 0;
+
+        purchases.forEach(function(purchase) {
+            if (!purchase || !purchase.numeroOrden) return;
+            const match = String(purchase.numeroOrden).match(/OC-\d{4}-(\d{5})/);
+            if (match) {
+                const number = parseInt(match[1], 10);
+                if (number > maxNum) maxNum = number;
+            }
+        });
+
+        el.value = 'OC-' + year + '-' + String(maxNum + 1).padStart(5, '0');
     }
 
     // --- Select de proveedores ---
     function cargarSelectProveedores() {
-        const suppliers = MarketWorld.data.getSuppliers().filter(s => s.activo);
+        const suppliers = getPurchaseCatalogSuppliers().filter(s => s.activo);
         const selects = ['selectProveedor', 'selectProveedorPago', 'filtrarProveedorPago', 'proveedorFiltro'];
 
         selects.forEach(id => {
@@ -321,8 +489,8 @@
 
     // --- KPIs ---
     async function actualizarKPIs() {
-        const localPurchases = MarketWorld.data.getPurchases();
-        const suppliers = MarketWorld.data.getSuppliers().filter(s => s.activo);
+        const localPurchases = getPurchaseCatalogPurchases();
+        const suppliers = getPurchaseCatalogSuppliers().filter(s => s.activo);
 
         const now = new Date();
         const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -336,10 +504,7 @@
             } catch(e) { console.warn('KPIs: No se pudo conectar a la API.'); }
         }
 
-        // Si tenemos datos de la API, los usamos; si no, caemos a local
         const purchases = apiPurchases.length > 0 ? apiPurchases : localPurchases;
-
-        try { console.log('KPIs - purchases sample:', purchases && purchases.slice ? purchases.slice(0,5) : purchases); } catch(e) {}
 
         const totalPagar = purchases.filter(p => p.estado !== 'Cancelado' && p.estado !== 'Recibida')
                         .reduce((sum, p) => sum + (parseNumber(p.total) || 0), 0);
@@ -363,14 +528,7 @@
         }
 
         const q = query.toLowerCase();
-        let products = [];
-        
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products) {
-            // Intentar obtener del estado global si existe o de la data local
-            products = MarketWorld.data.getProducts().filter(p => p.activo);
-        } else {
-            products = MarketWorld.data.getProducts().filter(p => p.activo);
-        }
+        const products = getPurchaseCatalogProducts().filter(p => p.activo);
 
         const resultados = products.filter(p =>
             p.nombre.toLowerCase().includes(q) ||
@@ -399,7 +557,9 @@
     }
 
     window.seleccionarProducto = function (id) {
-        const product = MarketWorld.data.findProductById(id);
+        const product = getPurchaseCatalogProducts().find(function(item) {
+            return item.id === parseInt(id, 10);
+        });
         if (!product) return;
 
         productoSeleccionado = product;
@@ -626,9 +786,6 @@
                 }))
             };
 
-            // Log payload antes de enviar para depuración (temporal)
-            try { console.log('purchaseData', purchaseData); } catch(e) {}
-
             if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.purchases) {
                 throw new Error('Adaptador de API no disponible');
             }
@@ -636,7 +793,6 @@
             const response = await MarketWorld.api.purchases.create(purchaseData);
 
             if (response && response.success) {
-                console.log('✅ Compra registrada en API:', response.data);
                 // Mostrar modal grande de éxito con opciones Aceptar/Cancelar
                 showSuccessModal(ordenNumero, response.data);
             } else {
@@ -701,36 +857,96 @@
             purchaseHistoryState.page = 1;
         }
 
-            try {
-                if (!hasApiAccess()) return;
+        if (typeof options.search === 'string') {
+            purchaseSearchTerm = options.search.trim();
+        }
 
-                const estadoFiltro = document.getElementById('estadoFiltro');
-                const proveedorFiltro = document.getElementById('proveedorFiltro');
-                const requestFilters = {
-                    page: purchaseHistoryState.page,
-                    per_page: purchaseHistoryState.perPage,
-                };
+        const searchTerm = String(options.search !== undefined ? options.search : purchaseSearchTerm || '').trim().toLowerCase();
 
-                const estadoApi = mapEstadoFiltroToApi(estadoFiltro ? estadoFiltro.value : '');
-                if (estadoApi) requestFilters.estado = estadoApi;
+        try {
+            if (!hasApiAccess()) return;
 
-                if (proveedorFiltro && proveedorFiltro.value) {
-                    requestFilters.supplier_id = proveedorFiltro.value;
-                }
+            const estadoFiltro = document.getElementById('estadoFiltro');
+            const proveedorFiltro = document.getElementById('proveedorFiltro');
+            const fechaInicioFiltro = document.getElementById('fechaInicio');
+            const fechaFinFiltro = document.getElementById('fechaFin');
+            const estadoSeleccionado = estadoFiltro ? estadoFiltro.value : 'Todos';
+            const requestFilters = {
+                page: purchaseHistoryState.page,
+                per_page: purchaseHistoryState.perPage,
+            };
 
-                const response = await MarketWorld.api.purchases.getAll(requestFilters);
-                const parsed = normalizeApiListResponse(response, {
-                    current_page: purchaseHistoryState.page,
-                    per_page: purchaseHistoryState.perPage,
+            const estadoApi = mapEstadoFiltroToApi(estadoSeleccionado);
+            if (estadoApi) requestFilters.estado = estadoApi;
+
+            if (proveedorFiltro && proveedorFiltro.value) {
+                requestFilters.supplier_id = proveedorFiltro.value;
+            }
+
+            if (searchTerm) {
+                requestFilters.search = searchTerm;
+            }
+
+            const response = await MarketWorld.api.purchases.getAll(requestFilters);
+            const parsed = normalizeApiListResponse(response, {
+                current_page: purchaseHistoryState.page,
+                per_page: purchaseHistoryState.perPage,
+            });
+            if (!parsed.success) return;
+
+            const normalizedPurchases = parsed.items.map(mapApiPurchaseToCompras);
+            setPurchaseCatalogPurchases(normalizedPurchases);
+            setPurchaseCatalogPayments(collectPurchasePayments(normalizedPurchases));
+
+            purchaseHistoryState.page = parsed.meta.current_page;
+            purchaseHistoryState.perPage = parsed.meta.per_page;
+            purchaseHistoryState.lastPage = parsed.meta.last_page;
+            purchaseHistoryState.total = parsed.meta.total;
+
+            let purchases = normalizedPurchases.slice();
+
+            if (estadoSeleccionado === 'Pagado') {
+                purchases = purchases.filter(function(purchase) {
+                    return getPurchaseDisplayState(purchase) === 'Pagada';
                 });
-                if (!parsed.success) return;
+            } else if (estadoSeleccionado && estadoSeleccionado !== 'Todos') {
+                purchases = purchases.filter(function(purchase) {
+                    return getPurchaseDisplayState(purchase) === estadoSeleccionado || purchase.estado === estadoSeleccionado;
+                });
+            }
 
-                purchaseHistoryState.page = parsed.meta.current_page;
-                purchaseHistoryState.perPage = parsed.meta.per_page;
-                purchaseHistoryState.lastPage = parsed.meta.last_page;
-                purchaseHistoryState.total = parsed.meta.total;
+            if (searchTerm) {
+                purchases = purchases.filter(function(purchase) {
+                    const searchable = [
+                        purchase.numeroOrden,
+                        purchase.proveedorNombre,
+                        purchase.proveedorNit,
+                        purchase.observaciones,
+                        purchase.estado,
+                        purchase.estadoPago,
+                        String(purchase.id),
+                    ].join(' ').toLowerCase();
 
-                const purchases = parsed.items;
+                    return searchable.includes(searchTerm);
+                });
+            }
+
+            if (fechaInicioFiltro && fechaInicioFiltro.value) {
+                const inicio = new Date(fechaInicioFiltro.value + 'T00:00:00');
+                purchases = purchases.filter(function(purchase) {
+                    const fecha = new Date(purchase.fechaCreacion || purchase.fecha || purchase.created_at || 0);
+                    return !isNaN(fecha.getTime()) && fecha >= inicio;
+                });
+            }
+
+            if (fechaFinFiltro && fechaFinFiltro.value) {
+                const fin = new Date(fechaFinFiltro.value + 'T23:59:59');
+                purchases = purchases.filter(function(purchase) {
+                    const fecha = new Date(purchase.fechaCreacion || purchase.fecha || purchase.created_at || 0);
+                    return !isNaN(fecha.getTime()) && fecha <= fin;
+                });
+            }
+
             setSafeHtml(tbody, '');
 
             if (purchases.length === 0) {
@@ -740,19 +956,20 @@
             }
 
             setSafeHtml(tbody, purchases.map(p => {
-                const fecha = new Date(p.fecha).toLocaleDateString('es-CO');
-                const badgeClass = getBadgeClass(p.estado);
+                const fecha = new Date(p.fechaCreacion || p.fecha || p.created_at || Date.now()).toLocaleDateString('es-CO');
+                const estadoVisual = getPurchaseDisplayState(p);
+                const badgeClass = getBadgeClass(estadoVisual);
                 const proveedorNombre = (p.supplier && p.supplier.nombre) || p.proveedor || p.proveedorNombre || 'Sin proveedor';
 
                 return `
                     <tr>
-                        <td><strong>${p.numero_orden}</strong></td>
+                        <td><strong>${p.numero_orden || p.numeroOrden}</strong></td>
                         <td>${fecha}</td>
                         <td class="fw-bold">${proveedorNombre}</td>
                         <td class="fw-bold">${formatMoney(parseFloat(p.total))}</td>
-                        <td><span class="badge ${badgeClass}">${p.estado}</span></td>
+                        <td><span class="badge ${badgeClass}">${estadoVisual}</span></td>
                         <td>${p.observaciones || '-'}</td>
-                        <td>-</td>
+                        <td>${formatMoney(parseFloat(p.saldo || 0))}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-ver-compra" data-purchase-id="${p.id}">
                                 <i class="bi bi-eye"></i>
@@ -790,17 +1007,16 @@
     }
 
     window.verDetalleCompra = async function (id) {
-        // Intentar obtener desde localStorage
-        let purchase = MarketWorld.data.findPurchaseById(id);
+        let purchase = getPurchaseCatalogPurchases().find(function(item) {
+            return parseInt(item.id, 10) === parseInt(id, 10);
+        }) || null;
 
         // Si no está en local, intentar desde la API
         if (!purchase && typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.purchases && MarketWorld.api.purchases.getById) {
             try {
                 const resp = await MarketWorld.api.purchases.getById(id);
                 if (resp && resp.success && resp.data) {
-                    // Normalizar nombres de campos esperados por la vista
-                    const p = resp.data;
-                    // Normalizar items y calcular subtotales
+                    const p = mapApiPurchaseToCompras(resp.data);
                     const itemsArr = Array.isArray(p.items) ? p.items.map(i => {
                         const precio = i.precio_unitario || i.precioUnitario || i.unit_price || 0;
                         const cantidad = i.cantidad || i.quantity || 0;
@@ -823,15 +1039,15 @@
 
                     purchase = {
                         id: p.id,
-                        numeroOrden: p.numero_orden || p.numeroOrden || '',
-                        fechaCreacion: p.fecha || p.created_at || new Date().toISOString(),
-                        fechaVencimiento: p.fecha_vencimiento || p.fechaVencimiento || '',
+                        numeroOrden: p.numeroOrden || '',
+                        fechaCreacion: p.fechaCreacion || new Date().toISOString(),
+                        fechaVencimiento: p.fechaVencimiento || '',
                         estado: p.estado || 'Pendiente',
-                        terminosPago: p.terminosPago || p.terminos_pago || '',
-                        proveedorNombre: (p.supplier && p.supplier.nombre) || p.proveedor || p.proveedorNombre || '',
-                        proveedorNit: (p.supplier && p.supplier.nit) || p.proveedorNit || '',
-                        usuario: (p.user && p.user.nombre) || p.usuario || '',
-                        observaciones: p.observaciones || p.notes || '',
+                        terminosPago: p.terminosPago || '',
+                        proveedorNombre: p.proveedorNombre || '',
+                        proveedorNit: p.proveedorNit || '',
+                        usuario: p.usuario || '',
+                        observaciones: p.observaciones || '',
                         items: itemsArr,
                         subtotal: subtotalCalc,
                         iva: ivaCalc,
@@ -851,10 +1067,13 @@
 
         const fecha = new Date(purchase.fechaCreacion).toLocaleDateString('es-CO');
         const venc = purchase.fechaVencimiento ? new Date(purchase.fechaVencimiento).toLocaleDateString('es-CO') : '-';
+        const estadoVisual = getPurchaseDisplayState(purchase);
         
-        // Obtener pagos de esta compra
-        const pagosCompra = MarketWorld.data.getPaymentsByPurchase(id);
-        const totalPagado = pagosCompra.reduce((sum, p) => sum + (p.monto || 0), 0);
+        const pagosCompra = (Array.isArray(purchase.pagos) ? purchase.pagos : (Array.isArray(purchase.payments) ? purchase.payments : getPurchaseCatalogPayments())).filter(function(payment) {
+            const paymentPurchaseId = payment.compraId || payment.purchase_id || payment.purchaseId || (payment.purchase && payment.purchase.id) || id;
+            return parseInt(paymentPurchaseId, 10) === parseInt(id, 10);
+        });
+        const totalPagado = parseNumber(purchase.paid_total) || pagosCompra.reduce((sum, p) => sum + (p.monto || 0), 0);
 
         const body = document.getElementById('detalleCompraBody');
         setSafeHtml(body, `
@@ -864,7 +1083,7 @@
                     <p><strong>N° Orden:</strong> ${purchase.numeroOrden}</p>
                     <p><strong>Fecha:</strong> ${fecha}</p>
                     <p><strong>Vencimiento:</strong> ${venc}</p>
-                    <p><strong>Estado:</strong> <span class="badge ${getBadgeClass(purchase.estado)}">${purchase.estado}</span></p>
+                    <p><strong>Estado:</strong> <span class="badge ${getBadgeClass(estadoVisual)}">${estadoVisual}</span></p>
                     <p><strong>Términos:</strong> ${purchase.terminosPago}</p>
                 </div>
                 <div class="col-md-6">
@@ -902,7 +1121,7 @@
                     <hr>
                     <div class="d-flex justify-content-between fw-bold fs-5"><span>Total:</span><span>${formatMoney(purchase.total)}</span></div>
                     <div class="d-flex justify-content-between mt-2 text-success"><span>Total pagado:</span><span class="fw-bold">${formatMoney(totalPagado)}</span></div>
-                    <div class="d-flex justify-content-between mt-1"><span>Saldo pendiente:</span><span class="fw-bold ${purchase.saldo <= 0 ? 'text-success' : 'text-danger'}">${formatMoney(purchase.saldo || 0)}</span></div>
+                    <div class="d-flex justify-content-between mt-1"><span>Saldo pendiente:</span><span class="fw-bold ${parseNumber(purchase.saldo) <= 0 ? 'text-success' : 'text-danger'}">${formatMoney(purchase.saldo || 0)}</span></div>
                 </div>
             </div>
             ${pagosCompra.length > 0 ? `
@@ -1017,7 +1236,7 @@
 
     // --- Proveedores ---
     function cargarProveedores(filtro) {
-        let suppliers = MarketWorld.data.getSuppliers();
+        let suppliers = getPurchaseCatalogSuppliers();
 
         if (filtro) {
             const q = filtro.toLowerCase();
@@ -1037,7 +1256,9 @@
         }
 
         setSafeHtml(tbody, suppliers.map(s => {
-            const compras = MarketWorld.data.getPurchasesBySupplier(s.id).length;
+            const compras = getPurchaseCatalogPurchases().filter(function(item) {
+                return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(s.id, 10);
+            }).length;
             const saldo = calcularSaldoProveedor(s.id);
 
             return `
@@ -1087,28 +1308,38 @@
     }
 
     function calcularSaldoProveedor(supplierId) {
-        const purchases = MarketWorld.data.getPurchasesBySupplier(supplierId);
+        const purchases = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(supplierId, 10);
+        });
         return purchases.reduce((sum, p) => sum + (p.saldo || 0), 0);
     }
 
     function calcularTotalComprasProveedor(supplierId) {
-        const purchases = MarketWorld.data.getPurchasesBySupplier(supplierId);
+        const purchases = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(supplierId, 10);
+        });
         return purchases.reduce((sum, p) => sum + (p.total || 0), 0);
     }
 
     function calcularTotalPagadoProveedor(supplierId) {
-        const payments = MarketWorld.data.getPaymentsBySupplier(supplierId);
+        const payments = getPurchaseCatalogPayments().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplierId || 0, 10) === parseInt(supplierId, 10);
+        });
         return payments.reduce((sum, p) => sum + (p.monto || 0), 0);
     }
 
     window.verDetalleProveedor = function (id) {
-        const supplier = MarketWorld.data.findSupplierById(id);
+        const supplier = getPurchaseCatalogSuppliers().find(function(item) {
+            return item.id === parseInt(id, 10);
+        });
         if (!supplier) return;
 
         const totalCompras = calcularTotalComprasProveedor(id);
         const totalPagado = calcularTotalPagadoProveedor(id);
         const saldo = calcularSaldoProveedor(id);
-        const numCompras = MarketWorld.data.getPurchasesBySupplier(id).length;
+        const numCompras = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(id, 10);
+        }).length;
 
         const body = document.getElementById('detalleProveedorBody');
         setSafeHtml(body, `
@@ -1165,7 +1396,9 @@
     };
 
     window.editarProveedor = function (id) {
-        const supplier = id ? MarketWorld.data.findSupplierById(id) : null;
+        const supplier = id ? getPurchaseCatalogSuppliers().find(function(item) {
+            return item.id === parseInt(id, 10);
+        }) : null;
         const label = document.getElementById('modalProveedorLabel');
 
         if (supplier) {
@@ -1225,33 +1458,74 @@
         const editId = document.getElementById('proveedorIdEdit').value;
 
         if (editId) {
-            MarketWorld.data.updateSupplier(parseInt(editId), data);
-            mostrarAlerta('Proveedor actualizado exitosamente', 'success');
+            if (!MarketWorld.api || !MarketWorld.api.suppliers) {
+                mostrarAlerta('No hay API disponible para actualizar proveedores', 'warning');
+                return;
+            }
+
+            MarketWorld.api.suppliers.update(parseInt(editId), data)
+                .then(function(response) {
+                    if (!response || !response.success) {
+                        throw new Error((response && response.message) ? response.message : 'No se pudo actualizar el proveedor');
+                    }
+                    mostrarAlerta('Proveedor actualizado exitosamente', 'success');
+                    return sincronizarDatosComprasConApi().then(function() {
+                        cargarProveedores();
+                        cargarSelectProveedores();
+                    });
+                })
+                .catch(function(error) {
+                    mostrarAlerta((error && error.message) ? error.message : 'No se pudo actualizar el proveedor', 'danger');
+                });
+            bootstrap.Modal.getInstance(document.getElementById('modalProveedor')).hide();
+            return;
         } else {
-            // Verificar NIT único
-            if (MarketWorld.data.findSupplierByNit(nit)) {
+            if (!MarketWorld.api || !MarketWorld.api.suppliers) {
+                mostrarAlerta('No hay API disponible para crear proveedores', 'warning');
+                return;
+            }
+
+            const duplicate = getPurchaseCatalogSuppliers().find(function(item) {
+                return String(item.nit || '').toLowerCase() === String(nit).toLowerCase();
+            });
+            if (duplicate) {
                 mostrarAlerta('Ya existe un proveedor con ese NIT', 'danger');
                 return;
             }
-            MarketWorld.data.createSupplier(data);
 
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
-                MarketWorld.notifications.create('success', 'Nuevo Proveedor', `Proveedor "${nombre}" registrado exitosamente`, 'compras.html');
-            }
+            MarketWorld.api.suppliers.create(data)
+                .then(function(response) {
+                    if (!response || !response.success) {
+                        throw new Error((response && response.message) ? response.message : 'No se pudo crear el proveedor');
+                    }
 
-            mostrarAlerta('Proveedor creado exitosamente', 'success');
+                    if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
+                        MarketWorld.notifications.create('success', 'Nuevo Proveedor', `Proveedor "${nombre}" registrado exitosamente`, 'compras.html');
+                    }
+
+                    mostrarAlerta('Proveedor creado exitosamente', 'success');
+                    return sincronizarDatosComprasConApi().then(function() {
+                        cargarProveedores();
+                        cargarSelectProveedores();
+                    });
+                })
+                .catch(function(error) {
+                    mostrarAlerta((error && error.message) ? error.message : 'No se pudo crear el proveedor', 'danger');
+                });
         }
 
         bootstrap.Modal.getInstance(document.getElementById('modalProveedor')).hide();
-        cargarProveedores();
-        cargarSelectProveedores();
     }
 
     window.eliminarProveedor = function (id) {
-        const supplier = MarketWorld.data.findSupplierById(id);
+        const supplier = getPurchaseCatalogSuppliers().find(function(item) {
+            return item.id === parseInt(id, 10);
+        });
         if (!supplier) return;
 
-        const compras = MarketWorld.data.getPurchasesBySupplier(id);
+        const compras = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(id, 10);
+        });
         if (compras.length > 0) {
             mostrarAlerta('No se puede eliminar un proveedor con compras asociadas. Puede desactivarlo.', 'warning');
             return;
@@ -1259,10 +1533,25 @@
 
         if (!confirm(`¿Eliminar el proveedor "${supplier.nombre}"?`)) return;
 
-        MarketWorld.data.deleteSupplier(id);
-        cargarProveedores();
-        cargarSelectProveedores();
-        mostrarAlerta('Proveedor eliminado', 'success');
+        if (!MarketWorld.api || !MarketWorld.api.suppliers) {
+            mostrarAlerta('No hay API disponible para eliminar proveedores', 'warning');
+            return;
+        }
+
+        MarketWorld.api.suppliers.delete(id)
+            .then(function(response) {
+                if (!response || !response.success) {
+                    throw new Error((response && response.message) ? response.message : 'No se pudo eliminar el proveedor');
+                }
+                mostrarAlerta('Proveedor eliminado', 'success');
+                return sincronizarDatosComprasConApi().then(function() {
+                    cargarProveedores();
+                    cargarSelectProveedores();
+                });
+            })
+            .catch(function(error) {
+                mostrarAlerta((error && error.message) ? error.message : 'No se pudo eliminar el proveedor', 'danger');
+            });
     };
 
     // --- Pagos ---
@@ -1275,7 +1564,9 @@
             return;
         }
 
-        const compras = MarketWorld.data.getPurchasesBySupplier(parseInt(proveedorId))
+        const compras = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(proveedorId, 10);
+        })
             .filter(p => p.saldo > 0 && p.estado !== 'Cancelado');
 
         if (compras.length === 0) {
@@ -1307,7 +1598,7 @@
         });
     }
 
-    function registrarPago() {
+    async function registrarPago() {
         const proveedorId = parseInt(document.getElementById('selectProveedorPago')?.value);
         if (!proveedorId) {
             mostrarAlerta('Seleccione un proveedor', 'warning');
@@ -1320,7 +1611,9 @@
             return;
         }
 
-        const proveedor = MarketWorld.data.findSupplierById(proveedorId);
+        const proveedor = getPurchaseCatalogSuppliers().find(function(item) {
+            return item.id === proveedorId;
+        });
         if (!proveedor) {
             mostrarAlerta('Proveedor no encontrado', 'danger');
             return;
@@ -1328,89 +1621,95 @@
 
         const referencia = document.getElementById('referenciaPago')?.value || '';
         const fechaPago = document.getElementById('fechaPago')?.value || new Date().toISOString();
-        const user = MarketWorld.data.getCurrentUser();
 
         // Obtener compras seleccionadas
         const checksSeleccionados = document.querySelectorAll('.compra-pago-check:checked');
-        let montoRestante = monto;
-
-        checksSeleccionados.forEach(cb => {
-            if (montoRestante <= 0) return;
-            const compraId = parseInt(cb.value);
-            const purchase = MarketWorld.data.findPurchaseById(compraId);
-            if (!purchase) return;
-
-            const pagoAplicado = Math.min(montoRestante, purchase.saldo);
-            const nuevoSaldo = purchase.saldo - pagoAplicado;
-
-            MarketWorld.data.updatePurchase(compraId, {
-                saldo: nuevoSaldo,
-                estado: nuevoSaldo <= 0 ? 'Pagado' : purchase.estado
-            });
-
-            MarketWorld.data.createPayment({
-                proveedorId: proveedorId,
-                proveedorNombre: proveedor.nombre,
-                compraId: compraId,
-                numeroOrden: purchase.numeroOrden,
-                monto: pagoAplicado,
-                metodoPago: metodoPagoSeleccionado,
-                referenciaTransaccion: referencia,
-                tipo: nuevoSaldo <= 0 ? 'Completo' : 'Parcial',
-                fechaPago: new Date(fechaPago).toISOString(),
-                usuario: user ? (user.nombre || user.username) : 'Sistema'
-            });
-
-            montoRestante -= pagoAplicado;
-        });
-
-        // Si no seleccionó compras específicas, crear pago general
         if (checksSeleccionados.length === 0) {
-            MarketWorld.data.createPayment({
-                proveedorId: proveedorId,
-                proveedorNombre: proveedor.nombre,
-                monto: monto,
-                metodoPago: metodoPagoSeleccionado,
-                referenciaTransaccion: referencia,
-                tipo: 'General',
-                fechaPago: new Date(fechaPago).toISOString(),
-                usuario: user ? (user.nombre || user.username) : 'Sistema'
+            mostrarAlerta('Seleccione al menos una compra pendiente para registrar el pago', 'warning');
+            return;
+        }
+
+        const comprasSeleccionadas = Array.from(checksSeleccionados).map(function(cb) {
+            return getPurchaseCatalogPurchases().find(function(item) {
+                return parseInt(item.id, 10) === parseInt(cb.value, 10);
             });
+        }).filter(Boolean);
+
+        const saldoSeleccionado = comprasSeleccionadas.reduce(function(sum, purchase) {
+            return sum + parseNumber(purchase.saldo || 0);
+        }, 0);
+
+        if (monto > saldoSeleccionado) {
+            mostrarAlerta('El monto supera el saldo combinado de las compras seleccionadas', 'warning');
+            return;
         }
 
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
-            MarketWorld.notifications.create('success', 'Pago Registrado', `Pago de ${formatMoney(monto)} a ${proveedor.nombre} registrado`, 'compras.html');
+        if (!hasApiAccess() || !MarketWorld.api.purchases || !MarketWorld.api.purchases.registerPayment) {
+            mostrarAlerta('No hay API disponible para registrar pagos', 'warning');
+            return;
         }
 
-        // Debug: verificar que se guardó
-        console.log('Pago registrado. Total pagos:', MarketWorld.data.getPayments().length);
+        try {
+            let montoRestante = monto;
 
-        // Limpiar formulario
-        document.getElementById('montoPagar').value = '0';
-        document.getElementById('referenciaPago').value = '';
-        document.getElementById('selectProveedorPago').value = '';
-        cargarComprasPendientesPago(null);
+            for (const purchase of comprasSeleccionadas) {
+                if (montoRestante <= 0) break;
 
-        // Recargar TODOS los datos para reflejar cambios
-        setTimeout(() => {
-            cargarHistorialPagos();
-            cargarHistorial();
-            actualizarKPIs();
+                const saldoCompra = parseNumber(purchase.saldo || 0);
+                if (saldoCompra <= 0) continue;
+
+                const pagoAplicado = Math.min(montoRestante, saldoCompra);
+                const response = await MarketWorld.api.purchases.registerPayment(purchase.id, {
+                    monto: pagoAplicado,
+                    metodo_pago: metodoPagoSeleccionado,
+                    referencia_transaccion: referencia,
+                    fecha_pago: fechaPago,
+                });
+
+                if (!response || !response.success) {
+                    throw new Error((response && response.message) ? response.message : 'No fue posible registrar el pago.');
+                }
+
+                montoRestante -= pagoAplicado;
+            }
+
+            await sincronizarDatosComprasConApi();
+            await cargarHistorialPagos();
+            await cargarHistorial();
+            await actualizarKPIs();
             cargarSelectProveedores();
             cargarProveedores();
-        }, 100);
 
-        mostrarAlerta(`Pago de ${formatMoney(monto)} registrado exitosamente`, 'success');
+            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications) {
+                MarketWorld.notifications.create('success', 'Pago Registrado', `Pago de ${formatMoney(monto)} a ${proveedor.nombre} registrado`, 'compras.html');
+            }
+
+            document.getElementById('montoPagar').value = '0';
+            document.getElementById('referenciaPago').value = '';
+            document.getElementById('selectProveedorPago').value = '';
+            cargarComprasPendientesPago(null);
+
+            mostrarAlerta(`Pago de ${formatMoney(monto)} registrado exitosamente`, 'success');
+        } catch (error) {
+            console.error('Error al registrar pago:', error);
+            mostrarAlerta((error && error.message) ? error.message : 'No se pudo registrar el pago', 'danger');
+        }
     }
 
     function cargarHistorialPagos() {
-        let payments = MarketWorld.data.getPayments();
-        console.log('Cargando historial de pagos. Total:', payments.length);
+        let payments = getPurchaseCatalogPayments();
 
         // Filtrar por proveedor
         const filtroProvId = document.getElementById('filtrarProveedorPago')?.value;
         if (filtroProvId) {
             payments = payments.filter(p => p.proveedorId === parseInt(filtroProvId));
+        }
+
+        if (purchaseSearchTerm) {
+            const term = purchaseSearchTerm.toLowerCase();
+            payments = payments.filter(function(payment) {
+                return [payment.numeroOrden, payment.proveedorNombre, payment.referenciaTransaccion, payment.metodoPago, payment.tipo].join(' ').toLowerCase().includes(term);
+            });
         }
 
         // Ordenar por fecha desc
@@ -1459,7 +1758,9 @@
         }
 
         const saldo = calcularSaldoProveedor(parseInt(proveedorId));
-        const comprasPend = MarketWorld.data.getPurchasesBySupplier(parseInt(proveedorId))
+        const comprasPend = getPurchaseCatalogPurchases().filter(function(item) {
+            return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(proveedorId, 10);
+        })
             .filter(p => p.saldo > 0 && p.estado !== 'Cancelado');
 
         let proxVenc = '-';
@@ -1475,8 +1776,125 @@
         alert.style.display = 'block';
     }
 
+    function refreshActivePurchaseView() {
+        const activeTab = document.querySelector('.tab-pane.active.show');
+        if (!activeTab) return;
+
+        switch (activeTab.id) {
+            case 'purchase-history':
+                cargarHistorial({ resetPage: true, search: purchaseSearchTerm });
+                break;
+            case 'suppliers':
+                cargarProveedores(purchaseSearchTerm);
+                break;
+            case 'payments':
+                cargarHistorialPagos();
+                cargarSelectProveedores();
+                break;
+            default:
+                break;
+        }
+    }
+
+    function exportarHistorialCompras() {
+        const estadoFiltro = document.getElementById('estadoFiltro');
+        const proveedorFiltro = document.getElementById('proveedorFiltro');
+        const fechaInicioFiltro = document.getElementById('fechaInicio');
+        const fechaFinFiltro = document.getElementById('fechaFin');
+
+        let purchases = getPurchaseCatalogPurchases().slice();
+        const estadoSeleccionado = estadoFiltro ? estadoFiltro.value : 'Todos';
+
+        if (estadoSeleccionado === 'Pagado') {
+            purchases = purchases.filter(function(purchase) {
+                return getPurchaseDisplayState(purchase) === 'Pagada';
+            });
+        } else if (estadoSeleccionado && estadoSeleccionado !== 'Todos') {
+            purchases = purchases.filter(function(purchase) {
+                return getPurchaseDisplayState(purchase) === estadoSeleccionado || purchase.estado === estadoSeleccionado;
+            });
+        }
+
+        if (proveedorFiltro && proveedorFiltro.value) {
+            purchases = purchases.filter(function(purchase) {
+                return parseInt(purchase.proveedorId || purchase.supplier_id || 0, 10) === parseInt(proveedorFiltro.value, 10);
+            });
+        }
+
+        if (purchaseSearchTerm) {
+            const term = purchaseSearchTerm.toLowerCase();
+            purchases = purchases.filter(function(purchase) {
+                return [purchase.numeroOrden, purchase.proveedorNombre, purchase.proveedorNit, purchase.observaciones, purchase.estado].join(' ').toLowerCase().includes(term);
+            });
+        }
+
+        if (fechaInicioFiltro && fechaInicioFiltro.value) {
+            const inicio = new Date(fechaInicioFiltro.value + 'T00:00:00');
+            purchases = purchases.filter(function(purchase) {
+                const fecha = new Date(purchase.fechaCreacion || purchase.fecha || 0);
+                return !isNaN(fecha.getTime()) && fecha >= inicio;
+            });
+        }
+
+        if (fechaFinFiltro && fechaFinFiltro.value) {
+            const fin = new Date(fechaFinFiltro.value + 'T23:59:59');
+            purchases = purchases.filter(function(purchase) {
+                const fecha = new Date(purchase.fechaCreacion || purchase.fecha || 0);
+                return !isNaN(fecha.getTime()) && fecha <= fin;
+            });
+        }
+
+        if (purchases.length === 0) {
+            mostrarAlerta('No hay compras para exportar con los filtros actuales', 'warning');
+            return;
+        }
+
+        const header = ['NumeroOrden', 'Fecha', 'Proveedor', 'Estado', 'Subtotal', 'IVA', 'Total', 'Saldo'];
+        const rows = purchases.map(function(purchase) {
+            return [
+                purchase.numeroOrden,
+                purchase.fechaCreacion,
+                purchase.proveedorNombre,
+                getPurchaseDisplayState(purchase),
+                parseNumber(purchase.subtotal).toFixed(2),
+                parseNumber(purchase.iva).toFixed(2),
+                parseNumber(purchase.total).toFixed(2),
+                parseNumber(purchase.saldo).toFixed(2),
+            ].map(function(value) {
+                return '"' + String(value).replace(/"/g, '""') + '"';
+            }).join(',');
+        });
+
+        const csv = [header.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'historial-compras.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        mostrarAlerta('Historial de compras exportado correctamente', 'success');
+    }
+
     // --- Event listeners ---
     function initEventListeners() {
+        const globalSearch = document.getElementById('globalSearch');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', (e) => {
+                purchaseSearchTerm = e.target.value.trim();
+            });
+            globalSearch.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    purchaseSearchTerm = e.target.value.trim();
+                    refreshActivePurchaseView();
+                }
+            });
+        }
+
         // Buscar producto (autocomplete)
         const buscarInput = document.getElementById('buscarProducto');
         if (buscarInput) {
@@ -1528,7 +1946,9 @@
                 // Aplicar descuento del proveedor
                 const provId = parseInt(e.target.value);
                 if (provId) {
-                    const prov = MarketWorld.data.findSupplierById(provId);
+                    const prov = getPurchaseCatalogSuppliers().find(function(item) {
+                        return parseInt(item.id, 10) === provId;
+                    });
                     if (prov && prov.descuento > 0) {
                         const descInput = document.getElementById('descuentoPorcentaje');
                         if (descInput) descInput.value = prov.descuento;
@@ -1650,6 +2070,11 @@
         const filtrarPago = document.getElementById('filtrarProveedorPago');
         if (filtrarPago) filtrarPago.addEventListener('change', cargarHistorialPagos);
 
+        const btnExportarHistorial = document.getElementById('btnExportarHistorial');
+        if (btnExportarHistorial) {
+            btnExportarHistorial.addEventListener('click', exportarHistorialCompras);
+        }
+
         // Imprimir compra
         const btnImprimir = document.getElementById('btnImprimirCompra');
         if (btnImprimir) {
@@ -1689,11 +2114,8 @@
         document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
             tab.addEventListener('shown.bs.tab', (e) => {
                 const target = e.target.getAttribute('href');
-                if (target === '#purchase-history') cargarHistorial();
-                if (target === '#suppliers') cargarProveedores();
-                if (target === '#payments') {
-                    cargarHistorialPagos();
-                    cargarSelectProveedores();
+                if (target === '#purchase-history' || target === '#suppliers' || target === '#payments') {
+                    refreshActivePurchaseView();
                 }
             });
         });

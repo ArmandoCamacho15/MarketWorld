@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
+use App\Models\PurchasePayment;
 use App\Models\PurchaseItem;
 use App\Models\Product;
 use App\Models\Account;
@@ -24,7 +25,7 @@ class PurchaseController extends Controller
         $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
 
         // Modificado: Se agregó 'supplier' al eager loading
-        $query = Purchase::with(['supplier', 'items.product', 'user']);
+        $query = Purchase::with(['supplier', 'items.product', 'user', 'payments.user']);
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
@@ -63,7 +64,7 @@ class PurchaseController extends Controller
      */
     public function show($id)
     {
-        $purchase = Purchase::with(['supplier', 'items.product', 'user'])->find($id);
+        $purchase = Purchase::with(['supplier', 'items.product', 'user', 'payments.user'])->find($id);
         if (!$purchase) {
             return response()->json([
                 'success' => false,
@@ -163,7 +164,6 @@ class PurchaseController extends Controller
                         'product_id'      => $item['product_id'],
                         'cantidad'        => $item['cantidad'],
                         'precio_unitario' => $item['precio_unitario'],
-                        'costo_unitario'  => $item['precio_unitario'], // Asegurar compatibilidad
                         'subtotal'        => $item['subtotal'],
                     ]);
 
@@ -183,7 +183,7 @@ class PurchaseController extends Controller
                 return response()->json([
                     'success' => true, 
                     'message' => 'Compra registrada con éxito, stock actualizado y asiento generado',
-                    'data'    => $purchase->load(['supplier', 'items.product']),
+                    'data'    => $purchase->load(['supplier', 'items.product', 'user', 'payments.user']),
                     'errors'  => null,
                 ], 201);
             });
@@ -217,7 +217,7 @@ class PurchaseController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($purchase, $validated) {
+            DB::transaction(function () use ($purchase, $validated, $request) {
                 $purchase->loadMissing('items');
 
                 if ($validated['estado'] === 'Recibida') {
@@ -248,9 +248,68 @@ class PurchaseController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Compra marcada como '{$validated['estado']}' correctamente.",
-            'data'    => $purchase->fresh()->load(['supplier', 'items.product', 'user']),
+            'data'    => $purchase->fresh()->load(['supplier', 'items.product', 'user', 'payments.user']),
             'errors'  => null,
         ], 200);
+    }
+
+    /**
+     * Registra un pago asociado a una compra existente.
+     */
+    public function registerPayment(Request $request, Purchase $purchase): JsonResponse
+    {
+        $validated = $request->validate([
+            'monto' => 'required|numeric|min:0.01',
+            'metodo_pago' => 'required|string|max:50',
+            'referencia_transaccion' => 'nullable|string|max:120',
+            'fecha_pago' => 'required|date',
+        ]);
+
+        $purchase->loadMissing('payments');
+
+        if ($purchase->estado === 'Cancelada') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pueden registrar pagos sobre una compra cancelada.',
+                'data'    => null,
+                'errors'  => null,
+            ], 409);
+        }
+
+        $paidTotal = (float) $purchase->payments->sum('monto');
+        $saldoActual = round(max((float) $purchase->total - $paidTotal, 0), 2);
+
+        if ((float) $validated['monto'] > $saldoActual) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El monto del pago supera el saldo pendiente de la compra.',
+                'data'    => null,
+                'errors'  => null,
+            ], 422);
+        }
+
+        $payment = DB::transaction(function () use ($purchase, $validated, $request, $saldoActual) {
+            return PurchasePayment::create([
+                'purchase_id' => $purchase->id,
+                'supplier_id' => $purchase->supplier_id,
+                'user_id' => $request->user()->id,
+                'monto' => round((float) $validated['monto'], 2),
+                'metodo_pago' => $validated['metodo_pago'],
+                'referencia_transaccion' => $validated['referencia_transaccion'] ?? null,
+                'tipo' => round($saldoActual - (float) $validated['monto'], 2) <= 0 ? 'Completo' : 'Parcial',
+                'fecha_pago' => $validated['fecha_pago'],
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pago registrado correctamente.',
+            'data'    => [
+                'purchase' => $purchase->fresh()->load(['supplier', 'items.product', 'user', 'payments.user']),
+                'payment'  => $payment->load(['supplier', 'user']),
+            ],
+            'errors'   => null,
+        ], 201);
     }
 
     /**
