@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use App\Models\CostAdjustment;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
@@ -60,6 +61,17 @@ class CostAdjustmentController extends Controller
             'old_cost' => $old,
             'new_cost' => $new,
             'reason' => $validated['reason']
+        ]);
+
+        AuditLogger::record($request, 'cost_adjusted', 'Se ajustó el costo de un producto.', [
+            'entity_type' => 'product',
+            'entity_id' => $product->id,
+            'metadata' => [
+                'product_name' => $product->name,
+                'old_cost' => $old,
+                'new_cost' => $new,
+                'reason' => $validated['reason'],
+            ],
         ]);
 
         return response()->json([

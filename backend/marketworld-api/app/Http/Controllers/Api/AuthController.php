@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,6 +39,17 @@ class AuthController extends Controller
         if ($role) {
             $user->syncRoles([$role->name]);
         }
+
+        AuditLogger::record($request, 'user_registered', 'Se registró un usuario público.', [
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => [
+                'nombre' => $validated['nombre'],
+                'apellido' => $validated['apellido'],
+                'email' => $validated['email'],
+                'rol' => 'Usuario',
+            ],
+        ]);
 
         return response()->json([
             'success' => true,
@@ -78,6 +90,15 @@ class AuthController extends Controller
             $request->session()->regenerate();
         }
         $user = Auth::user();
+
+        AuditLogger::record($request, 'user_login', 'Inicio de sesión exitoso.', [
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => [
+                'email' => $user->email,
+                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol',
+            ],
+        ]);
 
         return response()->json([
             'success' => true,
@@ -120,6 +141,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
+        $currentUserId = $request->user() ? $request->user()->id : null;
+
         $accessToken = $request->user() ? $request->user()->currentAccessToken() : null;
         if ($accessToken && method_exists($accessToken, 'delete')) {
             $accessToken->delete();
@@ -131,6 +154,14 @@ class AuthController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
+
+        AuditLogger::record($request, 'user_logout', 'Sesión cerrada correctamente.', [
+            'entity_type' => 'user',
+            'entity_id' => $currentUserId,
+            'metadata' => [
+                'email' => $request->user()?->email,
+            ],
+        ]);
 
         return response()->json([
             'success' => true,

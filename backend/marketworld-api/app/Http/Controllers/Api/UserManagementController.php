@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,11 +14,18 @@ class UserManagementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) $request->query('per_page', 15);
+        $perPage = max(1, min((int) $request->query('per_page', 15), 100));
         $query = User::query()->orderByDesc('id');
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->query('estado'));
+        }
+
+        if ($request->filled('rol')) {
+            $rol = $request->query('rol');
+            $query->whereHas('roles', function ($roleQuery) use ($rol) {
+                $roleQuery->where('name', $rol);
+            });
         }
 
         if ($request->filled('search')) {
@@ -71,6 +79,18 @@ class UserManagementController extends Controller
 
         $this->syncRole($user, $validated['rol']);
 
+        AuditLogger::record($request, 'admin_user_created', 'Se creó un usuario interno.', [
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => [
+                'nombre' => $validated['nombre'],
+                'apellido' => $validated['apellido'],
+                'email' => $validated['email'],
+                'rol' => $validated['rol'],
+                'estado' => $validated['estado'] ?? 'Activo',
+            ],
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Usuario creado.',
@@ -100,6 +120,16 @@ class UserManagementController extends Controller
             'rol' => 'nullable|string',
             'estado' => 'nullable|in:Activo,Inactivo',
         ]);
+
+        $beforeRole = $user->roles()->pluck('name')->first() ?? 'Usuario';
+        $beforeSnapshot = [
+            'nombre' => $user->name,
+            'apellido' => $user->apellido,
+            'telefono' => $user->telefono,
+            'email' => $user->email,
+            'rol' => $beforeRole,
+            'estado' => $user->estado,
+        ];
 
         $nombre = $validated['nombre'] ?? null;
         $apellido = $validated['apellido'] ?? null;
@@ -132,9 +162,27 @@ class UserManagementController extends Controller
 
         $user->save();
 
+        $afterRole = $beforeRole;
         if (!empty($validated['rol'])) {
             $this->syncRole($user, $validated['rol']);
+            $afterRole = $validated['rol'];
         }
+
+        AuditLogger::record($request, 'admin_user_updated', 'Se actualizó un usuario interno.', [
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => [
+                'before' => $beforeSnapshot,
+                'after' => [
+                    'nombre' => $user->name,
+                    'apellido' => $user->apellido,
+                    'telefono' => $user->telefono,
+                    'email' => $user->email,
+                    'rol' => $afterRole,
+                    'estado' => $user->estado,
+                ],
+            ],
+        ]);
 
         return response()->json([
             'success' => true,
@@ -148,6 +196,17 @@ class UserManagementController extends Controller
     {
         $user->estado = 'Inactivo';
         $user->save();
+
+        AuditLogger::record($request, 'admin_user_deactivated', 'Se desactivó un usuario interno.', [
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => [
+                'nombre' => $user->name,
+                'email' => $user->email,
+                'rol' => $user->roles()->pluck('name')->first() ?? 'Usuario',
+                'estado' => $user->estado,
+            ],
+        ]);
 
         return response()->json([
             'success' => true,

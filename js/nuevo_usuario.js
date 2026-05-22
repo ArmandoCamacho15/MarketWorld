@@ -76,7 +76,7 @@
         
         // --- Registrar usuario ---
         setLoadingState(btnRegister, true);
-        if (!MarketWorld.api || !MarketWorld.api.adminUsers) {
+        if (!MarketWorld.api || !MarketWorld.api.auth || typeof MarketWorld.api.auth.register !== 'function') {
             setLoadingState(btnRegister, false);
             MarketWorld.utils.showModal('Error al registrar', 'API de usuarios no disponible.', 'error');
             return;

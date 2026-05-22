@@ -15,6 +15,10 @@ use App\Http\Controllers\Api\CostAdjustmentController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\CRMController;
 use App\Http\Controllers\Api\UserManagementController;
+use App\Http\Controllers\Api\RoleManagementController;
+use App\Http\Controllers\Api\CompanySettingController;
+use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\SessionManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +56,8 @@ Route::prefix('v1')->group(function () {
             // Ajustes de costo (registro y auditoría) - Solo Administrador
             Route::post('products/{id}/adjust-cost', [CostAdjustmentController::class, 'store']);
             Route::get('cost-adjustments', [CostAdjustmentController::class, 'index']);
+            Route::get('company-settings', [CompanySettingController::class, 'show']);
+            Route::post('company-settings', [CompanySettingController::class, 'update']);
         });
 
         // Auth
@@ -63,6 +69,15 @@ Route::prefix('v1')->group(function () {
         // === Administracion ===
         Route::middleware('role:Administrador')->prefix('admin')->group(function () {
             Route::apiResource('users', UserManagementController::class);
+            Route::get('roles', [RoleManagementController::class, 'index']);
+            Route::post('roles', [RoleManagementController::class, 'store']);
+            Route::put('roles/{role}', [RoleManagementController::class, 'update']);
+            Route::delete('roles/{role}', [RoleManagementController::class, 'destroy']);
+            Route::get('permissions', [RoleManagementController::class, 'permissions']);
+            Route::get('audit-logs', [AuditLogController::class, 'index']);
+            Route::get('sessions', [SessionManagementController::class, 'index']);
+            Route::delete('sessions/{sessionId}', [SessionManagementController::class, 'destroy']);
+            Route::post('sessions/revoke-others', [SessionManagementController::class, 'revokeOthers']);
         });
 
         // === Productos (Inventario) ===

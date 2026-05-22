@@ -40,6 +40,10 @@
         return Object.assign({}, JSON_HEADERS, customHeaders || {});
     }
 
+    function isFormData(value) {
+        return typeof FormData !== 'undefined' && value instanceof FormData;
+    }
+
     function getCookieValue(name) {
         var prefix = name + '=';
         var parts = document.cookie ? document.cookie.split(';') : [];
@@ -170,8 +174,18 @@
     function apiFetch(endpoint, options) {
         var url = BASE_URL + endpoint;
         var requestOptions = options || {};
+        var headers = requestOptions.headers || {};
+
+        if (isFormData(requestOptions.body)) {
+            headers = Object.assign({}, headers);
+            delete headers['Content-Type'];
+            delete headers['content-type'];
+        } else {
+            headers = buildHeaders(headers);
+        }
+
         var config = Object.assign({}, requestOptions, {
-            headers: buildHeaders(requestOptions.headers),
+            headers: headers,
             credentials: 'include',
         });
         config = attachXsrfHeader(config);
@@ -699,6 +713,61 @@
         },
     };
 
+    var RolesAPI = {
+        getAll: function () {
+            return apiFetch('/admin/roles');
+        },
+        permissions: function () {
+            return apiFetch('/admin/permissions');
+        },
+        create: function (data) {
+            return apiFetch('/admin/roles', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        update: function (id, data) {
+            return apiFetch('/admin/roles/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/admin/roles/' + id, { method: 'DELETE' });
+        },
+    };
+
+    var AuditLogsAPI = {
+        getAll: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/admin/audit-logs' + (query ? '?' + query : ''));
+        },
+    };
+
+    var SessionsAPI = {
+        getAll: function () {
+            return apiFetch('/admin/sessions');
+        },
+        revoke: function (sessionId) {
+            return apiFetch('/admin/sessions/' + sessionId, { method: 'DELETE' });
+        },
+        revokeOthers: function () {
+            return apiFetch('/admin/sessions/revoke-others', { method: 'POST', body: JSON.stringify({}) });
+        },
+    };
+
+    var CompanySettingsAPI = {
+        get: function () {
+            return apiFetch('/company-settings');
+        },
+        save: function (data) {
+            return apiFetch('/company-settings', {
+                method: 'POST',
+                body: data,
+            });
+        },
+    };
+
     // -------------------------------------------------------
     // Exportar bajo el namespace global MarketWorld.api
     // -------------------------------------------------------
@@ -717,6 +786,10 @@
         reports: ReportAPI,
         crm:       CrmAPI,
         adminUsers: AdminUsersAPI,
+        roles: RolesAPI,
+        auditLogs: AuditLogsAPI,
+        sessions: SessionsAPI,
+        companySettings: CompanySettingsAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
         normalizeListResponse: normalizeListResponse,
