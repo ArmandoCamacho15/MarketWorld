@@ -7,6 +7,7 @@
     var notificationBadge = null;
     var notificationDropdown = null;
     var notificationsList = null;
+    var toastContainer = null;
 
     // Init
 
@@ -36,6 +37,7 @@
         // --- Cargar notificaciones ---
         updateNotifications();
         updateBadge();
+        ensureToastContainer();
 
         // --- Verificar notificaciones cada 30 segundos ---
         setInterval(function() {
@@ -43,6 +45,90 @@
         }, 30000);
 
         console.log('Sistema de notificaciones inicializado');
+    }
+
+    function ensureToastContainer() {
+        if (toastContainer) return toastContainer;
+
+        toastContainer = document.getElementById('marketworldToastContainer');
+        if (toastContainer) return toastContainer;
+
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'marketworldToastContainer';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.top = '16px';
+        toastContainer.style.right = '16px';
+        toastContainer.style.zIndex = '2000';
+        toastContainer.style.display = 'flex';
+        toastContainer.style.flexDirection = 'column';
+        toastContainer.style.gap = '10px';
+        document.body.appendChild(toastContainer);
+
+        return toastContainer;
+    }
+
+    function showToast(message, tipo) {
+        var container = ensureToastContainer();
+        if (!container) return;
+
+        var toast = document.createElement('div');
+        var palette = {
+            success: { bg: '#d1e7dd', border: '#198754', text: '#0f5132' },
+            warning: { bg: '#fff3cd', border: '#ffc107', text: '#664d03' },
+            danger: { bg: '#f8d7da', border: '#dc3545', text: '#842029' },
+            info: { bg: '#cfe2ff', border: '#0d6efd', text: '#084298' },
+        };
+        var colors = palette[tipo] || palette.info;
+
+        toast.style.minWidth = '280px';
+        toast.style.maxWidth = '380px';
+        toast.style.padding = '12px 14px';
+        toast.style.borderRadius = '10px';
+        toast.style.border = '1px solid ' + colors.border;
+        toast.style.background = colors.bg;
+        toast.style.color = colors.text;
+        toast.style.boxShadow = '0 10px 24px rgba(0,0,0,0.14)';
+        toast.style.fontSize = '0.92rem';
+        toast.style.lineHeight = '1.35';
+        toast.style.display = 'flex';
+        toast.style.justifyContent = 'space-between';
+        toast.style.alignItems = 'flex-start';
+        toast.style.gap = '12px';
+
+        var label = document.createElement('strong');
+        label.textContent = tipo ? String(tipo).toUpperCase() : 'INFO';
+        label.style.display = 'block';
+        label.style.marginBottom = '4px';
+
+        var textWrap = document.createElement('div');
+        textWrap.appendChild(label);
+        textWrap.appendChild(document.createTextNode(message));
+
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = '×';
+        closeBtn.style.border = '0';
+        closeBtn.style.background = 'transparent';
+        closeBtn.style.fontSize = '1.2rem';
+        closeBtn.style.lineHeight = '1';
+        closeBtn.style.color = 'inherit';
+        closeBtn.style.cursor = 'pointer';
+
+        closeBtn.addEventListener('click', function() {
+            if (toast && toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        });
+
+        toast.appendChild(textWrap);
+        toast.appendChild(closeBtn);
+        container.appendChild(toast);
+
+        window.setTimeout(function() {
+            if (toast && toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3500);
     }
 
     // --- UI Functions ---
@@ -314,6 +400,12 @@
         }
     }
 
+    function show(message, tipo) {
+        var normalizedType = tipo || 'info';
+        createNotification(normalizedType, normalizedType === 'success' ? 'Éxito' : 'Notificación', String(message), null);
+        showToast(String(message), normalizedType);
+    }
+
     // ======= AUTO NOTIFICATIONS =======
 
     function checkLowStock() {
@@ -387,6 +479,7 @@
     global.MarketWorld = global.MarketWorld || {};
     global.MarketWorld.notifications = {
         init: init,
+        show: show,
         markAsRead: markAsRead,
         markAllAsRead: markAllAsRead,
         deleteNotif: deleteNotif,

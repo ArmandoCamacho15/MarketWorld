@@ -588,6 +588,89 @@
         },
         eliminarOportunidad: function (id) {
             return apiFetch('/crm/oportunidades/' + id, { method: 'DELETE' });
+        },
+
+        // SEGMENTOS
+        segmentos: function () {
+            return apiFetch('/crm/segmentos');
+        },
+        crearSegmento: function (data) {
+            return apiFetch('/crm/segmentos', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        actualizarSegmento: function (id, data) {
+            return apiFetch('/crm/segmentos/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        eliminarSegmento: function (id) {
+            return apiFetch('/crm/segmentos/' + id, { method: 'DELETE' });
+        },
+
+        // CAMPAÑAS
+        campanas: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/crm/campanas' + (query ? '?' + query : ''));
+        },
+        crearCampana: function (data) {
+            return apiFetch('/crm/campanas', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        actualizarCampana: function (id, data) {
+            return apiFetch('/crm/campanas/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        eliminarCampana: function (id) {
+            return apiFetch('/crm/campanas/' + id, { method: 'DELETE' });
+        },
+
+        // ACTIVIDADES
+        actividades: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/crm/actividades' + (query ? '?' + query : ''));
+        },
+        crearActividad: function (data) {
+            return apiFetch('/crm/actividades', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        actualizarActividad: function (id, data) {
+            return apiFetch('/crm/actividades/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+        eliminarActividad: function (id) {
+            return apiFetch('/crm/actividades/' + id, { method: 'DELETE' });
+        },
+
+        // RECORDATORIOS
+        recordatorios: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/crm/recordatorios' + (query ? '?' + query : ''));
+        },
+        crearRecordatorio: function (data) {
+            return apiFetch('/crm/recordatorios', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        marcarRecordatorioLeido: function (id) {
+            return apiFetch('/crm/recordatorios/' + id + '/leido', {
+                method: 'PUT',
+                body: JSON.stringify({}),
+            });
+        },
+        eliminarRecordatorio: function (id) {
+            return apiFetch('/crm/recordatorios/' + id, { method: 'DELETE' });
         }
     };
 

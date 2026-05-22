@@ -24,6 +24,14 @@ class CustomerController extends Controller
             $query->where('segmento', $request->segmento);
         }
 
+        if ($request->filled('tipo_cliente')) {
+            $query->where('tipo_cliente', $request->tipo_cliente);
+        }
+
+        if ($request->filled('ciudad')) {
+            $query->where('ciudad', $request->ciudad);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -78,6 +86,9 @@ class CustomerController extends Controller
             'tipo_cliente'  => ['nullable', Rule::in(['Persona Natural', 'Empresa'])],
             'segmento'      => ['nullable', Rule::in(['Nuevo', 'Frecuente', 'Premium', 'Corporativo'])],
             'estado'        => ['nullable', Rule::in(['Activo', 'Inactivo'])],
+            'limite_credito' => 'nullable|numeric|min:0',
+            'ejecutivo_asignado' => 'nullable|string|max:150',
+            'notas' => 'nullable|string|max:2000',
         ]);
 
         $customer = Customer::create($validated);
@@ -109,6 +120,9 @@ class CustomerController extends Controller
             'tipo_cliente'  => ['nullable', Rule::in(['Persona Natural', 'Empresa'])],
             'segmento'      => ['nullable', Rule::in(['Nuevo', 'Frecuente', 'Premium', 'Corporativo'])],
             'estado'        => ['nullable', Rule::in(['Activo', 'Inactivo'])],
+            'limite_credito' => 'nullable|numeric|min:0',
+            'ejecutivo_asignado' => 'nullable|string|max:150',
+            'notas' => 'nullable|string|max:2000',
         ]);
 
         $customer->update($validated);

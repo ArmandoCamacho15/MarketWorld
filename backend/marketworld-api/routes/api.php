@@ -75,11 +75,38 @@ Route::prefix('v1')->group(function () {
 
         // === CRM ===
         Route::prefix('crm')->group(function () {
-            Route::get('clientes', [CRMController::class, 'clientes']);
+            // Oportunidades
             Route::get('oportunidades', [CRMController::class, 'oportunidades']);
             Route::post('oportunidades', [CRMController::class, 'crearOportunidad']);
             Route::put('oportunidades/{id}', [CRMController::class, 'actualizarOportunidad']);
             Route::delete('oportunidades/{id}', [CRMController::class, 'eliminarOportunidad']);
+            
+            // Segmentos
+            Route::get('segmentos', [CRMController::class, 'segmentos']);
+            Route::post('segmentos', [CRMController::class, 'crearSegmento']);
+            Route::put('segmentos/{id}', [CRMController::class, 'actualizarSegmento']);
+            Route::delete('segmentos/{id}', [CRMController::class, 'eliminarSegmento']);
+            
+            // Campañas
+            Route::get('campanas', [CRMController::class, 'campanas']);
+            Route::post('campanas', [CRMController::class, 'crearCampana']);
+            Route::put('campanas/{id}', [CRMController::class, 'actualizarCampana']);
+            Route::delete('campanas/{id}', [CRMController::class, 'eliminarCampana']);
+            
+            // Actividades
+            Route::get('actividades', [CRMController::class, 'actividades']);
+            Route::post('actividades', [CRMController::class, 'crearActividad']);
+            Route::put('actividades/{id}', [CRMController::class, 'actualizarActividad']);
+            Route::delete('actividades/{id}', [CRMController::class, 'eliminarActividad']);
+            
+            // Recordatorios
+            Route::get('recordatorios', [CRMController::class, 'recordatorios']);
+            Route::post('recordatorios', [CRMController::class, 'crearRecordatorio']);
+            Route::put('recordatorios/{id}/leido', [CRMController::class, 'marcarRecordatorioLeido']);
+            Route::delete('recordatorios/{id}', [CRMController::class, 'eliminarRecordatorio']);
+            
+            // Clientes (legacy)
+            Route::get('clientes', [CRMController::class, 'clientes']);
         });
 
         // === Clientes (CRM / Facturación) ===
