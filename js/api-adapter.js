@@ -576,6 +576,14 @@
         financiero: function (params) {
             var query = buildQueryParams(params);
             return apiFetch('/reports/financiero' + (query ? '?' + query : ''));
+        },
+        taxSummary: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/tax-summary' + (query ? '?' + query : ''));
+        },
+        dianDraft: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/dian-draft' + (query ? '?' + query : ''));
         }
     };
 

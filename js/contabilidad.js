@@ -14,8 +14,6 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('💰 Módulo Contabilidad - Inicializando interactividad completa');
-        
         // Inicializar componentes base
         initApp();
         
@@ -28,6 +26,7 @@
                 console.error('[Contabilidad] Error cargando datos desde API:', error);
             })
             .finally(() => {
+                renderContabilidadSelectors();
                 actualizarDashboard();
                 renderizarPlanContable();
                 cargarAsientosContables();
@@ -45,9 +44,13 @@
 
     function normalizeApiListResponse(response, fallbackMeta) {
         const payload = response || {};
-        const items = Array.isArray(payload.data)
-            ? payload.data
-            : (Array.isArray(payload) ? payload : []);
+        const items = Array.isArray(payload.items)
+            ? payload.items
+            : (Array.isArray(payload.data)
+                ? payload.data
+                : (Array.isArray(payload) ? payload : []));
+
+        const meta = payload.meta || {};
 
         return {
             items: items,
@@ -56,7 +59,7 @@
                 per_page: (fallbackMeta && fallbackMeta.per_page) || items.length || 15,
                 current_page: (fallbackMeta && fallbackMeta.current_page) || 1,
                 last_page: (fallbackMeta && fallbackMeta.last_page) || 1,
-            }, payload.meta || {}),
+            }, meta),
             success: payload.success !== false,
             message: payload.message || ''
         };
@@ -231,7 +234,88 @@
             if (el) el.textContent = utils.formatCurrency(value);
         });
 
+        renderFinancialStatements(summary);
         actualizarGraficos(summary);
+    }
+
+    function renderFinancialStatements(summary) {
+        const values = {
+            'balance-total-activos': summary.activos,
+            'balance-total-pasivos': summary.pasivos,
+            'balance-total-patrimonio': summary.patrimonio,
+            'balance-total-contrapartida': summary.pasivos + summary.patrimonio,
+            'results-ingresos': summary.ingresos,
+            'results-gastos': summary.gastos,
+            'results-utilidad': summary.utilidadNeta
+        };
+
+        Object.keys(values).forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = MarketWorld.utils.formatCurrency(values[id]);
+            }
+        });
+    }
+
+    function formatAccountOption(account) {
+        return `${account.codigo} - ${account.nombre}`;
+    }
+
+    function renderContabilidadSelectors() {
+        const accounts = getAccounts();
+        const accountOptionsHtml = ['<option value="">Selecciona una cuenta</option>']
+            .concat(accounts.map(function(account) {
+                const code = MarketWorld.utils.escapeHtml(account.codigo || '');
+                const label = MarketWorld.utils.escapeHtml(formatAccountOption(account));
+                return `<option value="${code}">${label}</option>`;
+            }))
+            .join('');
+
+        document.querySelectorAll('#entry-lines .account-select').forEach(function(select) {
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = accountOptionsHtml;
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        });
+
+        const accountParent = document.getElementById('account-parent');
+        if (accountParent) {
+            const currentValue = accountParent.value;
+            accountParent.innerHTML = ['<option value="">Sin cuenta padre</option>']
+                .concat(accounts.map(function(account) {
+                    const code = MarketWorld.utils.escapeHtml(account.codigo || '');
+                    const label = MarketWorld.utils.escapeHtml(formatAccountOption(account));
+                    return `<option value="${code}">${label}</option>`;
+                }))
+                .join('');
+            if (currentValue) {
+                accountParent.value = currentValue;
+            }
+        }
+
+        const mayorAccount = document.getElementById('mayor-account');
+        if (mayorAccount) {
+            const currentValue = mayorAccount.value;
+            mayorAccount.innerHTML = ['<option value="">Selecciona una cuenta</option>']
+                .concat(accounts.map(function(account) {
+                    const code = MarketWorld.utils.escapeHtml(account.codigo || '');
+                    const label = MarketWorld.utils.escapeHtml(formatAccountOption(account));
+                    return `<option value="${code}">${label}</option>`;
+                }))
+                .join('');
+
+            if (currentValue) {
+                mayorAccount.value = currentValue;
+            } else if (accounts.length > 0) {
+                mayorAccount.value = accounts[0].codigo || '';
+                cargarLibroMayor(mayorAccount.value, {
+                    startDate: document.getElementById('mayor-start')?.value,
+                    endDate: document.getElementById('mayor-end')?.value
+                });
+            }
+        }
     }
 
     function actualizarGraficos(summary) {
@@ -301,43 +385,38 @@
         const accounts = getAccounts();
         container.innerHTML = '';
 
-        const renderNode = (parentCode, level) => {
-            const children = accounts.filter(a => a.padre === parentCode);
-            if (children.length === 0) return null;
+        if (accounts.length === 0) {
+            container.innerHTML = '<li class="text-muted">No hay cuentas contables registradas</li>';
+            return;
+        }
 
-            const ul = document.createElement('ul');
-            children.forEach(acc => {
-                const li = document.createElement('li');
-                li.className = 'account-item';
-                li.setAttribute('data-codigo', acc.codigo);
-                
-                let typeTag = '';
-                if (acc.nivel === 'Clase') {
-                    typeTag = `<span class="account-type type-${acc.tipo.toLowerCase()}">${acc.tipo}</span>`;
-                }
-                
-                li.innerHTML = `
-                    <span class="account-code">${acc.codigo}</span> ${acc.nombre}
-                    ${typeTag}
-                `;
-                
-                li.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const active = container.querySelector('.selected');
-                    if (active) active.classList.remove('selected');
-                    li.classList.add('selected');
-                    cargarDetalleCuenta(acc.codigo);
-                });
+        const ul = document.createElement('ul');
+        ul.className = 'account-tree list-unstyled';
 
-                const childUl = renderNode(acc.codigo, level + 1);
-                if (childUl) li.appendChild(childUl);
-                ul.appendChild(li);
+        accounts.forEach(function(acc) {
+            const li = document.createElement('li');
+            li.className = 'account-item';
+            li.setAttribute('data-codigo', acc.codigo);
+
+            const typeTag = acc.tipo ? `<span class="account-type type-${String(acc.tipo).toLowerCase()}">${MarketWorld.utils.escapeHtml(acc.tipo)}</span>` : '';
+
+            li.innerHTML = `
+                <span class="account-code">${MarketWorld.utils.escapeHtml(acc.codigo || '')}</span> ${MarketWorld.utils.escapeHtml(acc.nombre || '')}
+                ${typeTag}
+            `;
+
+            li.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const active = container.querySelector('.selected');
+                if (active) active.classList.remove('selected');
+                li.classList.add('selected');
+                cargarDetalleCuenta(acc.codigo);
             });
-            return ul;
-        };
 
-        const rootUl = renderNode(null, 0);
-        if (rootUl) container.appendChild(rootUl);
+            ul.appendChild(li);
+        });
+
+        container.appendChild(ul);
     }
 
     function cargarDetalleCuenta(codigo) {
@@ -350,25 +429,15 @@
         const inputs = {
             codigo: document.getElementById('account-code'),
             nombre: document.getElementById('account-name'),
-            tipo: document.getElementById('account-type'),
-            descripcion: document.getElementById('account-desc'),
-            nivel: document.getElementById('account-level'),
-            padre: document.getElementById('account-parent'),
-            moneda: document.getElementById('account-currency')
+            tipo: document.getElementById('account-type')
         };
 
         if (inputs.codigo) inputs.codigo.value = account.codigo;
         if (inputs.nombre) inputs.nombre.value = account.nombre;
         if (inputs.tipo) inputs.tipo.value = account.tipo;
-        if (inputs.descripcion) inputs.descripcion.value = account.descripcion || '';
-        if (inputs.nivel) inputs.nivel.value = account.nivel || '';
-        if (inputs.padre) inputs.padre.value = account.padre || '';
-        if (inputs.moneda) inputs.moneda.value = account.moneda || 'COP';
         
         // Cargar movimientos de esta cuenta
         cargarMovimientosCuenta(codigo);
-
-        console.log(`📖 Cuenta cargada: ${account.codigo} - ${account.nombre}`);
     }
 
     function cargarMovimientosCuenta(codigo) {
@@ -467,6 +536,22 @@
         const btnGuardarCuenta = document.getElementById('btn-save-account');
         if (btnGuardarCuenta) btnGuardarCuenta.addEventListener('click', guardarCuenta);
 
+        // Botón cancelar cuenta (Plan Contable)
+        const btnCancelarCuenta = document.getElementById('btn-cancel-account');
+        if (btnCancelarCuenta) {
+            btnCancelarCuenta.addEventListener('click', () => {
+                if (currentAccount) {
+                    cargarDetalleCuenta(currentAccount.codigo);
+                } else {
+                    limpiarFormularioCuenta();
+                }
+            });
+        }
+
+        // Botón Nuevo Asiento (encabezado del tab)
+        const btnNewEntryHeader = document.querySelector('#asientos .content-container .d-flex.justify-content-between.align-items-center.mb-4 .btn.btn-primary');
+        if (btnNewEntryHeader) btnNewEntryHeader.addEventListener('click', mostrarFormularioAsiento);
+
         // Botones de filtro en Libro Diario
         const btnFiltrarDiario = document.querySelector('#diario .btn-primary');
         if (btnFiltrarDiario) {
@@ -492,7 +577,6 @@
     }
 
     function mostrarFormularioAsiento() {
-        console.log('📝 Preparando formulario para nuevo asiento');
         // El formulario ya está visible en el HTML, solo limpiar campos
         limpiarFormularioAsiento();
     }
@@ -525,6 +609,38 @@
         calcularDiferenciaAsiento();
     }
 
+    function limpiarFormularioCuenta() {
+        currentAccount = null;
+
+        const inputs = [
+            document.getElementById('account-code'),
+            document.getElementById('account-name'),
+        ];
+
+        inputs.forEach(function(input) {
+            if (input) input.value = '';
+        });
+
+        const selects = [
+            document.getElementById('account-type')
+        ];
+
+        selects.forEach(function(select) {
+            if (select) select.selectedIndex = 0;
+        });
+
+        const movementsBody = document.getElementById('account-movements-body');
+        const movementsFoot = document.getElementById('account-movements-foot');
+
+        if (movementsBody) {
+            movementsBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Selecciona una cuenta para ver sus movimientos</td></tr>';
+        }
+
+        if (movementsFoot) {
+            movementsFoot.innerHTML = '';
+        }
+    }
+
     function agregarFilaPartida() {
         const container = document.getElementById('entry-lines');
         if (!container) return;
@@ -533,11 +649,16 @@
         div.className = 'input-group mb-2 partida-row';
         
         const accounts = getAccounts();
-        const options = accounts.map(a => `<option value="${a.codigo}">${a.codigo} - ${a.nombre}</option>`).join('');
+        const options = ['<option value="">Seleccionar cuenta</option>']
+            .concat(accounts.map(function(account) {
+                const code = MarketWorld.utils.escapeHtml(account.codigo || '');
+                const label = MarketWorld.utils.escapeHtml(formatAccountOption(account));
+                return `<option value="${code}">${label}</option>`;
+            }))
+            .join('');
 
         div.innerHTML = `
             <select class="form-select account-select">
-                <option value="">Seleccionar cuenta</option>
                 ${options}
             </select>
             <input type="number" class="form-control amount-input" placeholder="Monto" style="max-width: 120px;" min="0" step="0.01">
@@ -603,7 +724,7 @@
     async function registrarNuevoAsiento() {
         const fecha = document.querySelector('#asientos input[type="date"]')?.value;
         const glosa = document.querySelector('#asientos textarea')?.value;
-        const tipoAsiento = document.querySelector('#asientos select.form-select')?.value;
+        const tipoAsiento = document.getElementById('entry-type')?.value;
 
         if (!glosa || glosa.trim() === '') {
             alert('Por favor ingresa una descripción para el asiento.');
@@ -656,10 +777,10 @@
                     MarketWorld.notifications.show('Asiento contable registrado', 'success');
                 }
                 await loadContabilidadStateFromAPI();
+                renderContabilidadSelectors();
                 actualizarDashboard();
                 cargarAsientosContables();
                 limpiarFormularioAsiento();
-                console.log('✅ Asiento registrado:', result.data || result);
             } else {
                 alert('Error: ' + (result.message || 'No se pudo crear el asiento'));
             }
@@ -670,7 +791,7 @@
     }
 
     function cargarAsientosContables() {
-        const container = document.querySelector('#asientos .col-md-8');
+        const container = document.getElementById('journal-entries-container');
         if (!container) return;
 
         const entries = getJournalEntries();
@@ -761,36 +882,41 @@
     };
 
     function guardarCuenta() {
-        if (!currentAccount) {
-            alert('Por favor selecciona una cuenta del árbol contable.');
-            return;
-        }
-
         const inputs = {
             codigo: document.getElementById('account-code'),
             nombre: document.getElementById('account-name'),
-            tipo: document.getElementById('account-type'),
-            descripcion: document.getElementById('account-desc'),
-            padre: document.getElementById('account-parent'),
-            moneda: document.getElementById('account-currency')
+            tipo: document.getElementById('account-type')
         };
 
-        MarketWorld.api.accounts.update(currentAccount.id, {
-            codigo: inputs.codigo?.value || currentAccount.codigo,
-            nombre: inputs.nombre?.value,
-            tipo: inputs.tipo?.value,
-            activo: currentAccount.activo !== false
-        }).then(async function(result) {
+        const payload = {
+            codigo: inputs.codigo?.value?.trim() || '',
+            nombre: inputs.nombre?.value?.trim() || '',
+            tipo: inputs.tipo?.value || 'Activo',
+            activo: currentAccount ? currentAccount.activo !== false : true
+        };
+
+        if (!payload.codigo || !payload.nombre) {
+            alert('Completa el código y el nombre de la cuenta.');
+            return;
+        }
+
+        const request = currentAccount
+            ? MarketWorld.api.accounts.update(currentAccount.id, payload)
+            : MarketWorld.api.accounts.create(payload);
+
+        request.then(async function(result) {
             if (result.success) {
                 MarketWorld.utils.showNotification('✅ ' + result.message, 'success');
                 await loadContabilidadStateFromAPI();
+                renderContabilidadSelectors();
                 renderizarPlanContable();
+                cargarDetalleCuenta(payload.codigo);
             } else {
-                alert('Error: ' + (result.message || 'No se pudo actualizar la cuenta'));
+                alert('Error: ' + (result.message || 'No se pudo guardar la cuenta'));
             }
         }).catch(function(error) {
-            console.error('[Contabilidad] Error actualizando cuenta:', error);
-            alert(error && error.message ? error.message : 'Error al actualizar la cuenta');
+            console.error('[Contabilidad] Error guardando cuenta:', error);
+            alert(error && error.message ? error.message : 'Error al guardar la cuenta');
         });
     }
 
@@ -805,12 +931,19 @@
         if (!tableBody) return;
 
         const entries = getJournalEntries();
-        
-        if (entries.length === 0) {
+        renderLibroDiario(entries, tableBody);
+    }
+
+    function renderLibroDiario(entries, tableBody) {
+        if (!Array.isArray(entries) || entries.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No hay asientos registrados</td></tr>';
+            const emptyFoot = document.querySelector('#diario tfoot');
+            if (emptyFoot) {
+                emptyFoot.innerHTML = '';
+            }
             return;
         }
-
+        
         let totalDebe = 0;
         let totalHaber = 0;
 
@@ -866,47 +999,60 @@
             </tr>
         `).join('');
 
-        alert(`Asiento: ${getEntryDisplayNumber(entry)}\nFecha: ${entry.fecha}\nDescripción: ${entry.glosa || entry.descripcion || ''}\n\nVer consola para detalles completos.`);
-        console.log('Detalle del asiento:', entry);
+        alert(`Asiento: ${getEntryDisplayNumber(entry)}\nFecha: ${entry.fecha}\nDescripción: ${entry.glosa || entry.descripcion || ''}`);
     };
 
     function aplicarFiltrosDiario() {
-        const startDate = document.getElementById('diario-start')?.value || document.querySelector('#diario input[type="date"]')?.value;
-        const endDate = document.getElementById('diario-end')?.value || document.querySelectorAll('#diario input[type="date"]')[1]?.value;
-        const tipo = document.getElementById('diario-type')?.value || document.querySelector('#diario select')?.value;
+        const startDate = document.getElementById('diario-start')?.value;
+        const endDate = document.getElementById('diario-end')?.value;
+        const tipo = document.getElementById('diario-type')?.value;
 
-        console.log('📊 Filtros aplicados:', { startDate, endDate, tipo });
-        MarketWorld.utils.showNotification('Filtros aplicados correctamente', 'info');
-        
-        // Aquí se implementaría el filtrado real
-        cargarLibroDiario();
+        const filteredEntries = getJournalEntries().filter(function(entry) {
+            if (startDate && entry.fecha < startDate) return false;
+            if (endDate && entry.fecha > endDate) return false;
+
+            if (tipo && tipo !== 'Todos') {
+                const entryType = getEntryDisplayType(entry);
+                if (tipo === 'Manual' && entryType !== 'Manual') return false;
+                if (tipo === 'Automático' && entryType === 'Manual') return false;
+            }
+
+            return true;
+        });
+
+        MarketWorld.utils.showNotification('Filtros del libro diario aplicados', 'info');
+        renderLibroDiario(filteredEntries, document.querySelector('#diario tbody'));
     }
 
     function aplicarFiltrosMayor() {
-        const cuenta = document.getElementById('mayor-account')?.value || document.querySelector('#mayor select')?.value;
-        const startDate = document.getElementById('mayor-start')?.value || document.querySelector('#mayor input[type="date"]')?.value;
-        const endDate = document.getElementById('mayor-end')?.value || document.querySelectorAll('#mayor input[type="date"]')[1]?.value;
+        const cuenta = document.getElementById('mayor-account')?.value;
+        const startDate = document.getElementById('mayor-start')?.value;
+        const endDate = document.getElementById('mayor-end')?.value;
 
-        console.log('📖 Filtros Libro Mayor:', { cuenta, startDate, endDate });
-        MarketWorld.utils.showNotification('Filtrando libro mayor...', 'info');
+        MarketWorld.utils.showNotification('Filtros del libro mayor aplicados', 'info');
         
         if (cuenta) {
-            cargarLibroMayor(cuenta);
+            cargarLibroMayor(cuenta, { startDate: startDate, endDate: endDate });
         }
     }
-
-    function cargarLibroMayor(codigo) {
+    function cargarLibroMayor(codigo, options) {
         const account = findAccountByCode(codigo);
         if (!account) return;
 
-        const result = getAccountMovements(codigo);
+        const result = getAccountMovements(codigo, options || {});
         const movements = result.movements || [];
         const tableBody = document.querySelector('#mayor tbody');
-        
+        const title = document.getElementById('mayor-account-title');
+        const typeLabel = document.getElementById('mayor-account-type');
+        const balanceLabel = document.getElementById('mayor-account-balance');
+
         if (!tableBody) return;
 
+        if (title) title.textContent = `${account.codigo} - ${account.nombre}`;
+        if (typeLabel) typeLabel.textContent = `Cuenta de ${account.tipo || 'Contabilidad'}`;
+
         let saldo = 0;
-        const rows = movements.map(m => {
+        const rows = movements.map(function(m) {
             if (account.tipo === 'Activo' || account.tipo === 'Gasto') {
                 saldo += (m.debe - m.haber);
             } else {
@@ -926,6 +1072,11 @@
         }).join('');
 
         tableBody.innerHTML = rows || '<tr><td colspan="6" class="text-center">Sin movimientos</td></tr>';
+
+        if (balanceLabel) {
+            balanceLabel.textContent = MarketWorld.utils.formatCurrency(Math.abs(saldo));
+            balanceLabel.className = `fs-4 ${saldo >= 0 ? 'debit' : 'credit'}`;
+        }
     }
 
     function calcularConciliacion() {
@@ -948,50 +1099,122 @@
     }
 
     function registrarAjustesConciliacion() {
-        MarketWorld.utils.showNotification('✅ Ajustes de conciliación registrados', 'success');
-        console.log('📝 Registrando ajustes de conciliación bancaria');
+        MarketWorld.utils.showNotification('La conciliación se muestra solo en lectura hasta publicar su endpoint backend.', 'warning');
     }
 
     // ======= IMPUESTOS =======
 
     function inicializarImpuestos() {
-        const btnCalc = document.querySelector('#impuestos .btn-primary');
-        if (btnCalc) {
-            btnCalc.addEventListener('click', calcularImpuestos);
+        const btnRefresh = document.getElementById('btn-refresh-tax-summary');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', cargarResumenTributario);
         }
 
-        const btnPresentar = document.querySelector('#impuestos .btn-danger');
-        if (btnPresentar) {
-            btnPresentar.addEventListener('click', presentarDeclaracion);
+        const btnDraft = document.getElementById('btn-generate-dian-draft');
+        if (btnDraft) {
+            btnDraft.addEventListener('click', generarBorradorDian);
         }
+
+        cargarResumenTributario();
     }
 
     function calcularImpuestos() {
-        const summary = getFinancialSummary();
-        const impuestoRenta = summary.utilidadNeta > 0 ? summary.utilidadNeta * 0.35 : 0;
-        const ivaEstimado = summary.ingresos * 0.19;
-
-        const mensaje = `Basado en los datos contables actuales:\n\n` +
-                       `Utilidad Neta: ${MarketWorld.utils.formatCurrency(summary.utilidadNeta)}\n` +
-                       `Impuesto de Renta (35%): ${MarketWorld.utils.formatCurrency(impuestoRenta)}\n\n` +
-                       `Ingresos Totales: ${MarketWorld.utils.formatCurrency(summary.ingresos)}\n` +
-                       `IVA Estimado (19%): ${MarketWorld.utils.formatCurrency(ivaEstimado)}`;
-
-        alert(mensaje);
-        console.log('🧮 Cálculo de impuestos:', { summary, impuestoRenta, ivaEstimado });
+        MarketWorld.utils.showNotification('El cálculo tributario final debe salir del backend antes de producción.', 'warning');
     }
 
-    function presentarDeclaracion() {
-        if (!confirm('¿Deseas presentar la declaración tributaria a la DIAN?')) {
+    async function cargarResumenTributario() {
+        const body = document.getElementById('tax-period-table-body');
+        const companyId = document.getElementById('tax-company-id');
+        const periodEl = document.getElementById('tax-period');
+        const baseEl = document.getElementById('tax-base');
+        const ivaEl = document.getElementById('tax-iva');
+        const invoicesEl = document.getElementById('tax-invoices');
+        const updatedEl = document.getElementById('tax-last-update');
+
+        if (!MarketWorld.api || !MarketWorld.api.reports || typeof MarketWorld.api.reports.taxSummary !== 'function') {
+            if (body) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Resumen tributario no disponible</td></tr>';
+            }
             return;
         }
 
-        MarketWorld.utils.showNotification('📤 Enviando declaración...', 'info');
-        
-        setTimeout(() => {
-            const radicado = 'DIAN-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000);
-            MarketWorld.utils.showNotification('✅ Declaración presentada exitosamente. Radicado: ' + radicado, 'success');
-        }, 2000);
+        try {
+            const result = await MarketWorld.api.reports.taxSummary();
+            if (!result || !result.success || !result.data) {
+                throw new Error(result && result.message ? result.message : 'No se pudo cargar el resumen tributario');
+            }
+
+            const data = result.data;
+            const periodo = data.periodo || {};
+            const totales = data.totales || {};
+            const periodos = Array.isArray(data.periodos) ? data.periodos : [];
+
+            if (companyId) companyId.textContent = data.company_tax_id || 'Sin NIT fiscal';
+            if (periodEl) periodEl.textContent = `${periodo.desde || '--'} a ${periodo.hasta || '--'}`;
+            if (baseEl) baseEl.textContent = MarketWorld.utils.formatCurrency(totales.base_gravable || 0);
+            if (ivaEl) ivaEl.textContent = MarketWorld.utils.formatCurrency(totales.iva_generado || 0);
+            if (invoicesEl) invoicesEl.textContent = String(totales.cantidad_facturas || 0);
+            if (updatedEl) updatedEl.textContent = `Actualizado ${new Date().toLocaleString('es-CO')}`;
+
+            if (body) {
+                if (periodos.length === 0) {
+                    body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay facturas en el periodo seleccionado</td></tr>';
+                } else {
+                    body.innerHTML = periodos.map(function(row) {
+                        return `
+                            <tr>
+                                <td>${MarketWorld.utils.escapeHtml(row.periodo || '')}</td>
+                                <td>${Number(row.cantidad_facturas || 0).toLocaleString('es-CO')}</td>
+                                <td>${MarketWorld.utils.formatCurrency(row.base_gravable || 0)}</td>
+                                <td>${MarketWorld.utils.formatCurrency(row.iva_generado || 0)}</td>
+                                <td>${Number(row.tasa_promedio || 0).toFixed(2)}%</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+        } catch (error) {
+            console.error('[Contabilidad] Error cargando resumen tributario:', error);
+            if (body) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">No se pudo cargar el resumen tributario</td></tr>';
+            }
+        }
+    }
+
+    async function generarBorradorDian() {
+        const btnDraft = document.getElementById('btn-generate-dian-draft');
+
+        try {
+            if (btnDraft) btnDraft.disabled = true;
+
+            if (!MarketWorld.api || !MarketWorld.api.reports || typeof MarketWorld.api.reports.dianDraft !== 'function') {
+                throw new Error('El backend no expone el borrador DIAN.');
+            }
+
+            const result = await MarketWorld.api.reports.dianDraft();
+            if (!result || !result.success || !result.data) {
+                throw new Error(result && result.message ? result.message : 'No se pudo generar el borrador DIAN');
+            }
+
+            const payload = result.data;
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+            const link = document.createElement('a');
+            const fileName = `marketworld-dian-borrador-${new Date().toISOString().slice(0, 10)}.json`;
+
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(link.href);
+
+            MarketWorld.utils.showNotification('✅ Borrador DIAN generado y descargado', 'success');
+        } catch (error) {
+            console.error('[Contabilidad] Error generando borrador DIAN:', error);
+            alert(error && error.message ? error.message : 'No se pudo generar el borrador DIAN');
+        } finally {
+            if (btnDraft) btnDraft.disabled = false;
+        }
     }
 
 })();

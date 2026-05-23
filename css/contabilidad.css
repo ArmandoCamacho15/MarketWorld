@@ -269,6 +269,26 @@ body {
     margin-bottom: 20px;
 }
 
+.module-status-card {
+    min-height: 260px;
+}
+
+#estados .row,
+#impuestos .row {
+    align-items: flex-start;
+}
+
+#estados .content-container,
+#impuestos .content-container {
+    height: 100%;
+    margin-bottom: 0;
+}
+
+#estados .content-container .chart-container,
+#impuestos .content-container .chart-container {
+    margin-top: 10px;
+}
+
 /* Asientos contables */
 .journal-entry {
     border-left: 3px solid var(--accounting);

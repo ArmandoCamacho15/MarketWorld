@@ -17,27 +17,11 @@
     }
 
     function clearSession() {
-        // La sesión se limpia en el backend; el frontend ya no guarda tokens.
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.logout) {
-            MarketWorld.data.logout();
-        }
+        // La sesión se limpia en el backend; el frontend ya no persiste estado de auth.
     }
 
     function redirectToLogin() {
         window.location.href = 'Login.html';
-    }
-
-    function syncUserToLegacyStore(user) {
-        if (!user) return;
-        
-        if (typeof MarketWorld !== 'undefined' && MarketWorld.data && MarketWorld.data.setCurrentUser) {
-            MarketWorld.data.setCurrentUser({
-                nombre: user.name || user.nombre || '',
-                apellido: user.apellido || '',
-                email: user.email || '',
-                rol: user.rol || 'Usuario'
-            });
-        }
     }
 
     function loadUserInfo(user) {
@@ -63,8 +47,6 @@
                 var user = (body.data) ? body.data : (body.user || null);
                 
                 if (user) {
-                    // Sincronizamos con el estado global para UI, pero sin persistir en disco.
-                    syncUserToLegacyStore(user);
                     loadUserInfo(user);
                     return true;
                 } else {

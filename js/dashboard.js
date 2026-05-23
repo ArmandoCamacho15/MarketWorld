@@ -5,14 +5,12 @@
     let salesChart, categoriesChart, incomeExpenseChart;
 
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log(' Módulo Dashboard cargado (Producción)');
-        
         // Inicializar
         initCharts();
         initDateFilters();
         initKPIs();
         initCalendar();
-        renderRecentTransactions();
+        renderRecentTransactions([]);
 
         // Cargar datos reales de la API (endpoint consolidado)
         fetchDashboardStats();
@@ -100,7 +98,7 @@
     async function fetchDashboardStats() {
         try {
             if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.dashboard) {
-                console.warn('Adaptador de API no disponible para Dashboard stats');
+                renderRecentTransactions([]);
                 return;
             }
 
@@ -108,17 +106,16 @@
             try {
                 const result = await MarketWorld.api.dashboard.getStats();
                 if (result && result.success) {
-                    console.log('📊 Dashboard stats actualizados desde API');
                     updateDashboardUI(result.data);
                     return;
                 }
-                console.warn('Adaptador dashboard devolvió respuesta no exitosa o vacía:', result);
+                renderRecentTransactions([]);
             } catch (e) {
-                console.warn('Error llamando MarketWorld.api.dashboard.getStats():', e && e.message ? e.message : e);
+                renderRecentTransactions([]);
             }
 
         } catch (error) {
-            console.error('Error fetching dashboard stats via adapter:', error);
+            renderRecentTransactions([]);
         }
     }
 
@@ -164,12 +161,8 @@
         }
 
         // Notificar si hay stock bajo
-        if (data.low_stock_count > 0) {
-            console.warn(`⚠️ Hay ${data.low_stock_count} productos con stock bajo.`);
-            // Disparar las alertas para la campana de notificaciones
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.notifications && typeof MarketWorld.notifications.checkLowStock === 'function') {
+            if (data.low_stock_count > 0 && typeof MarketWorld !== 'undefined' && MarketWorld.notifications && typeof MarketWorld.notifications.checkLowStock === 'function') {
                 MarketWorld.notifications.checkLowStock();
-            }
         }
         // Actualizar tarjeta combinada de inventario + stock bajo
         try {
@@ -335,7 +328,6 @@
     }
 
     function applyDateFilter(period) {
-        // ======= SIMULAR ACTUALIZACIÓN DE DATOS =======
         const startDate = document.querySelector('.date-filter input[type="date"]');
         const endDate = document.querySelectorAll('.date-filter input[type="date"]')[1];
         
@@ -352,18 +344,12 @@
         
         if (startDate) startDate.value = start.toISOString().split('T')[0];
         if (endDate) endDate.value = today.toISOString().split('T')[0];
-        
-        // ======= ACTUALIZAR GRÁFICOS =======
-        updateCharts();
+
+        fetchDashboardStats();
     }
 
     function updateCharts() {
-        if (salesChart) {
-            salesChart.data.datasets[0].data = salesChart.data.datasets[0].data.map(v => v * (0.9 + Math.random() * 0.2));
-            salesChart.update();
-        }
-        
-        console.log('🔄 Gráficos actualizados');
+        fetchDashboardStats();
     }
 
     // KPIs
@@ -431,18 +417,13 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek'
                 },
-                events: [
-                    { title: 'Reunión ventas', start: '2025-06-25', color: '#0d6ef0' },
-                    { title: 'Vencimiento factura', start: '2025-06-30', color: '#e74c3c' },
-                    { title: 'Inventario mensual', start: '2025-06-28', color: '#f39c12' }
-                ],
+                events: [],
                 eventClick: (info) => {
                     alert(`Evento: ${info.event.title}\nFecha: ${info.event.start.toLocaleDateString()}`);
                 }
             });
             
             calendar.render();
-            console.log('📅 Calendario inicializado');
         }
     }
 
@@ -451,11 +432,7 @@
         const tbody = document.querySelector('.transaction-table tbody');
         if (!tbody) return;
 
-        // Datos mapeados desde DashboardController backend
-        let transactions = [];
-        if (Array.isArray(optionalData)) {
-            transactions = optionalData;
-        }
+        const transactions = Array.isArray(optionalData) ? optionalData : [];
 
         if (transactions.length === 0) {
             setSafeHtml(tbody, '<tr><td colspan="4" class="text-center text-muted">No hay transacciones recientes</td></tr>');
@@ -520,27 +497,6 @@
                     invoiceData = res && (res.data || res) ? (res.data || res) : null;
                 } catch (err) {
                     console.warn('Error obteniendo factura desde adaptador:', err && err.message ? err.message : err);
-                }
-            }
-
-            // Si no obtuvimos datos vía adaptador, intentar fetch directo
-            if (!invoiceData) {
-                const baseUrl = (MarketWorld && MarketWorld.api && MarketWorld.api.BASE_URL)
-                    ? MarketWorld.api.BASE_URL
-                    : 'http://127.0.0.1:8000/api/v1';
-                try {
-                    const resp = await fetch(baseUrl + '/invoices/' + invoiceId, {
-                        headers: { 'Accept': 'application/json' },
-                        credentials: 'include'
-                    });
-                    if (resp.ok) {
-                        const body = await resp.json();
-                        invoiceData = body && (body.data || body) ? (body.data || body) : null;
-                    } else {
-                        console.warn('Fetch invoice detail falló con status', resp.status);
-                    }
-                } catch (err) {
-                    console.warn('Error fetch invoice detail directo:', err && err.message ? err.message : err);
                 }
             }
 

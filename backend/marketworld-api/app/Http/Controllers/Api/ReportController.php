@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompanySetting;
 use App\Models\Invoice;
 use App\Models\Purchase;
 use App\Models\Product;
@@ -13,6 +14,53 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    private function buildTaxSummaryData(string $desde, string $hasta): array
+    {
+        $periodos = Invoice::query()
+            ->selectRaw("DATE_FORMAT(fecha, '%Y-%m') as periodo")
+            ->selectRaw('COUNT(*) as cantidad_facturas')
+            ->selectRaw('SUM(COALESCE(subtotal, 0)) as base_gravable')
+            ->selectRaw('SUM(COALESCE(impuestos, 0)) as iva_generado')
+            ->selectRaw('SUM(COALESCE(total, 0)) as total_facturado')
+            ->where('estado', '!=', 'Anulada')
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->groupByRaw("DATE_FORMAT(fecha, '%Y-%m')")
+            ->orderBy('periodo')
+            ->get()
+            ->map(function ($item): array {
+                $base = (float) ($item->base_gravable ?? 0);
+                $iva = (float) ($item->iva_generado ?? 0);
+
+                return [
+                    'periodo' => $item->periodo,
+                    'cantidad_facturas' => (int) $item->cantidad_facturas,
+                    'base_gravable' => round($base, 2),
+                    'iva_generado' => round($iva, 2),
+                    'tasa_promedio' => $base > 0 ? round(($iva / $base) * 100, 2) : 0,
+                    'total_facturado' => round((float) ($item->total_facturado ?? 0), 2),
+                ];
+            })
+            ->values();
+
+        $companySetting = CompanySetting::query()->latest('id')->first();
+
+        return [
+            'company_tax_id' => $companySetting?->tax_id,
+            'company_name' => $companySetting?->company_name,
+            'periodo' => [
+                'desde' => $desde,
+                'hasta' => $hasta,
+            ],
+            'periodos' => $periodos,
+            'totales' => [
+                'cantidad_facturas' => (int) $periodos->sum('cantidad_facturas'),
+                'base_gravable' => round((float) $periodos->sum('base_gravable'), 2),
+                'iva_generado' => round((float) $periodos->sum('iva_generado'), 2),
+                'total_facturado' => round((float) $periodos->sum('total_facturado'), 2),
+            ],
+        ];
+    }
+
     /**
      * Endpoint legacy de ventas (se conserva por compatibilidad temporal).
      */
@@ -188,6 +236,82 @@ class ReportController extends Controller
                 'periodo' => [
                     'desde' => $desde,
                     'hasta' => $hasta,
+                ],
+            ],
+            'errors' => null,
+        ]);
+    }
+
+    /**
+     * Resumen tributario real derivado de facturas emitidas.
+     */
+    public function taxSummary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'desde' => 'nullable|date|before_or_equal:hasta',
+            'hasta' => 'nullable|date',
+        ]);
+
+        $desde = $validated['desde'] ?? Carbon::now()->startOfMonth()->toDateString();
+        $hasta = $validated['hasta'] ?? Carbon::now()->toDateString();
+        $summary = $this->buildTaxSummaryData($desde, $hasta);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resumen tributario generado.',
+            'data' => [
+                'company_tax_id' => $summary['company_tax_id'],
+                'periodo' => $summary['periodo'],
+                'periodos' => $summary['periodos'],
+                'totales' => $summary['totales'],
+            ],
+            'errors' => null,
+        ]);
+    }
+
+    /**
+     * Borrador DIAN descargable derivado del resumen tributario.
+     */
+    public function dianDraft(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'desde' => 'nullable|date|before_or_equal:hasta',
+            'hasta' => 'nullable|date',
+        ]);
+
+        $desde = $validated['desde'] ?? Carbon::now()->startOfMonth()->toDateString();
+        $hasta = $validated['hasta'] ?? Carbon::now()->toDateString();
+        $summary = $this->buildTaxSummaryData($desde, $hasta);
+
+        $periodos = collect($summary['periodos']);
+        $companySetting = CompanySetting::query()->latest('id')->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Borrador DIAN generado correctamente.',
+            'data' => [
+                'connector' => 'MarketWorld.DIAN.DraftConnector',
+                'status' => 'draft',
+                'generated_at' => Carbon::now()->toIso8601String(),
+                'company' => [
+                    'name' => $companySetting?->company_name,
+                    'tax_id' => $companySetting?->tax_id,
+                ],
+                'periodo' => $summary['periodo'],
+                'totales' => $summary['totales'],
+                'summary' => $summary['periodos'],
+                'declaration' => [
+                    'form_type' => 'IVA_Renta_Borrador',
+                    'periods' => $periodos->map(function ($item): array {
+                        return [
+                            'periodo' => $item['periodo'],
+                            'facturas' => $item['cantidad_facturas'],
+                            'base_gravable' => $item['base_gravable'],
+                            'iva_generado' => $item['iva_generado'],
+                            'tasa_promedio' => $item['tasa_promedio'],
+                            'total_facturado' => $item['total_facturado'],
+                        ];
+                    })->values(),
                 ],
             ],
             'errors' => null,

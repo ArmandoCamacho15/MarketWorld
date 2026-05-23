@@ -49,6 +49,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:Administrador')->group(function () {
             Route::get('reports/sales-summary', [ReportController::class, 'salesSummary']);
             Route::get('reports/inventory-utility', [ReportController::class, 'inventoryUtility']);
+            Route::get('reports/tax-summary', [ReportController::class, 'taxSummary']);
+            Route::get('reports/dian-draft', [ReportController::class, 'dianDraft']);
             // Dia 11: endpoints nuevos de reportes reales (compatibilidad temporal con legacy activa)
             Route::get('reports/ventas', [ReportController::class, 'ventas']);
             Route::get('reports/inventario', [ReportController::class, 'inventario']);
