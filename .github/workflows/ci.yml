@@ -1,0 +1,66 @@
+name: CI MarketWorld
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  tests:
+    name: Pruebas y calidad de código
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: marketworld_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, json, bcmath, pdo_mysql
+
+      - name: Instalar dependencias PHP
+        working-directory: backend/marketworld-api
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: Preparar entorno de prueba
+        working-directory: backend/marketworld-api
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --env=testing --force
+          php artisan db:seed --env=testing --force || true
+
+      - name: Escanear secretos en el código
+        uses: gitleaks/gitleaks-action@v2
+
+      - name: Configurar Node.js para quality gates frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validar frontend (document.write gate)
+        run: |
+          if grep -R --line-number "document.write" js/; then
+            echo "Fallo quality gate: se detectó document.write en frontend";
+            exit 1;
+          fi
+
+      - name: Ejecutar suite de pruebas PHP
+        working-directory: backend/marketworld-api
+        run: php artisan test --parallel
+        env:
+          DB_DATABASE: marketworld_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
