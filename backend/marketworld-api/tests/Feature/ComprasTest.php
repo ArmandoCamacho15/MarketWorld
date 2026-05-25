@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Account;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Database\Seeders\AccountingSeeder;
 use Spatie\Permission\Models\Role;
@@ -25,7 +26,7 @@ class ComprasTest extends TestCase
         Role::create(['name' => 'Usuario']);
     }
 
-    /** @test */
+    #[Test]
     public function registrar_compra_actualiza_stock_y_costo_promedio(): void
     {
         $usuario = User::factory()->create();
@@ -68,7 +69,7 @@ class ComprasTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function no_se_puede_comprar_a_proveedor_inactivo(): void
     {
         $usuario = User::factory()->create();

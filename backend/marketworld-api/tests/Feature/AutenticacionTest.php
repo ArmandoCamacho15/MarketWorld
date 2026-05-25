@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
 
@@ -19,7 +20,7 @@ class AutenticacionTest extends TestCase
         Role::create(['name' => 'Administrador']);
     }
 
-    /** @test */
+    #[Test]
     public function login_con_credenciales_correctas_inicia_sesion_por_cookie(): void
     {
         $usuario = User::factory()->create([
@@ -39,7 +40,7 @@ class AutenticacionTest extends TestCase
         $this->getJson('/api/v1/auth/me')->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function login_con_credenciales_incorrectas_devuelve_401(): void
     {
         $usuario = User::factory()->create();
@@ -50,13 +51,13 @@ class AutenticacionTest extends TestCase
         ])->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function ruta_protegida_sin_sesion_devuelve_401(): void
     {
         $this->getJson('/api/v1/products')->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function registro_de_usuario_funciona_correctamente(): void
     {
         $respuesta = $this->postJson('/api/v1/auth/register', [
@@ -75,7 +76,7 @@ class AutenticacionTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function logout_invalida_la_sesion(): void
     {
         $usuario = User::factory()->create();

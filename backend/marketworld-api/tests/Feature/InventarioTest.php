@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
 
@@ -19,7 +20,7 @@ class InventarioTest extends TestCase
         Role::create(['name' => 'Usuario']);
     }
 
-    /** @test */
+    #[Test]
     public function un_administrador_puede_crear_un_producto(): void
     {
         $usuario = User::factory()->create();
@@ -39,7 +40,7 @@ class InventarioTest extends TestCase
         $this->assertDatabaseHas('products', ['sku' => 'SKU-001']);
     }
 
-    /** @test */
+    #[Test]
     public function se_pueden_listar_productos_con_stock_bajo(): void
     {
         $usuario = User::factory()->create();
@@ -55,7 +56,7 @@ class InventarioTest extends TestCase
         $this->assertCount(1, $respuesta->json('data'));
     }
 
-    /** @test */
+    #[Test]
     public function la_valorizacion_del_inventario_es_correcta(): void
     {
         $usuario = User::factory()->create();

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Account;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Database\Seeders\AccountingSeeder;
 use Spatie\Permission\Models\Role;
@@ -24,7 +25,7 @@ class FacturacionTest extends TestCase
         Role::create(['name' => 'Usuario']);
     }
 
-    /** @test */
+    #[Test]
     public function crear_factura_descuenta_stock_del_producto(): void
     {
         $usuario  = User::factory()->create();
@@ -61,7 +62,7 @@ class FacturacionTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function factura_con_stock_insuficiente_devuelve_409(): void
     {
         $usuario  = User::factory()->create();
@@ -80,7 +81,7 @@ class FacturacionTest extends TestCase
         $this->assertEquals(2, $producto->fresh()->stock);
     }
 
-    /** @test */
+    #[Test]
     public function no_se_puede_facturar_a_cliente_inactivo(): void
     {
         $usuario  = User::factory()->create();

@@ -144,6 +144,7 @@ class PurchaseController extends Controller
                         'product_id' => $itemData['product_id'],
                         'cantidad' => $cantidad,
                         'precio_unitario' => $precioUnitario,
+                        'costo_unitario' => $precioUnitario,
                         'subtotal' => $itemSubtotal,
                     ];
                 }
@@ -164,6 +165,7 @@ class PurchaseController extends Controller
                         'product_id'      => $item['product_id'],
                         'cantidad'        => $item['cantidad'],
                         'precio_unitario' => $item['precio_unitario'],
+                        'costo_unitario'  => $item['costo_unitario'],
                         'subtotal'        => $item['subtotal'],
                     ]);
 
