@@ -34,6 +34,10 @@ jobs:
         working-directory: backend/marketworld-api
         run: composer install --no-progress --prefer-dist --no-interaction
 
+      - name: Auditar dependencias PHP (composer audit)
+        working-directory: backend/marketworld-api
+        run: composer audit --no-interaction
+
       - name: Preparar entorno de prueba
         working-directory: backend/marketworld-api
         run: |
@@ -59,7 +63,7 @@ jobs:
 
       - name: Ejecutar suite de pruebas PHP
         working-directory: backend/marketworld-api
-        run: php artisan test --parallel
+        run: ./vendor/bin/paratest -c phpunit.xml
         env:
           DB_DATABASE: marketworld_test
           DB_USERNAME: root
