@@ -31,6 +31,10 @@ class PurchaseController extends Controller
             $query->where('estado', $request->estado);
         }
 
+        if ($request->filled('estado_pago')) {
+            $query->where('estado_pago', $request->estado_pago);
+        }
+
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
         }
@@ -149,12 +153,15 @@ class PurchaseController extends Controller
                     ];
                 }
 
+                $estadoRecepcion = $request->estado ?? 'Recibida';
+
                 $purchase = Purchase::create([
                     'numero_orden'  => $request->numero_orden,
                     'supplier_id'   => $request->supplier_id,
                     'fecha'         => $request->fecha,
                     'total'         => $totalCalculado,
-                    'estado'        => $request->estado ?? 'Recibida',
+                    'estado'        => $estadoRecepcion,
+                    'estado_pago'   => $estadoRecepcion === 'Recibida' ? 'pagada' : 'pendiente',
                     'observaciones' => $request->observaciones,
                     'user_id'       => $authUser->id,
                 ]);
@@ -291,7 +298,7 @@ class PurchaseController extends Controller
         }
 
         $payment = DB::transaction(function () use ($purchase, $validated, $request, $saldoActual) {
-            return PurchasePayment::create([
+            $payment = PurchasePayment::create([
                 'purchase_id' => $purchase->id,
                 'supplier_id' => $purchase->supplier_id,
                 'user_id' => $request->user()->id,
@@ -301,6 +308,11 @@ class PurchaseController extends Controller
                 'tipo' => round($saldoActual - (float) $validated['monto'], 2) <= 0 ? 'Completo' : 'Parcial',
                 'fecha_pago' => $validated['fecha_pago'],
             ]);
+
+            $this->generatePaymentJournalEntry($purchase, $payment, $request->user()->id);
+            $purchase->refresh()->load('payments')->syncEstadoPago();
+
+            return $payment;
         });
 
         return response()->json([
@@ -354,5 +366,42 @@ class PurchaseController extends Controller
                 'haber' => $purchase->total
             ]);
         }
+    }
+
+    /**
+     * Asiento de pago a proveedor: débito CxP (2205), crédito caja (1105).
+     */
+    private function generatePaymentJournalEntry(Purchase $purchase, PurchasePayment $payment, int $userId): void
+    {
+        $cuentaProveedores = Account::where('codigo', '2205')->first();
+        $cuentaCaja = Account::where('codigo', '1105')->first();
+
+        if (! $cuentaProveedores || ! $cuentaCaja) {
+            return;
+        }
+
+        $entry = JournalEntry::create([
+            'fecha' => $payment->fecha_pago,
+            'glosa' => "Pago compra Orden #{$purchase->numero_orden}",
+            'referencia_tipo' => 'PurchasePayment',
+            'referencia_id' => $payment->id,
+            'user_id' => $userId,
+        ]);
+
+        $monto = (float) $payment->monto;
+
+        JournalItem::create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $cuentaProveedores->id,
+            'debe' => $monto,
+            'haber' => 0,
+        ]);
+
+        JournalItem::create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $cuentaCaja->id,
+            'debe' => 0,
+            'haber' => $monto,
+        ]);
     }
 }

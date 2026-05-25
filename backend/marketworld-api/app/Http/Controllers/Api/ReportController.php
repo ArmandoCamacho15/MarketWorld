@@ -221,10 +221,14 @@ class ReportController extends Controller
             ->whereBetween('fecha', [$desde, $hasta])
             ->sum(DB::raw('COALESCE(subtotal, total)'));
 
-        $gastos = (float) Purchase::query()
-            ->where('estado', 'Recibida')
+        $comprasPeriodo = Purchase::query()
+            ->where('estado', '!=', 'Cancelada')
             ->whereBetween('fecha', [$desde, $hasta])
-            ->sum('total');
+            ->with('payments')
+            ->get();
+
+        $gastos = (float) $comprasPeriodo->sum('total');
+        $cuentasPorPagar = round((float) $comprasPeriodo->sum(fn (Purchase $purchase) => $purchase->saldo), 2);
 
         return response()->json([
             'success' => true,
@@ -232,6 +236,7 @@ class ReportController extends Controller
             'data' => [
                 'ingresos_ventas' => round($ingresos, 2),
                 'gastos_compras' => round($gastos, 2),
+                'cuentas_por_pagar' => $cuentasPorPagar,
                 'utilidad_bruta' => round($ingresos - $gastos, 2),
                 'periodo' => [
                     'desde' => $desde,

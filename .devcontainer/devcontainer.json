@@ -1,0 +1,11 @@
+{
+  "name": "MarketWorld ERP - Dev",
+  "image": "mcr.microsoft.com/devcontainers/php:8.2",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/mysql:1": {}
+  },
+  "postCreateCommand": "cd backend/marketworld-api && composer install && php artisan key:generate && php artisan migrate --seed",
+  "forwardPorts": [8000, 3306],
+  "remoteUser": "vscode"
+}

@@ -129,14 +129,10 @@ Para no tener que recordar los comandos, puedes usar el script de automatizació
 
 ### Credenciales del Sistema (Seeders)
 
-| Usuario | Contraseña | Rol |
-|---------|------------|-----|
-| **admin@marketworld.com** | **admin123** | Super Administrador |
-| ventas@marketworld.com | ventas123 | Vendedor |
-| user@marketworld.com | 123456 | Cliente/Usuario |
+Tras `php artisan migrate --seed`, el usuario administrador se crea desde `UserSeeder` con el correo configurado en `.env` (`ADMIN_EMAIL`, por defecto `admin@marketworld.com`) y la contraseña en `ADMIN_DEFAULT_PASSWORD`.
 
 > [!NOTE]
-> Estas credenciales se generan automáticamente al ejecutar `php artisan migrate --seed`.
+> No hay usuarios demo en el frontend. El login es exclusivamente vía API (Laravel Sanctum).
 
 ### Navegación
 

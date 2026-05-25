@@ -43,7 +43,13 @@ class DashboardController extends Controller
                     ->sum('total'),
                 'purchases_month' => Purchase::whereMonth('fecha', $today->month)
                     ->whereYear('fecha', $today->year)
+                    ->where('estado', '!=', 'Cancelada')
                     ->sum('total'),
+                'accounts_payable' => round((float) Purchase::query()
+                    ->where('estado', '!=', 'Cancelada')
+                    ->with('payments')
+                    ->get()
+                    ->sum(fn (Purchase $purchase) => $purchase->saldo), 2),
                 'low_stock_count' => Product::whereColumn('stock', '<=', 'stock_minimo')->count(),
                 'total_products' => Product::count(),
                 // Valor total del inventario (stock * costo unitario)

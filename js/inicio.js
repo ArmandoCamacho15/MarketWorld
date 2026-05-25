@@ -1185,7 +1185,7 @@
     /**
      * Cargar y renderizar tareas desde datos reales del sistema
      */
-    function loadRealTasks() {
+    async function loadRealTasks() {
         console.log('✅ Iniciando carga de tareas...');
         
         try {
@@ -1207,24 +1207,29 @@
                 return;
             }
             
-            // 1. Órdenes de compra pendientes
-            try {
-                const compras = MarketWorld.data.getPurchases();
-                console.log(`🛒 Total compras: ${compras.length}`);
-                const pendingOrders = compras.filter(c => c.estado === 'Pendiente' || c.estado === 'En Proceso');
-                
-                pendingOrders.slice(0, 3).forEach(orden => {
-                    const dueTime = orden.fechaVencimiento ? formatDueTime(orden.fechaVencimiento) : 'Sin fecha';
-                    tasks.push({
-                        icon: 'bi-cart',
-                        title: `Revisar orden de compra #${orden.numeroOrden || orden.id}`,
-                        time: dueTime,
-                        priority: isPastDue(orden.fechaVencimiento) ? 'high' : 'normal',
-                        link: 'compras.html'
+            // 1. Órdenes de compra pendientes (API)
+            if (MarketWorld.api && MarketWorld.api.purchases && typeof MarketWorld.api.purchases.getAll === 'function') {
+                try {
+                    const comprasResp = await MarketWorld.api.purchases.getAll({ per_page: 50 });
+                    const compras = Array.isArray(comprasResp?.data) ? comprasResp.data : (Array.isArray(comprasResp) ? comprasResp : []);
+                    const pendingOrders = compras.filter(function(c) {
+                        const estadoRecepcion = c.estado || '';
+                        const estadoPago = (c.estado_pago || '').toLowerCase();
+                        return estadoRecepcion === 'Pendiente' || estadoPago === 'pendiente' || estadoPago === 'parcial';
                     });
-                });
-            } catch (e) {
-                console.warn('No se pudieron obtener órdenes de compra:', e);
+                    pendingOrders.slice(0, 3).forEach(function(orden) {
+                        const dueTime = orden.fecha_vencimiento || orden.fechaVencimiento ? formatDueTime(orden.fecha_vencimiento || orden.fechaVencimiento) : 'Sin fecha';
+                        tasks.push({
+                            icon: 'bi-cart',
+                            title: 'Revisar orden de compra #' + (orden.numero_orden || orden.numeroOrden || orden.id),
+                            time: dueTime,
+                            priority: isPastDue(orden.fecha_vencimiento || orden.fechaVencimiento) ? 'high' : 'normal',
+                            link: 'compras.html'
+                        });
+                    });
+                } catch (e) {
+                    console.warn('No se pudieron obtener órdenes de compra desde API:', e);
+                }
             }
             
             // 2. Productos con stock crítico que requieren pedido urgente

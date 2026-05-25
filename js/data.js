@@ -5,7 +5,6 @@
 
     // --- Storage keys ---
     var STORAGE_KEYS = {
-        USERS: 'marketworld_users',
         CURRENT_USER: 'marketworld_current_user',
         PRODUCTS: 'marketworld_products',
         CATEGORIES: 'marketworld_categories',
@@ -13,8 +12,6 @@
         CUSTOMERS: 'marketworld_customers',
         INVOICES: 'marketworld_invoices',
         SUPPLIERS: 'marketworld_suppliers',
-        PURCHASES: 'marketworld_purchases',
-        PAYMENTS: 'marketworld_payments',
         ACCOUNTS: 'marketworld_accounts',
         JOURNAL_ENTRIES: 'marketworld_journal_entries'
     };
@@ -35,40 +32,6 @@
             return (defaultValue !== undefined ? defaultValue : []);
         }
     }
-
-    // --- Default users ---
-    var DEFAULT_USERS = [
-        {
-            id: 1,
-            nombre: 'Administrador',
-            apellido: 'Sistema',
-            email: 'admin@marketworld.com',
-            password: 'admin123',
-            rol: 'Administrador',
-            estado: 'Activo',
-            fechaCreacion: '2025-01-01'
-        },
-        {
-            id: 2,
-            nombre: 'Juan',
-            apellido: 'Vendedor',
-            email: 'ventas@marketworld.com',
-            password: 'ventas123',
-            rol: 'Vendedor',
-            estado: 'Activo',
-            fechaCreacion: '2025-01-15'
-        },
-        {
-            id: 3,
-            nombre: 'Usuario',
-            apellido: 'Prueba',
-            email: 'user@marketworld.com',
-            password: '123456',
-            rol: 'Usuario',
-            estado: 'Activo',
-            fechaCreacion: '2025-02-01'
-        }
-    ];
 
     // --- Default categories ---
     var DEFAULT_CATEGORIES = [
@@ -216,9 +179,6 @@
         }
     ];
 
-    const DEFAULT_PURCHASES = [];
-    const DEFAULT_PAYMENTS = [];
-
     const DEFAULT_ACCOUNTS = [
         { id: 1, codigo: '1', nombre: 'Activos', tipo: 'Activo', nivel: 'Clase', padre: null, moneda: 'COP', descripcion: 'Recursos controlados por la entidad', saldo: 185450000, activo: true },
         { id: 2, codigo: '1.1', nombre: 'Activo Corriente', tipo: 'Activo', nivel: 'Grupo', padre: '1', moneda: 'COP', descripcion: 'Activos de liquidez inmediata', saldo: 55000000, activo: true },
@@ -287,28 +247,6 @@
         }
     }
 
-    // C-02: Hash de contraseñas usando algoritmo simple pero seguro
-    function hashPassword(password) {
-        var hash = 0;
-        var salt = 'MarketWorld2026Salt';
-        var str = salt + password + salt;
-        for (var i = 0; i < str.length; i++) {
-            var char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
-        }
-        // Añadir iteraciones para mayor seguridad
-        for (var j = 0; j < 1000; j++) {
-            hash = ((hash << 5) - hash) + j;
-            hash = hash & hash;
-        }
-        return 'mw_' + Math.abs(hash).toString(36);
-    }
-
-    function verifyPassword(password, hash) {
-        return hashPassword(password) === hash;
-    }
-
     // C-04: Validación de sesión para operaciones críticas
     function requireAuth() {
         var user = getCurrentUser();
@@ -319,20 +257,6 @@
     }
 
     function initializeData() {
-        if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-            // Hashear contraseñas por defecto para no almacenar texto plano
-            var usersToStore = DEFAULT_USERS.map(function(u) {
-                var copy = Object.assign({}, u);
-                try {
-                    copy.password = hashPassword(String(u.password || ''));
-                } catch (err) {
-                    copy.password = String(u.password || '');
-                }
-                return copy;
-            });
-            safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(usersToStore));
-            console.log('Datos iniciales creados');
-        }
         if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
             safeSetItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
         }
@@ -351,12 +275,6 @@
         if (!localStorage.getItem(STORAGE_KEYS.SUPPLIERS)) {
             safeSetItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify(DEFAULT_SUPPLIERS));
         }
-        if (!localStorage.getItem(STORAGE_KEYS.PURCHASES)) {
-            safeSetItem(STORAGE_KEYS.PURCHASES, JSON.stringify(DEFAULT_PURCHASES));
-        }
-        if (!localStorage.getItem(STORAGE_KEYS.PAYMENTS)) {
-            safeSetItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(DEFAULT_PAYMENTS));
-        }
         if (!localStorage.getItem(STORAGE_KEYS.ACCOUNTS)) {
             safeSetItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(DEFAULT_ACCOUNTS));
         }
@@ -365,64 +283,22 @@
         }
     }
 
-    // Usuarios
+    // Usuarios: autenticación solo vía API (Sanctum). Sin credenciales locales.
     function getUsers() {
-        return safeParseStorage(STORAGE_KEYS.USERS, DEFAULT_USERS);
+        return [];
     }
 
-    function findUserByEmail(email) {
-        var users = getUsers();
-        for (var i = 0; i < users.length; i++) {
-            if (users[i].email.toLowerCase() === email.toLowerCase()) {
-                return users[i];
-            }
-        }
+    function findUserByEmail() {
         return null;
     }
 
-    function verifyCredentials(email, password) {
-        var user = findUserByEmail(email);
-        if (!user || user.estado !== 'Activo') {
-            return null;
-        }
-        // Soportar tanto contraseñas hasheadas como texto plano (legacy)
-        var isValid = false;
-        if (user.password.startsWith('mw_')) {
-            isValid = verifyPassword(password, user.password);
-        } else {
-            // Legacy: texto plano - hashear automáticamente
-            isValid = (user.password === password);
-            if (isValid) {
-                // Migrar a hash automáticamente
-                var users = getUsers();
-                var index = users.findIndex(function(u) { return u.id === user.id; });
-                if (index !== -1) {
-                    users[index].password = hashPassword(password);
-                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-                }
-            }
-        }
-        return isValid ? user : null;
+    function verifyCredentials() {
+        console.warn('verifyCredentials deshabilitado: use MarketWorld.api.auth.login');
+        return null;
     }
 
-    function registerUser(userData) {
-        var users = getUsers();
-        if (findUserByEmail(userData.email)) {
-            return { success: false, message: 'Este email ya esta registrado' };
-        }
-        var newUser = {
-            id: users.length + 1,
-            nombre: userData.nombre,
-            apellido: userData.apellido,
-            email: userData.email,
-            password: hashPassword(userData.password), // C-02: Hashear contraseña
-            rol: 'Usuario',
-            estado: 'Activo',
-            fechaCreacion: new Date().toISOString().split('T')[0]
-        };
-        users.push(newUser);
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-        return { success: true, message: 'Usuario registrado correctamente', user: newUser };
+    function registerUser() {
+        return { success: false, message: 'Registro local deshabilitado. Use la API de autenticación.' };
     }
 
     function setCurrentUser(user) {
@@ -438,6 +314,17 @@
     }
 
     function getCurrentUser() {
+        var authKey = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.AUTH_USER_KEY)
+            ? APP_CONFIG.AUTH_USER_KEY
+            : 'marketworld_auth_user';
+        var rawAuth = localStorage.getItem(authKey);
+        if (rawAuth) {
+            try {
+                return JSON.parse(rawAuth);
+            } catch (e) {
+                return null;
+            }
+        }
         var parsed = safeParseStorage(STORAGE_KEYS.CURRENT_USER, null);
         return parsed ? parsed : null;
     }
@@ -1047,138 +934,34 @@
         return { success: true, supplier: supplier };
     }
 
-    // ======= ÓRDENES DE COMPRA =======
+    // ======= ÓRDENES DE COMPRA / PAGOS (solo API) =======
+    function apiOnlyPurchasesWarning() {
+        console.warn('Compras y pagos se gestionan vía MarketWorld.api.purchases (backend Sanctum).');
+    }
+
     function getPurchases() {
-        return safeParseStorage(STORAGE_KEYS.PURCHASES, DEFAULT_PURCHASES);
+        apiOnlyPurchasesWarning();
+        return [];
     }
 
-    function findPurchaseById(id) {
-        var purchases = getPurchases();
-        return purchases.find(function(p) { return p.id === parseInt(id); }) || null;
-    }
-
-    function findPurchaseByNumber(numero) {
-        var purchases = getPurchases();
-        return purchases.find(function(p) { return p.numeroOrden === numero; }) || null;
-    }
-
+    function findPurchaseById() { apiOnlyPurchasesWarning(); return null; }
+    function findPurchaseByNumber() { apiOnlyPurchasesWarning(); return null; }
     function generatePurchaseNumber() {
-        var purchases = getPurchases();
         var year = new Date().getFullYear();
-        var maxNum = 0;
-        purchases.forEach(function(p) {
-            if (p.numeroOrden) {
-                var match = p.numeroOrden.match(/OC-\d{4}-(\d{5})/);
-                if (match) {
-                    var num = parseInt(match[1]);
-                    if (num > maxNum) maxNum = num;
-                }
-            }
-        });
-        var next = String(maxNum + 1).padStart(5, '0');
-        return 'OC-' + year + '-' + next;
+        return 'OC-' + year + '-' + String(Date.now()).slice(-5);
     }
+    function createPurchase() { apiOnlyPurchasesWarning(); return null; }
+    function updatePurchase() { apiOnlyPurchasesWarning(); return null; }
+    function deletePurchase() { apiOnlyPurchasesWarning(); return false; }
+    function getPurchasesBySupplier() { return []; }
+    function getPurchasesByStatus() { return []; }
+    function getPurchasesByDateRange() { return []; }
 
-    function createPurchase(purchaseData) {
-        var purchases = getPurchases();
-        var newPurchase = {
-            id: Date.now(),
-            numeroOrden: purchaseData.numeroOrden || generatePurchaseNumber(),
-            proveedorId: purchaseData.proveedorId || null,
-            proveedorNombre: purchaseData.proveedorNombre || '',
-            proveedorNit: purchaseData.proveedorNit || '',
-            items: purchaseData.items || [],
-            subtotal: purchaseData.subtotal || 0,
-            iva: purchaseData.iva || 0,
-            descuento: purchaseData.descuento || 0,
-            envio: purchaseData.envio || 0,
-            total: purchaseData.total || 0,
-            saldo: purchaseData.saldo !== undefined ? purchaseData.saldo : (purchaseData.total || 0),
-            terminosPago: purchaseData.terminosPago || 'Contado',
-            estado: purchaseData.estado || 'Pendiente',
-            observaciones: purchaseData.observaciones || '',
-            afectarInventario: purchaseData.afectarInventario !== undefined ? purchaseData.afectarInventario : true,
-            usuario: purchaseData.usuario || '',
-            fechaCreacion: purchaseData.fechaCreacion || new Date().toISOString(),
-            fechaVencimiento: purchaseData.fechaVencimiento || ''
-        };
-        purchases.push(newPurchase);
-        localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
-        return newPurchase;
-    }
-
-    function updatePurchase(id, updates) {
-        var purchases = getPurchases();
-        var index = purchases.findIndex(function(p) { return p.id === parseInt(id); });
-        if (index === -1) return null;
-        purchases[index] = Object.assign({}, purchases[index], updates);
-        localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
-        return purchases[index];
-    }
-
-    function deletePurchase(id) {
-        var purchases = getPurchases();
-        var filtered = purchases.filter(function(p) { return p.id !== parseInt(id); });
-        localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(filtered));
-        return true;
-    }
-
-    function getPurchasesBySupplier(supplierId) {
-        return getPurchases().filter(function(p) { return p.proveedorId === parseInt(supplierId); });
-    }
-
-    function getPurchasesByStatus(estado) {
-        if (!estado || estado === 'Todos') return getPurchases();
-        return getPurchases().filter(function(p) { return p.estado === estado; });
-    }
-
-    function getPurchasesByDateRange(startDate, endDate) {
-        var purchases = getPurchases();
-        return purchases.filter(function(p) {
-            var fecha = new Date(p.fechaCreacion);
-            return fecha >= new Date(startDate) && fecha <= new Date(endDate + 'T23:59:59');
-        });
-    }
-
-    // ======= PAGOS A PROVEEDORES =======
-    function getPayments() {
-        return safeParseStorage(STORAGE_KEYS.PAYMENTS, DEFAULT_PAYMENTS);
-    }
-
-    function findPaymentById(id) {
-        var payments = getPayments();
-        return payments.find(function(p) { return p.id === parseInt(id); }) || null;
-    }
-
-    function createPayment(paymentData) {
-        var payments = getPayments();
-        var newPayment = {
-            id: Date.now(),
-            referencia: paymentData.referencia || ('PAG-' + String(payments.length + 1).padStart(4, '0')),
-            proveedorId: paymentData.proveedorId || null,
-            proveedorNombre: paymentData.proveedorNombre || '',
-            compraId: paymentData.compraId || null,
-            numeroOrden: paymentData.numeroOrden || '',
-            monto: paymentData.monto || 0,
-            metodoPago: paymentData.metodoPago || 'Transferencia',
-            referenciaTransaccion: paymentData.referenciaTransaccion || '',
-            tipo: paymentData.tipo || 'Completo',
-            fechaPago: paymentData.fechaPago || new Date().toISOString(),
-            usuario: paymentData.usuario || '',
-            fechaCreacion: new Date().toISOString()
-        };
-        payments.push(newPayment);
-        localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments));
-        return newPayment;
-    }
-
-    function getPaymentsBySupplier(supplierId) {
-        return getPayments().filter(function(p) { return p.proveedorId === parseInt(supplierId); });
-    }
-
-    function getPaymentsByPurchase(compraId) {
-        return getPayments().filter(function(p) { return p.compraId === parseInt(compraId); });
-    }
+    function getPayments() { apiOnlyPurchasesWarning(); return []; }
+    function findPaymentById() { return null; }
+    function createPayment() { apiOnlyPurchasesWarning(); return null; }
+    function getPaymentsBySupplier() { return []; }
+    function getPaymentsByPurchase() { return []; }
 
     // ======= CONTABILIDAD =======
     

@@ -62,6 +62,19 @@
         return purchaseCatalogState.currentUser;
     }
 
+    function mapEstadoPagoFromApi(apiPurchase, saldo, paidTotal, total) {
+        var raw = apiPurchase.estado_pago || apiPurchase.estadoPago || '';
+        if (raw) {
+            var normalized = String(raw).toLowerCase();
+            if (normalized === 'pagada') return 'Pagada';
+            if (normalized === 'parcial') return 'Parcial';
+            if (normalized === 'pendiente') return 'Pendiente';
+        }
+        if (total > 0 && saldo <= 0) return 'Pagada';
+        if (paidTotal > 0) return 'Parcial';
+        return 'Pendiente';
+    }
+
     function mapApiPurchaseToCompras(apiPurchase) {
         const supplierId = apiPurchase.supplier_id || apiPurchase.proveedorId || (apiPurchase.supplier && apiPurchase.supplier.id) || null;
         const supplierRef = apiPurchase.supplier || null;
@@ -119,7 +132,7 @@
             afectarInventario: apiPurchase.afectarInventario !== undefined ? apiPurchase.afectarInventario : true,
             pagos: apiPayments,
             payments: apiPayments,
-            estadoPago: saldo <= 0 && total > 0 ? 'Pagada' : (apiPurchase.estado || 'Pendiente')
+            estadoPago: mapEstadoPagoFromApi(apiPurchase, saldo, paidTotal, total)
         };
     }
 

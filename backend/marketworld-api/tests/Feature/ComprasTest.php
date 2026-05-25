@@ -87,4 +87,152 @@ class ComprasTest extends TestCase
             ]
         ])->assertStatus(422);
     }
+
+    #[Test]
+    public function pago_parcial_actualiza_estado_pago_y_saldo_cxp(): void
+    {
+        $usuario = User::factory()->create();
+        $usuario->assignRole('Administrador');
+
+        $proveedor = Supplier::factory()->create(['estado' => 'Activo']);
+        $producto  = Product::factory()->create(['stock' => 5, 'precio_compra' => 500]);
+
+        $compra = $this->actingAs($usuario)->postJson('/api/v1/purchases', [
+            'numero_orden' => 'ORD-CXP-01',
+            'supplier_id'  => $proveedor->id,
+            'fecha'        => now()->format('Y-m-d'),
+            'estado'       => 'Pendiente',
+            'items' => [
+                [
+                    'product_id' => $producto->id,
+                    'cantidad' => 2,
+                    'precio_unitario' => 1000,
+                ],
+            ],
+        ]);
+
+        $compra->assertStatus(201);
+        $purchaseId = $compra->json('data.id');
+
+        $this->assertDatabaseHas('purchases', [
+            'id' => $purchaseId,
+            'estado_pago' => 'pendiente',
+        ]);
+
+        $pago = $this->actingAs($usuario)->postJson("/api/v1/purchases/{$purchaseId}/payments", [
+            'monto' => 1000,
+            'metodo_pago' => 'Transferencia',
+            'fecha_pago' => now()->format('Y-m-d'),
+        ]);
+
+        $pago->assertStatus(201);
+
+        $this->assertDatabaseHas('purchases', [
+            'id' => $purchaseId,
+            'estado_pago' => 'parcial',
+        ]);
+
+        $purchasePayload = $pago->json('data.purchase');
+        $this->assertEquals(1000.0, (float) $purchasePayload['saldo']);
+    }
+
+    #[Test]
+    public function pago_completo_marca_compra_como_pagada_y_cero_saldo(): void
+    {
+        $usuario = User::factory()->create();
+        $usuario->assignRole('Administrador');
+
+        $proveedor = Supplier::factory()->create(['estado' => 'Activo']);
+        $producto  = Product::factory()->create(['stock' => 5, 'precio_compra' => 500]);
+
+        $compra = $this->actingAs($usuario)->postJson('/api/v1/purchases', [
+            'numero_orden' => 'ORD-CXP-02',
+            'supplier_id'  => $proveedor->id,
+            'fecha'        => now()->format('Y-m-d'),
+            'estado'       => 'Pendiente',
+            'items' => [
+                [
+                    'product_id' => $producto->id,
+                    'cantidad' => 1,
+                    'precio_unitario' => 500,
+                ],
+            ],
+        ])->assertStatus(201);
+
+        $purchaseId = $compra->json('data.id');
+
+        $this->actingAs($usuario)->postJson("/api/v1/purchases/{$purchaseId}/payments", [
+            'monto' => 500,
+            'metodo_pago' => 'Efectivo',
+            'fecha_pago' => now()->format('Y-m-d'),
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('purchases', [
+            'id' => $purchaseId,
+            'estado_pago' => 'pagada',
+        ]);
+    }
+
+    #[Test]
+    public function pago_mayor_al_saldo_devuelve_422(): void
+    {
+        $usuario = User::factory()->create();
+        $usuario->assignRole('Administrador');
+
+        $proveedor = Supplier::factory()->create(['estado' => 'Activo']);
+        $producto  = Product::factory()->create();
+
+        $compra = $this->actingAs($usuario)->postJson('/api/v1/purchases', [
+            'numero_orden' => 'ORD-CXP-03',
+            'supplier_id'  => $proveedor->id,
+            'fecha'        => now()->format('Y-m-d'),
+            'estado'       => 'Pendiente',
+            'items' => [
+                ['product_id' => $producto->id, 'cantidad' => 1, 'precio_unitario' => 300],
+            ],
+        ])->assertStatus(201);
+
+        $purchaseId = $compra->json('data.id');
+
+        $this->actingAs($usuario)->postJson("/api/v1/purchases/{$purchaseId}/payments", [
+            'monto' => 9999,
+            'metodo_pago' => 'Efectivo',
+            'fecha_pago' => now()->format('Y-m-d'),
+        ])->assertStatus(422);
+    }
+
+    #[Test]
+    public function reporte_financiero_refleja_cuentas_por_pagar_tras_pago_parcial(): void
+    {
+        $usuario = User::factory()->create();
+        $usuario->assignRole('Administrador');
+
+        $proveedor = Supplier::factory()->create(['estado' => 'Activo']);
+        $producto  = Product::factory()->create();
+
+        $compra = $this->actingAs($usuario)->postJson('/api/v1/purchases', [
+            'numero_orden' => 'ORD-CXP-04',
+            'supplier_id'  => $proveedor->id,
+            'fecha'        => now()->toDateString(),
+            'estado'       => 'Pendiente',
+            'items' => [
+                ['product_id' => $producto->id, 'cantidad' => 1, 'precio_unitario' => 1000],
+            ],
+        ])->assertStatus(201);
+
+        $purchaseId = $compra->json('data.id');
+
+        $this->actingAs($usuario)->postJson("/api/v1/purchases/{$purchaseId}/payments", [
+            'monto' => 400,
+            'metodo_pago' => 'Transferencia',
+            'fecha_pago' => now()->toDateString(),
+        ])->assertStatus(201);
+
+        $desde = now()->startOfMonth()->toDateString();
+        $hasta = now()->endOfMonth()->toDateString();
+
+        $reporte = $this->actingAs($usuario)->getJson("/api/v1/reports/financiero?desde={$desde}&hasta={$hasta}");
+        $reporte->assertStatus(200);
+        $reporte->assertJsonPath('data.cuentas_por_pagar', 600);
+    }
 }

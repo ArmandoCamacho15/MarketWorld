@@ -23,6 +23,7 @@ class Purchase extends Model
         'fecha',
         'total',
         'estado',
+        'estado_pago',
         'observaciones',
         'user_id'
     ];
@@ -59,5 +60,26 @@ class Purchase extends Model
     public function getSaldoAttribute(): float
     {
         return round(max((float) $this->total - $this->paid_total, 0), 2);
+    }
+
+    /**
+     * Recalcula estado_pago según pagos acumulados (pendiente | parcial | pagada).
+     */
+    public function syncEstadoPago(): void
+    {
+        $paid = $this->paid_total;
+        $total = (float) $this->total;
+
+        if ($paid <= 0) {
+            $estadoPago = 'pendiente';
+        } elseif ($paid >= round($total - 0.01, 2)) {
+            $estadoPago = 'pagada';
+        } else {
+            $estadoPago = 'parcial';
+        }
+
+        if ($this->estado_pago !== $estadoPago) {
+            $this->forceFill(['estado_pago' => $estadoPago])->save();
+        }
     }
 }
