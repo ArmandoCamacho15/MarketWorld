@@ -1,0 +1,25 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "script"
+  },
+  "ignorePatterns": ["js/lib/**"],
+  "globals": {
+    "APP_CONFIG": "readonly",
+    "MarketWorld": "writable",
+    "bootstrap": "readonly",
+    "DOMPurify": "readonly",
+    "Chart": "readonly",
+    "showGlobalError": "readonly",
+    "debounce": "readonly"
+  },
+  "rules": {
+    "no-eval": "error",
+    "no-implied-eval": "error"
+  }
+}

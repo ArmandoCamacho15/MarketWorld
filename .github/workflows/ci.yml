@@ -1,10 +1,12 @@
+# Pipeline de integración continua para MarketWorld
+# Se ejecuta en cada push y en cada Pull Request
 name: CI MarketWorld
 
 on:
   push:
-    branches: [develop, main]
-  pull_request:
     branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
   tests:
@@ -12,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # Base de datos temporal para las pruebas
       mysql:
         image: mysql:8.0
         env:
@@ -45,26 +48,40 @@ jobs:
           php artisan key:generate
           php artisan migrate --env=testing --force
           php artisan db:seed --env=testing --force || true
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: marketworld_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
 
       - name: Escanear secretos en el código
         uses: gitleaks/gitleaks-action@v2
 
-      - name: Configurar Node.js para quality gates frontend
+      - name: Configurar Node.js 20 para quality gates frontend
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Validar frontend (document.write gate)
+      - name: Validar frontend (ESLint + Stylelint)
         run: |
+          npm install --no-save eslint@8 stylelint@15 stylelint-config-standard@34
+          npx eslint js/**/*.js
+          npx stylelint "css/**/*.css"
+          # Gate mínimo de seguridad: bloquear uso directo de document.write en producción
           if grep -R --line-number "document.write" js/; then
             echo "Fallo quality gate: se detectó document.write en frontend";
             exit 1;
           fi
 
-      - name: Ejecutar suite de pruebas PHP
+      - name: Ejecutar suite de pruebas
         working-directory: backend/marketworld-api
         run: ./vendor/bin/paratest -c phpunit.xml
         env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
           DB_DATABASE: marketworld_test
           DB_USERNAME: root
           DB_PASSWORD: root
