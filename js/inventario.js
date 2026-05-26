@@ -84,6 +84,40 @@
         };
     }
 
+    async function fetchAllPagedApiItems(getter, filters, batchSize, mapper) {
+        if (typeof getter !== 'function') {
+            return [];
+        }
+
+        var items = [];
+        var currentPage = 1;
+        var lastPage = 1;
+        var perPage = Math.max(parseInt(batchSize || 100, 10) || 100, 1);
+
+        while (currentPage <= lastPage) {
+            var response = await getter(Object.assign({}, filters || {}, {
+                page: currentPage,
+                per_page: perPage,
+            }));
+            var parsed = normalizeApiListResponse(response, {
+                per_page: perPage,
+                current_page: currentPage,
+            });
+            var pageItems = Array.isArray(parsed.items) ? parsed.items : [];
+
+            items = items.concat(mapper ? pageItems.map(mapper) : pageItems);
+            lastPage = Math.max(parsed.meta && parsed.meta.last_page ? parsed.meta.last_page : 1, lastPage);
+
+            if (pageItems.length === 0) {
+                break;
+            }
+
+            currentPage += 1;
+        }
+
+        return items;
+    }
+
     function setProductsState(products, source) {
         // Normalizar tipos: asegurar que stock y stockMinimo sean números, precio/costo números y activo boolean
         var normalized = [];
@@ -1470,11 +1504,7 @@
         
         var fetchProducts;
         if (hasProductApi()) {
-            fetchProducts = MarketWorld.api.products.getAll({ per_page: 1000 })
-                .then(function(response) {
-                    var parsed = normalizeApiListResponse(response);
-                    return (parsed.items || []).map(mapApiProductToFrontend);
-                });
+            fetchProducts = fetchAllPagedApiItems(MarketWorld.api.products.getAll, {}, 100, mapApiProductToFrontend);
         } else {
             fetchProducts = Promise.resolve(getProductsState());
         }
@@ -1930,10 +1960,8 @@
         // Cargar movimientos desde API o usar array vacío
         var loadMovements = function() {
             if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
-                return MarketWorld.api.movements.getAll({ per_page: 1000 })
-                    .then(function(response) {
-                        // Normalizar respuesta
-                        var items = response && response.data ? response.data : (Array.isArray(response) ? response : []);
+                return fetchAllPagedApiItems(MarketWorld.api.movements.getAll, {}, 100)
+                    .then(function(items) {
                         console.log('[API] Movimientos cargados para gráfico:', items.length);
                         return items;
                     })
@@ -2049,10 +2077,7 @@
 
         var fetchMovements = function() {
             if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
-                return MarketWorld.api.movements.getAll({ per_page: 1000 })
-                    .then(function(response) {
-                        return response && response.data ? response.data : (Array.isArray(response) ? response : []);
-                    })
+                return fetchAllPagedApiItems(MarketWorld.api.movements.getAll, {}, 100)
                     .catch(function(err) {
                         console.warn('[Reportes] No se pudieron cargar movimientos:', err);
                         return [];
@@ -2618,9 +2643,8 @@
     function updateMovementsSummary() {
         // MIGRADO (03-05-2026): Cargar movimientos desde API de forma asincrónica
         if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.movements) {
-            MarketWorld.api.movements.getAll({ per_page: 1000 })
-                .then(function(response) {
-                    var movements = response && response.data ? response.data : (Array.isArray(response) ? response : []);
+            fetchAllPagedApiItems(MarketWorld.api.movements.getAll, {}, 100)
+                .then(function(movements) {
                     
                     var entradas = movements.filter(function(m) { return normalizeMovementType(m.tipo).key === 'entrada'; });
                     var salidas = movements.filter(function(m) { return normalizeMovementType(m.tipo).key === 'salida'; });

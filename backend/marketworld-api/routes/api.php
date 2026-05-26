@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\RoleManagementController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\SessionManagementController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,18 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
+        });
+
+        // === Notificaciones ===
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+            Route::post('/', [NotificationController::class, 'store']);
+            Route::post('/mark-all-read', [NotificationController::class, 'markAllRead']);
+            Route::delete('/read', [NotificationController::class, 'destroyRead']);
+            Route::delete('/all', [NotificationController::class, 'destroyAll']);
+            Route::post('/{notification}/mark-read', [NotificationController::class, 'markRead']);
+            Route::delete('/{notification}', [NotificationController::class, 'destroy']);
         });
 
         // === Administracion ===

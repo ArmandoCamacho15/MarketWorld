@@ -37,7 +37,7 @@ cd backend/marketworld-api
 php artisan down
 
 # Restaurar (ajustar ruta del .sql)
-mysql -h 127.0.0.1 -u root -p marketworld_db < storage/backups/marketworld_marketworld_db_YYYYMMDD_HHMMSS.sql
+mysql -h 127.0.0.1 -u root -p marketworld_sena < storage/backups/marketworld_marketworld_sena_YYYYMMDD_HHMMSS.sql
 
 php artisan up
 bash scripts/smoke_test.sh

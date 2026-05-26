@@ -8,6 +8,8 @@
     var notificationDropdown = null;
     var notificationsList = null;
     var toastContainer = null;
+    var notificationCache = [];
+    var notificationMeta = { unread_count: 0 };
 
     // Init
 
@@ -65,6 +67,77 @@
         document.body.appendChild(toastContainer);
 
         return toastContainer;
+    }
+
+    function hasBackendAPI() {
+        return !!(MarketWorld && MarketWorld.api && MarketWorld.api.notifications);
+    }
+
+    function normalizeType(tipo) {
+        var normalized = String(tipo || 'info').toLowerCase();
+        if (normalized === 'notificación' || normalized === 'notificacion' || normalized === 'email' || normalized === 'sms' || normalized === 'push') {
+            return 'info';
+        }
+        if (normalized === 'success' || normalized === 'warning' || normalized === 'danger' || normalized === 'info') {
+            return normalized;
+        }
+        return 'info';
+    }
+
+    function normalizeNotification(notif) {
+        return {
+            id: notif.id,
+            tipo: normalizeType(notif.tipo),
+            titulo: notif.titulo || notif.title || 'Notificación',
+            mensaje: notif.mensaje || notif.message || '',
+            enlace: notif.enlace || notif.link || null,
+            leida: !!notif.leida,
+            fechaCreacion: notif.fechaCreacion || notif.created_at || new Date().toISOString(),
+        };
+    }
+
+    function setNotificationState(notifications, meta) {
+        notificationCache = (notifications || []).map(normalizeNotification);
+        notificationMeta = meta || {};
+    }
+
+    function getNotificationCount() {
+        return typeof notificationMeta.unread_count === 'number'
+            ? notificationMeta.unread_count
+            : notificationCache.filter(function(n) { return !n.leida; }).length;
+    }
+
+    function refreshNotifications(options) {
+        options = options || {};
+
+        if (!hasBackendAPI()) {
+            setNotificationState([], { unread_count: 0 });
+            if (!options.silent) {
+                renderNotifications(notificationCache);
+                updateBadge();
+            }
+            return Promise.resolve(notificationCache);
+        }
+
+        return MarketWorld.api.notifications.getAll()
+            .then(function(response) {
+                var payload = response || {};
+                var items = Array.isArray(payload.data) ? payload.data : [];
+                setNotificationState(items, payload.meta || {});
+                if (!options.silent) {
+                    renderNotifications(notificationCache);
+                    updateBadge();
+                }
+                return notificationCache;
+            })
+            .catch(function(error) {
+                console.warn('[Notifications] No se pudieron cargar notificaciones del backend:', error);
+                if (!options.silent) {
+                    renderNotifications(notificationCache);
+                    updateBadge();
+                }
+                return notificationCache;
+            });
     }
 
     function showToast(message, tipo) {
@@ -142,7 +215,7 @@
     }
 
     function openDropdown() {
-        updateNotifications();
+        refreshNotifications();
         notificationDropdown.style.display = 'block';
     }
 
@@ -153,8 +226,8 @@
     function updateBadge() {
         if (!notificationBadge) return;
         
-        var count = MarketWorld.data.getUnreadCount();
-        var notifications = MarketWorld.data.getNotifications();
+        var count = getNotificationCount();
+        var notifications = notificationCache.slice();
         var dangerCount = notifications.filter(function(n) { return !n.leida && n.tipo === 'danger'; }).length;
 
         if (count > 0) {
@@ -175,8 +248,10 @@
     }
 
     function updateNotifications() {
-        var notifications = MarketWorld.data.getNotifications();
-        
+        renderNotifications(notificationCache);
+    }
+
+    function renderNotifications(notifications) {
         if (!notificationsList) return;
 
         notificationsList.innerHTML = '';
@@ -245,8 +320,8 @@
                 <div class="notification-time">${timeAgo}</div>
             </div>
             <div class="notification-actions">
-                ${!notif.leida ? '<button class="btn btn-link btn-sm p-0" data-action="mark-read" data-id="' + notif.id + '" title="Marcar como leída"><i class="bi bi-check2"></i></button>' : ''}
-                <button class="btn btn-link btn-sm p-0" data-action="delete" data-id="' + notif.id + '" title="Eliminar"><i class="bi bi-trash"></i></button>
+                ${!notif.leida ? `<button class="btn btn-link btn-sm p-0" data-action="mark-read" data-id="${notif.id}" title="Marcar como leída"><i class="bi bi-check2"></i></button>` : ''}
+                <button class="btn btn-link btn-sm p-0" data-action="delete" data-id="${notif.id}" title="Eliminar"><i class="bi bi-trash"></i></button>
             </div>
         `;
 
@@ -335,27 +410,45 @@
     // ======= PUBLIC ACTIONS =======
 
     function markAsRead(notificationId) {
-        MarketWorld.data.markNotificationAsRead(notificationId);
-        updateNotifications();
-        updateBadge();
+        if (!hasBackendAPI()) return;
+
+        MarketWorld.api.notifications.markRead(notificationId)
+            .then(function() {
+                return refreshNotifications();
+            })
+            .catch(function(error) {
+                console.warn('[Notifications] No se pudo marcar como leída:', error);
+            });
     }
 
     function markAllAsRead() {
-        MarketWorld.data.markAllNotificationsAsRead();
-        updateNotifications();
-        updateBadge();
+        if (!hasBackendAPI()) return;
+
+        MarketWorld.api.notifications.markAllRead()
+            .then(function() {
+                return refreshNotifications();
+            })
+            .catch(function(error) {
+                console.warn('[Notifications] No se pudieron marcar todas como leídas:', error);
+            });
     }
 
     function deleteNotif(notificationId) {
         if (confirm('¿Eliminar esta notificación?')) {
-            MarketWorld.data.deleteNotification(notificationId);
-            updateNotifications();
-            updateBadge();
+            if (!hasBackendAPI()) return;
+
+            MarketWorld.api.notifications.delete(notificationId)
+                .then(function() {
+                    return refreshNotifications();
+                })
+                .catch(function(error) {
+                    console.warn('[Notifications] No se pudo eliminar la notificación:', error);
+                });
         }
     }
 
     function deleteAllRead() {
-        var notifications = MarketWorld.data.getNotifications();
+        var notifications = notificationCache.slice();
         var readCount = notifications.filter(function(n) { return n.leida; }).length;
         
         if (readCount === 0) {
@@ -364,14 +457,20 @@
         }
         
         if (confirm('¿Eliminar ' + readCount + ' notificación' + (readCount > 1 ? 'es' : '') + ' leída' + (readCount > 1 ? 's' : '') + '?')) {
-            MarketWorld.data.deleteReadNotifications();
-            updateNotifications();
-            updateBadge();
+            if (!hasBackendAPI()) return;
+
+            MarketWorld.api.notifications.deleteRead()
+                .then(function() {
+                    return refreshNotifications();
+                })
+                .catch(function(error) {
+                    console.warn('[Notifications] No se pudieron eliminar las notificaciones leídas:', error);
+                });
         }
     }
 
     function deleteAll() {
-        var notifications = MarketWorld.data.getNotifications();
+        var notifications = notificationCache.slice();
         
         if (notifications.length === 0) {
             alert('No hay notificaciones para eliminar');
@@ -379,25 +478,31 @@
         }
         
         if (confirm('¿Eliminar TODAS las ' + notifications.length + ' notificaciones?')) {
-            MarketWorld.data.deleteAllNotifications();
-            updateNotifications();
-            updateBadge();
+            if (!hasBackendAPI()) return;
+
+            MarketWorld.api.notifications.deleteAll()
+                .then(function() {
+                    return refreshNotifications();
+                })
+                .catch(function(error) {
+                    console.warn('[Notifications] No se pudieron eliminar todas las notificaciones:', error);
+                });
         }
     }
 
     function createNotification(tipo, titulo, mensaje, enlace) {
-        MarketWorld.data.createNotification({
-            tipo: tipo,
+        if (!hasBackendAPI()) {
+            return Promise.resolve(null);
+        }
+
+        return MarketWorld.api.notifications.create({
+            tipo: normalizeType(tipo),
             titulo: titulo,
             mensaje: mensaje,
             enlace: enlace
+        }).then(function() {
+            return refreshNotifications();
         });
-        updateBadge();
-        
-        // ======= ACTUALIZAR DROPDOWN ABIERTO =======
-        if (notificationDropdown && notificationDropdown.style.display === 'block') {
-            updateNotifications();
-        }
     }
 
     function show(message, tipo) {
@@ -409,30 +514,41 @@
     // ======= AUTO NOTIFICATIONS =======
 
     function checkLowStock() {
-        var lowStockProducts = MarketWorld.data.getLowStockProducts();
-        console.log('[Notifications] checkLowStock found:', lowStockProducts.length);
-        
-        if (lowStockProducts.length > 0) {
-            lowStockProducts.forEach(function(product) {
-                // ======= VERIFICAR NOTIFICACIÓN SIMILAR RECIENTE =======
-                var notifications = MarketWorld.data.getNotifications();
-                      var exists = notifications.some(function(n) {
-                      return n.titulo.includes(product.nombre) && 
-                          n.tipo === 'danger' &&
-                           // ======= ÚLTIMAS 24H =======
-                           (new Date() - new Date(n.fechaCreacion)) < (24 * 60 * 60 * 1000);
+        if (!hasBackendAPI() || !MarketWorld.api.products) {
+            return Promise.resolve([]);
+        }
+
+        return MarketWorld.api.products.stockBajo()
+            .then(function(response) {
+                var lowStockProducts = (response && response.data) || [];
+                console.log('[Notifications] checkLowStock found:', lowStockProducts.length);
+
+                var now = new Date();
+                var pending = [];
+
+                lowStockProducts.forEach(function(product) {
+                    var exists = notificationCache.some(function(n) {
+                        return n.titulo.indexOf(product.nombre) !== -1 &&
+                            n.tipo === 'danger' &&
+                            (now - new Date(n.fechaCreacion)) < (24 * 60 * 60 * 1000);
+                    });
+
+                    if (!exists) {
+                        pending.push(createNotification(
+                            'danger',
+                            'Stock Bajo: ' + product.nombre,
+                            'Quedan ' + product.stock + ' unidades. Stock mínimo: ' + product.stockMinimo,
+                            'inventario.html'
+                        ));
+                    }
                 });
 
-                if (!exists) {
-                    createNotification(
-                        'danger',
-                        'Stock Bajo: ' + product.nombre,
-                        'Quedan ' + product.stock + ' unidades. Stock mínimo: ' + product.stockMinimo,
-                        'inventario.html'
-                    );
-                }
+                return Promise.all(pending);
+            })
+            .catch(function(error) {
+                console.warn('[Notifications] No se pudo verificar stock bajo:', error);
+                return [];
             });
-        }
     }
 
     function notifyNewUser(userName) {
@@ -480,6 +596,7 @@
     global.MarketWorld.notifications = {
         init: init,
         show: show,
+        refresh: refreshNotifications,
         markAsRead: markAsRead,
         markAllAsRead: markAllAsRead,
         deleteNotif: deleteNotif,

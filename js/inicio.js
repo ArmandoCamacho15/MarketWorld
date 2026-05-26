@@ -2,9 +2,6 @@
 (function() {
     'use strict';
 
-    const PRODUCTS_STORAGE_KEY = 'marketworld_products';
-    const INVOICES_STORAGE_KEY = 'marketworld_invoices';
-
     // --- Estado del módulo ---
     const moduleState = {
         initialized: false,
@@ -14,20 +11,20 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         console.log('✅ Módulo Inicio cargado correctamente');
-        console.log('🔍 Verificando disponibilidad de MarketWorld.data...');
+        console.log('🔍 Verificando disponibilidad de MarketWorld...');
         
-        // --- Verificar MarketWorld.data ---
+        // --- Verificar MarketWorld ---
         if (typeof MarketWorld === 'undefined') {
             console.error('❌ MarketWorld no está definido. Verifica que data.js se cargue antes que inicio.js');
             return;
         }
         
-        if (!MarketWorld.data) {
-            console.error('❌ MarketWorld.data no está disponible');
+        if (!MarketWorld.api) {
+            console.error('❌ No hay fuente de datos disponible para inicio');
             return;
         }
         
-        console.log('✅ MarketWorld.data disponible');
+        console.log('✅ MarketWorld disponible');
         
         try {
             // --- Cargar información del usuario ---
@@ -68,108 +65,87 @@
         return [];
     }
 
+    function extractPaginationMeta(payload) {
+        var meta = (payload && payload.meta) || (payload && payload.data && payload.data.meta) || {};
+
+        return {
+            total: typeof meta.total === 'number' ? meta.total : 0,
+            per_page: typeof meta.per_page === 'number' ? meta.per_page : 0,
+            current_page: typeof meta.current_page === 'number' ? meta.current_page : 1,
+            last_page: typeof meta.last_page === 'number' ? meta.last_page : 1,
+        };
+    }
+
+    async function fetchAllApiItems(getter, filters, batchSize) {
+        if (typeof getter !== 'function') {
+            return [];
+        }
+
+        var requestedPerPage = Math.max(parseInt(batchSize || 100, 10) || 100, 1);
+        var currentPage = 1;
+        var lastPage = 1;
+        var items = [];
+
+        while (currentPage <= lastPage) {
+            var response = await getter(Object.assign({}, filters || {}, {
+                page: currentPage,
+                per_page: requestedPerPage
+            }));
+
+            var pageItems = extractDataArray(response);
+            var meta = extractPaginationMeta(response);
+
+            items = items.concat(pageItems);
+            lastPage = Math.max(meta.last_page || 1, lastPage);
+
+            if (pageItems.length === 0) {
+                break;
+            }
+
+            currentPage += 1;
+        }
+
+        return items;
+    }
+
+    async function getCurrentUserProfile() {
+        if (MarketWorld.api && MarketWorld.api.auth && typeof MarketWorld.api.auth.me === 'function') {
+            try {
+                var response = await MarketWorld.api.auth.me();
+                return response && response.data ? response.data : response;
+            } catch (error) {
+                console.warn('No se pudo obtener el usuario desde la API:', error && error.message ? error.message : error);
+            }
+        }
+
+        return null;
+    }
+
     async function sincronizarInicioConApi() {
         try {
-            // La autenticación ahora es por cookies HttpOnly, no necesitamos leer tokens del localStorage.
+            // Sin respaldos locales: solo sincronización con API para asegurar datos reales.
             const headers = {
                 'Accept': 'application/json'
             };
 
-            // Usar el adaptador centralizado si está disponible para mayor seguridad y consistencia
-            const productsPromise = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products) 
-                ? MarketWorld.api.products.getAll() 
+            const productsPromise = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.products)
+                ? MarketWorld.api.products.getAll()
                 : fetch('http://127.0.0.1:8000/api/v1/products', { headers, credentials: 'include' }).then(r => r.json());
 
             const invoicesPromise = (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.invoices)
                 ? MarketWorld.api.invoices.getAll()
                 : fetch('http://127.0.0.1:8000/api/v1/invoices', { headers, credentials: 'include' }).then(r => r.json());
 
-            const [productsBody, invoicesBody] = await Promise.all([productsPromise, invoicesPromise]);
-
-            if (productsBody && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                const apiProducts = extractDataArray(productsBody);
-                if (apiProducts.length > 0) {
-                    const localProducts = MarketWorld.data.getProducts();
-                    const byCode = new Map();
-
-                    localProducts.forEach(function(product) {
-                        if (product && product.codigo) {
-                            byCode.set(String(product.codigo).toLowerCase(), product);
-                        }
-                    });
-
-                    apiProducts.forEach(function(apiProduct) {
-                        const mapped = {
-                            id: apiProduct.id,
-                            codigo: apiProduct.sku || '',
-                            nombre: apiProduct.nombre || '',
-                            descripcion: apiProduct.descripcion || '',
-                            categoria: apiProduct.categoria || 'General',
-                            precio: parseFloat(apiProduct.precio_venta || 0),
-                            costo: parseFloat(apiProduct.precio_compra || 0),
-                            stock: parseInt(apiProduct.stock || 0, 10),
-                            stockMinimo: parseInt(apiProduct.stock_minimo || 0, 10),
-                            unidad: apiProduct.unidad || 'Unidad',
-                            proveedor: apiProduct.proveedor || '',
-                            fechaCreacion: (apiProduct.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
-                            activo: (apiProduct.estado || 'Activo') === 'Activo'
-                        };
-
-                        if (mapped.codigo) {
-                            byCode.set(String(mapped.codigo).toLowerCase(), mapped);
-                        }
-                    });
-
-                    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(Array.from(byCode.values())));
-                }
-            }
-
-            if (invoicesBody) {
-                const apiInvoices = extractDataArray(invoicesBody);
-                if (apiInvoices.length > 0) {
-                    const byNumber = new Map();
-                    const localInvoices = (typeof MarketWorld !== 'undefined' && MarketWorld.data)
-                        ? MarketWorld.data.getInvoices()
-                        : [];
-
-                    localInvoices.forEach(function(inv) {
-                        const key = String(inv.numero_factura || inv.numero || inv.id || '').toLowerCase();
-                        if (key) byNumber.set(key, inv);
-                    });
-
-                    apiInvoices.forEach(function(apiInv) {
-                        const mapped = {
-                            id: apiInv.id,
-                            numero_factura: apiInv.numero_factura || apiInv.numero || '',
-                            fechaCreacion: apiInv.created_at || apiInv.fecha || new Date().toISOString(),
-                            fecha: apiInv.fecha || apiInv.created_at || new Date().toISOString(),
-                            total: parseFloat(apiInv.total || 0),
-                            estado: apiInv.estado || 'Pagada',
-                            customer_id: apiInv.customer_id || null
-                        };
-
-                        const key = String(mapped.numero_factura || mapped.id || '').toLowerCase();
-                        if (key) {
-                            byNumber.set(key, mapped);
-                        }
-                    });
-
-                    const merged = [];
-                    byNumber.forEach(function(value) {
-                        merged.push(value);
-                    });
-                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(merged));
-                }
-            }
+            await Promise.all([productsPromise, invoicesPromise]);
         } catch (error) {
             console.warn('No se pudieron sincronizar datos de inicio desde API:', error.message || error);
         }
     }
 
     // ======= CARGAR INFORMACIÓN DEL USUARIO (SANITIZACIÓN) =======
-    function loadUserInfo() {
+    async function loadUserInfo() {
         try {
-            const user = MarketWorld.data.getCurrentUser();
+            const user = await getCurrentUserProfile();
             if (!user) {
                 console.warn('⚠️ No se encontró información del usuario');
                 return;
@@ -287,38 +263,6 @@
         const queryLower = query.toLowerCase();
         
         try {
-            // Buscar en productos
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                const products = MarketWorld.data.getProducts();
-                products.filter(p => 
-                    p.nombre.toLowerCase().includes(queryLower) || 
-                    p.codigo.toLowerCase().includes(queryLower)
-                ).slice(0, 5).forEach(p => {
-                    results.push({
-                        type: 'producto',
-                        icon: 'bi-box-seam',
-                        name: p.nombre,
-                        subtitle: `Código: ${p.codigo}`,
-                        url: `inventario.html?id=${p.id}`
-                    });
-                });
-                
-                // Buscar en clientes
-                const customers = MarketWorld.data.getCustomers();
-                customers.filter(c => 
-                    c.nombre.toLowerCase().includes(queryLower) ||
-                    (c.documento && c.documento.includes(query))
-                ).slice(0, 3).forEach(c => {
-                    results.push({
-                        type: 'cliente',
-                        icon: 'bi-person',
-                        name: c.nombre,
-                        subtitle: `Doc: ${c.documento}`,
-                        url: `crm.html?id=${c.id}`
-                    });
-                });
-            }
-            
             // Buscar en módulos del sistema
             const modules = [
                 { name: 'Dashboard', keywords: ['panel', 'inicio', 'dashboard', 'metricas'], url: 'dashboard.html', icon: 'bi-speedometer2' },
@@ -695,34 +639,7 @@
 
     function loadAndShowNotifications() {
         try {
-            let notifications = [];
-            
-            // Intentar obtener notificaciones reales del sistema
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-                try {
-                    const systemNotifications = MarketWorld.data.getNotifications();
-                    if (systemNotifications && systemNotifications.length > 0) {
-                        notifications = systemNotifications.slice(0, 10).map(n => ({
-                            type: n.tipo || 'info',
-                            message: n.titulo || n.mensaje,
-                            time: formatNotificationTime(n.fechaCreacion),
-                            id: n.id,
-                            read: n.leida
-                        }));
-                    }
-                } catch (e) {
-                    console.warn('No se pudieron obtener notificaciones del sistema:', e);
-                }
-            }
-            
-            // Si no hay notificaciones, mostrar algunas de demostración
-            if (notifications.length === 0) {
-                notifications = [
-                    { type: 'danger', message: '5 productos con stock bajo', time: 'Hace 10 min', read: false },
-                    { type: 'info', message: '3 facturas por vencer esta semana', time: 'Hace 1 hora', read: false },
-                    { type: 'success', message: 'Nueva venta registrada: $1,250', time: 'Hace 2 horas', read: true }
-                ];
-            }
+            const notifications = [];
             
             showNotificationPanel(notifications);
         } catch (error) {
@@ -758,12 +675,8 @@
         if (!badge) return;
         
         try {
-            let count = 0;
-            
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.getUnreadCount === 'function') {
-                count = MarketWorld.data.getUnreadCount();
-            }
-            
+            const count = 0;
+
             if (count > 0) {
                 badge.textContent = count > 99 ? '99+' : count;
                 badge.style.display = 'inline-block';
@@ -995,16 +908,6 @@
     function handleNotificationClick(notification) {
         console.log('📌 Notificación clickeada:', notification);
         
-        // Marcar como leída si tiene ID
-        if (notification.id && typeof MarketWorld !== 'undefined' && MarketWorld.data) {
-            try {
-                MarketWorld.data.markNotificationAsRead(notification.id);
-                updateNotificationBadge();
-            } catch (e) {
-                console.warn('No se pudo marcar como leída:', e);
-            }
-        }
-        
         // Si tiene enlace, navegar
         if (notification.enlace) {
             window.location.href = normalizeNavigationUrl(notification.enlace);
@@ -1015,11 +918,7 @@
 
     function handleMarkAllAsRead() {
         try {
-            if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.markAllNotificationsAsRead === 'function') {
-                MarketWorld.data.markAllNotificationsAsRead();
-                updateNotificationBadge();
-                showSuccessNotification('Todas las notificaciones marcadas como leídas');
-            }
+            showSuccessNotification('Notificaciones gestionadas desde el backend');
             closeNotificationPanel();
         } catch (error) {
             console.error('❌ Error al marcar todas como leídas:', error);
@@ -1030,11 +929,7 @@
     function handleClearAllNotifications() {
         if (confirm('¿Estás seguro de que deseas eliminar todas las notificaciones?')) {
             try {
-                if (typeof MarketWorld !== 'undefined' && MarketWorld.data && typeof MarketWorld.data.deleteAllNotifications === 'function') {
-                    MarketWorld.data.deleteAllNotifications();
-                    updateNotificationBadge();
-                    showSuccessNotification('Todas las notificaciones eliminadas');
-                }
+                showSuccessNotification('Notificaciones gestionadas desde el backend');
                 closeNotificationPanel();
             } catch (error) {
                 console.error('❌ Error al eliminar notificaciones:', error);
@@ -1050,7 +945,7 @@
     /**
      * Cargar y renderizar alertas desde datos reales del sistema
      */
-    function loadRealAlerts() {
+    async function loadRealAlerts() {
         console.log('🚨 Iniciando carga de alertas...');
         
         try {
@@ -1064,17 +959,19 @@
             alertsContainer.innerHTML = '';
             
             const alerts = [];
-            
-            // Verificar que MarketWorld.data esté disponible
-            if (typeof MarketWorld === 'undefined' || !MarketWorld.data) {
-                console.warn('⚠️ MarketWorld.data no disponible para alertas');
-                showNoAlertsMessage(alertsContainer);
-                return;
-            }
+
+            const productsGetter = MarketWorld.api && MarketWorld.api.products && typeof MarketWorld.api.products.getAll === 'function'
+                ? MarketWorld.api.products.getAll
+                : null;
+            const invoicesGetter = MarketWorld.api && MarketWorld.api.invoices && typeof MarketWorld.api.invoices.getAll === 'function'
+                ? MarketWorld.api.invoices.getAll
+                : null;
             
             // 1. Alerta de stock bajo
             try {
-                const productos = MarketWorld.data.getProducts();
+                const productos = productsGetter
+                    ? await fetchAllApiItems(productsGetter, { per_page: 100 }, 100)
+                    : [];
                 console.log(`📦 Total productos: ${productos.length}`);
                 const lowStockProducts = productos.filter(p => p.stock < 10);
                 console.log(`⚠️ Productos con stock bajo (<10): ${lowStockProducts.length}`);
@@ -1094,7 +991,9 @@
             
             // 2. Alerta de facturas pendientes/vencidas
             try {
-                const facturas = MarketWorld.data.getInvoices();
+                const facturas = invoicesGetter
+                    ? await fetchAllApiItems(invoicesGetter, { per_page: 100 }, 100)
+                    : [];
                 console.log(`📄 Total facturas: ${facturas.length}`);
                 const today = new Date();
                 const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -1200,22 +1099,16 @@
             
             const tasks = [];
             
-            // Verificar que MarketWorld.data esté disponible
-            if (typeof MarketWorld === 'undefined' || !MarketWorld.data) {
-                console.warn('⚠️ MarketWorld.data no disponible para tareas');
-                showNoTasksMessage(tasksContainer);
-                return;
-            }
-            
             // 1. Órdenes de compra pendientes (API)
             if (MarketWorld.api && MarketWorld.api.purchases && typeof MarketWorld.api.purchases.getAll === 'function') {
                 try {
-                    const comprasResp = await MarketWorld.api.purchases.getAll({ per_page: 50 });
-                    const compras = Array.isArray(comprasResp?.data) ? comprasResp.data : (Array.isArray(comprasResp) ? comprasResp : []);
+                    const compras = await fetchAllApiItems(MarketWorld.api.purchases.getAll, { per_page: 50 }, 50);
                     const pendingOrders = compras.filter(function(c) {
                         const estadoRecepcion = c.estado || '';
                         const estadoPago = (c.estado_pago || '').toLowerCase();
-                        return estadoRecepcion === 'Pendiente' || estadoPago === 'pendiente' || estadoPago === 'parcial';
+                        const saldoPendiente = parseFloat(c.saldo ?? 0) || 0;
+
+                        return estadoRecepcion === 'Pendiente' && saldoPendiente > 0;
                     });
                     pendingOrders.slice(0, 3).forEach(function(orden) {
                         const dueTime = orden.fecha_vencimiento || orden.fechaVencimiento ? formatDueTime(orden.fecha_vencimiento || orden.fechaVencimiento) : 'Sin fecha';
@@ -1234,7 +1127,9 @@
             
             // 2. Productos con stock crítico que requieren pedido urgente
             try {
-                const productos = MarketWorld.data.getProducts();
+                const productos = MarketWorld.api && MarketWorld.api.products && typeof MarketWorld.api.products.getAll === 'function'
+                    ? await fetchAllApiItems(MarketWorld.api.products.getAll, { per_page: 100 }, 100)
+                    : [];
                 console.log(`📦 Total productos para tareas: ${productos.length}`);
                 const criticalProducts = productos.filter(p => p.stock < 5 && p.stock > 0);
                     
@@ -1253,7 +1148,9 @@
             
             // 3. Facturas próximas a vencer (en 2-3 días)
             try {
-                const facturas = MarketWorld.data.getInvoices();
+                const facturas = MarketWorld.api && MarketWorld.api.invoices && typeof MarketWorld.api.invoices.getAll === 'function'
+                    ? await fetchAllApiItems(MarketWorld.api.invoices.getAll, { per_page: 100 }, 100)
+                    : [];
                 const today = new Date();
                 const twoDaysFromNow = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000);
                 
@@ -1681,20 +1578,11 @@
         console.log('📊 Iniciando carga de estadísticas (priorizando API)...');
         
         try {            
-            // Verificar que MarketWorld.data esté disponible
             if (typeof MarketWorld === 'undefined') {
                 console.error('❌ MarketWorld no está definido');
                 loadFallbackStats();
                 return;
             }
-            
-            if (!MarketWorld.data) {
-                console.error('❌ MarketWorld.data no está disponible');
-                loadFallbackStats();
-                return;
-            }
-            
-            console.log('✅ MarketWorld.data disponible');
             
             // Intentar obtener stats desde la API (si está disponible)
             let usedApi = false;
@@ -1743,39 +1631,9 @@
                 }
             }
 
-            // Si no se usó la API, caer al cálculo local existente
             if (!usedApi) {
-                // 1. Calcular Crecimiento Mensual
-                try {
-                    calculateMonthlyGrowth();
-                } catch (e) {
-                    console.error('Error en calculateMonthlyGrowth:', e);
-                    document.getElementById('statGrowth').textContent = '0%';
-                }
-                
-                // 2. Contar Clientes Activos
-                try {
-                    calculateActiveClients();
-                } catch (e) {
-                    console.error('Error en calculateActiveClients:', e);
-                    document.getElementById('statClients').textContent = '0';
-                }
-                
-                // 3. Contar Productos en Stock
-                try {
-                    calculateProductsInStock();
-                } catch (e) {
-                    console.error('Error en calculateProductsInStock:', e);
-                    document.getElementById('statProducts').textContent = '0';
-                }
-                
-                // 4. Calcular Ventas del Mes
-                try {
-                    calculateMonthlySales();
-                } catch (e) {
-                    console.error('Error en calculateMonthlySales:', e);
-                    document.getElementById('statSales').textContent = '$0';
-                }
+                loadFallbackStats();
+                return;
             }
             
             // Animaciones de entrada
@@ -1789,154 +1647,7 @@
         }
     }
     
-    /**
-     * Calcular crecimiento mensual comparando mes actual vs anterior
-     */
-    function calculateMonthlyGrowth() {
-        try {
-            const facturas = MarketWorld.data.getInvoices();
-            console.log(`📈 Calculando crecimiento - ${facturas.length} facturas encontradas`);
-            
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            
-            // Ventas del mes actual
-            const currentMonthSales = facturas
-                .filter(f => {
-                    if (f.estado === 'Anulada' || f.estado === 'Cancelada' || !f.fechaCreacion) return false;
-                    const date = new Date(f.fechaCreacion);
-                    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-                })
-                .reduce((sum, f) => sum + (parseFloat(f.total) || 0), 0);
-            
-            // Ventas del mes anterior
-            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            
-            const lastMonthSales = facturas
-                .filter(f => {
-                    if (f.estado === 'Anulada' || f.estado === 'Cancelada' || !f.fechaCreacion) return false;
-                    const date = new Date(f.fechaCreacion);
-                    return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
-                })
-                .reduce((sum, f) => sum + (parseFloat(f.total) || 0), 0);
-            
-            // Calcular porcentaje de crecimiento
-            let growth = 0;
-            if (lastMonthSales > 0) {
-                growth = ((currentMonthSales - lastMonthSales) / lastMonthSales) * 100;
-            } else if (currentMonthSales > 0) {
-                growth = 100; // Si no había ventas el mes pasado pero hay este mes
-            }
-            
-            const growthElement = document.getElementById('statGrowth');
-            if (growthElement) {
-                const sign = growth >= 0 ? '+' : '';
-                const color = growth >= 0 ? 'text-success' : 'text-danger';
-                const icon = growth >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
-                growthElement.innerHTML = `
-                    <span class="${color}">
-                        ${sign}${growth.toFixed(1)}%
-                        <i class="bi ${icon} ms-1"></i>
-                    </span>
-                `;
-            }
-            
-        } catch (error) {
-            console.error('Error al calcular crecimiento mensual:', error);
-            const growthElement = document.getElementById('statGrowth');
-            if (growthElement) growthElement.textContent = '0%';
-        }
-    }
-    
-    /**
-     * Contar clientes activos
-     */
-    function calculateActiveClients() {
-        try {
-            const clientes = MarketWorld.data.getCustomers();
-            const activeClients = clientes.filter(c => c.activo !== false).length;
-            
-            console.log(`👥 ${activeClients} clientes activos de ${clientes.length} totales`);
-            
-            const clientsElement = document.getElementById('statClients');
-            if (clientsElement) {
-                clientsElement.textContent = formatNumber(activeClients);
-            }
-            
-        } catch (error) {
-            console.error('Error al contar clientes activos:', error);
-            const clientsElement = document.getElementById('statClients');
-            if (clientsElement) clientsElement.textContent = '0';
-        }
-    }
-    
-    /**
-     * Contar productos en stock
-     */
-    function calculateProductsInStock() {
-        try {
-            const productos = MarketWorld.data.getProducts();
-            const totalProducts = productos.length;
-            const totalStock = productos.reduce((sum, p) => sum + (parseInt(p.stock) || 0), 0);
-            
-            console.log(`📦 ${totalProducts} productos diferentes con ${totalStock} unidades totales`);
-            
-            const productsElement = document.getElementById('statProducts');
-            if (productsElement) {
-                productsElement.innerHTML = `
-                    <div style="line-height: 1.2;">
-                        <div style="font-size: 2rem; font-weight: 700;">${formatNumber(totalProducts)}</div>
-                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">${formatNumber(totalStock)} unidades</div>
-                    </div>
-                `;
-            }
-            
-        } catch (error) {
-            console.error('Error al contar productos en stock:', error);
-            const productsElement = document.getElementById('statProducts');
-            if (productsElement) productsElement.textContent = '0';
-        }
-    }
-    
-    /**
-     * Calcular ventas del mes
-     */
-    function calculateMonthlySales() {
-        try {
-            const facturas = MarketWorld.data.getInvoices();
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            
-            const monthlySales = facturas
-                .filter(f => {
-                    if (f.estado === 'Anulada' || f.estado === 'Cancelada' || !f.fechaCreacion) return false;
-                    const date = new Date(f.fechaCreacion);
-                    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-                })
-                .reduce((sum, f) => sum + (parseFloat(f.total) || 0), 0);
-            const filtered = facturas.filter(f => f && f.fechaCreacion && !(f.estado==='Anulada' || f.estado==='Cancelada'))
-                .filter(f => {
-                    const d = new Date(f.fechaCreacion);
-                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-                });
-
-            console.log('🔍 Detalle facturas consideradas (muestra 5):', filtered.slice(0,5).map(f=>({id:f.id, fechaCreacion:f.fechaCreacion, total:f.total, estado:f.estado})));
-            console.log(`💰 Ventas del mes (local calculado): ${formatCurrency(monthlySales)}`);
-            
-            const salesElement = document.getElementById('statSales');
-            if (salesElement) {
-                salesElement.textContent = formatCurrency(monthlySales);
-            }
-            
-        } catch (error) {
-            console.error('Error al calcular ventas del mes:', error);
-            const salesElement = document.getElementById('statSales');
-            if (salesElement) salesElement.textContent = '$0';
-        }
-    }
+    // Los cálculos locales de estadísticas se retiraron: el home ahora depende de la API.
     
     /**
      * Datos de respaldo si el sistema no está disponible

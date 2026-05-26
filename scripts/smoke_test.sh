@@ -14,7 +14,7 @@ echo "[1/3] Migraciones pendientes"
 php artisan migrate --force --no-interaction
 
 echo "[2/3] Suite PHPUnit"
-php artisan test --no-interaction
+php artisan test
 
 echo "[3/3] Health API"
 curl -fsS "${BASE_URL}/api/health" >/dev/null || {

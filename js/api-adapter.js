@@ -696,6 +696,43 @@
         }
     };
 
+    var NotificationAPI = {
+        getAll: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/notifications' + (query ? '?' + query : ''));
+        },
+        getUnreadCount: function () {
+            return apiFetch('/notifications/unread-count');
+        },
+        create: function (data) {
+            return apiFetch('/notifications', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+        },
+        markRead: function (id) {
+            return apiFetch('/notifications/' + id + '/mark-read', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+        },
+        markAllRead: function () {
+            return apiFetch('/notifications/mark-all-read', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+        },
+        delete: function (id) {
+            return apiFetch('/notifications/' + id, { method: 'DELETE' });
+        },
+        deleteRead: function () {
+            return apiFetch('/notifications/read', { method: 'DELETE' });
+        },
+        deleteAll: function () {
+            return apiFetch('/notifications/all', { method: 'DELETE' });
+        },
+    };
+
     var AdminUsersAPI = {
         getAll: function (params) {
             var query = buildQueryParams(params);
@@ -793,6 +830,7 @@
         dashboard: DashboardAPI,
         reports: ReportAPI,
         crm:       CrmAPI,
+        notifications: NotificationAPI,
         adminUsers: AdminUsersAPI,
         roles: RolesAPI,
         auditLogs: AuditLogsAPI,
