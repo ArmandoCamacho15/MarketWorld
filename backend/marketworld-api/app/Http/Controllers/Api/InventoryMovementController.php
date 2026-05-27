@@ -58,7 +58,7 @@ class InventoryMovementController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'tipo'       => 'required|string|in:Entrada,Salida,Ajuste,entrada,salida,ajuste',
+            'tipo'       => 'required|string|in:Entrada,Salida,Ajuste',
             'cantidad'   => 'required|integer|min:1',
             'motivo'     => 'nullable|string|max:255',
         ]);
@@ -76,7 +76,7 @@ class InventoryMovementController extends Controller
                     ], 404);
                 }
 
-                $tipo = ucfirst(strtolower($validated['tipo']));
+                $tipo = $validated['tipo'];
                 $cantidad = (int) $validated['cantidad'];
                 $stockAnterior = (int) $product->stock;
 

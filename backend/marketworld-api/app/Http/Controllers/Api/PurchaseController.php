@@ -41,12 +41,48 @@ class PurchaseController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where('numero_orden', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('numero_orden', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', function ($sq) use ($search) {
+                      $sq->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('fecha', '>=', $request->fecha_inicio);
+        }
+
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('fecha', '<=', $request->fecha_fin);
         }
 
         $purchases = $query
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
+
+        // Auto-corregir estado_pago stale: si saldo=0 pero estado_pago es 'pendiente' o 'parcial',
+        // o si saldo>0 pero estado_pago es 'pagada', actualizamos en BD.
+        foreach ($purchases->items() as $purchase) {
+            $saldo     = $purchase->saldo;        // accessor calculado con payments cargados
+            $paidTotal = $purchase->paid_total;
+            $total     = (float) $purchase->total;
+            $expected  = null;
+
+            if ($total <= 0) continue;
+
+            if ($paidTotal <= 0) {
+                $expected = 'pendiente';
+            } elseif ($saldo <= 0) {
+                $expected = 'pagada';
+            } else {
+                $expected = 'parcial';
+            }
+
+            if ($expected !== null && $purchase->estado_pago !== $expected) {
+                $purchase->forceFill(['estado_pago' => $expected])->save();
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -62,6 +98,7 @@ class PurchaseController extends Controller
             'errors'  => null,
         ]);
     }
+
 
     /**
      * Mostrar una compra específica.
@@ -180,8 +217,8 @@ class PurchaseController extends Controller
                     if ($purchase->estado === 'Recibida') {
                         $product = Product::lockForUpdate()->find($item['product_id']);
                         if ($product) {
-                            // Actualizar stock y costo usando Costo Promedio Ponderado (CPP) y registrar en Kardex
-                            $product->aplicarCostoPromedioPonderado($item['cantidad'], $item['precio_unitario'], $authUser->id, "Cálculo PMP por Orden #{$purchase->numero_orden}");
+                            // Actualizar stock y costo usando InventoryService
+                            app(\App\Services\InventoryService::class)->entradaPorCompra($product, $item['cantidad'], $item['precio_unitario'], $authUser->id, 'Purchase', $purchase->id);
                         }
                     }
                 }
@@ -237,7 +274,7 @@ class PurchaseController extends Controller
                             throw new \RuntimeException('Producto no encontrado para la compra.');
                         }
 
-                        $product->aplicarCostoPromedioPonderado($item->cantidad, $item->precio_unitario, $request->user()?->id, "Cálculo PMP por recepción de Orden #{$purchase->numero_orden}");
+                        app(\App\Services\InventoryService::class)->entradaPorCompra($product, $item->cantidad, $item->precio_unitario, $request->user()?->id, 'Purchase', $purchase->id);
                     }
                 }
 

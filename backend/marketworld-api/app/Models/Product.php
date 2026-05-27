@@ -101,7 +101,7 @@ class Product extends Model
             \App\Models\InventoryMovement::create([
                 'product_id'     => $this->id,
                 'user_id'        => $userId,
-                'tipo'           => 'salida',
+                'tipo'           => 'Salida',
                 'cantidad'       => $cantidad,
                 'stock_anterior' => $stockAntes,
                 'stock_nuevo'    => $stockNuevo,
@@ -135,7 +135,7 @@ class Product extends Model
             \App\Models\InventoryMovement::create([
                 'product_id'     => $this->id,
                 'user_id'        => $userId,
-                'tipo'           => 'entrada',
+                'tipo'           => 'Entrada',
                 'cantidad'       => $cantidad,
                 'stock_anterior' => $stockAntes,
                 'stock_nuevo'    => $stockNuevo,

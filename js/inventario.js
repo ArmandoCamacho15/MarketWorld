@@ -1768,45 +1768,48 @@
         
         MarketWorld.api.products.getCostAdjustments()
             .then(function(response) {
-                if (response && response.success && response.data) {
-                    var adjustments = response.data;
-                    container.innerHTML = '';
-                    
-                    if (adjustments.length === 0) {
-                        container.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay ajustes de costo registrados</td></tr>';
-                        return;
-                    }
-                    
-                    adjustments.forEach(function(adj) {
-                        var row = document.createElement('tr');
-                        
-                        var oldCost = parseFloat(adj.old_cost || 0);
-                        var newCost = parseFloat(adj.new_cost || 0);
-                        var diff = newCost - oldCost;
-                        var diffClass = diff > 0 ? 'text-danger' : 'text-success';
-                        var diffIcon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '');
-                        
-                        var userName = adj.user ? (adj.user.nombre + ' ' + (adj.user.apellido || '')) : 'Sistema';
-                        var prodName = adj.product ? adj.product.nombre : ('ID: ' + adj.product_id);
+                var adjustments = (response && Array.isArray(response.data))
+                    ? response.data
+                    : [];
 
-                        row.innerHTML = `
-                            <td>${formatDate(adj.created_at)}</td>
-                            <td>${prodName}</td>
-                            <td>$${oldCost.toFixed(2)}</td>
-                            <td><strong>$${newCost.toFixed(2)}</strong></td>
-                            <td class="${diffClass}">${diffIcon} $${Math.abs(diff).toFixed(2)}</td>
-                            <td>${userName}</td>
-                            <td>${adj.reason || '-'}</td>
-                        `;
-                        
-                        container.appendChild(row);
-                    });
+                container.innerHTML = '';
+                
+                if (adjustments.length === 0) {
+                    container.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay ajustes de costo registrados</td></tr>';
+                    return;
                 }
+                
+                adjustments.forEach(function(adj) {
+                    var row = document.createElement('tr');
+                    
+                    var oldCost = parseFloat(adj.old_cost || 0);
+                    var newCost = parseFloat(adj.new_cost || 0);
+                    var diff = newCost - oldCost;
+                    var diffClass = diff > 0 ? 'text-danger' : 'text-success';
+                    var diffIcon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '=');
+                    
+                    var userName = adj.user ? ((adj.user.nombre || '') + ' ' + (adj.user.apellido || '')).trim() : 'Sistema';
+                    var prodName = adj.product ? adj.product.nombre : ('Producto #' + adj.product_id);
+
+                    row.innerHTML = `
+                        <td>${formatDate(adj.created_at)}</td>
+                        <td>${prodName}</td>
+                        <td>$${oldCost.toFixed(2)}</td>
+                        <td><strong>$${newCost.toFixed(2)}</strong></td>
+                        <td class="${diffClass}">${diffIcon} $${Math.abs(diff).toFixed(2)}</td>
+                        <td>${userName}</td>
+                        <td>${adj.reason || '-'}</td>
+                    `;
+                    
+                    container.appendChild(row);
+                });
             })
             .catch(function(err) {
-                container.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar ajustes</td></tr>';
+                console.error('[Ajustes] Error al cargar ajustes de costo:', err);
+                container.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar ajustes' + (err && err.message ? ': ' + err.message : '') + '</td></tr>';
             });
     }
+
 
     // --- Logout ---
     function logout() {

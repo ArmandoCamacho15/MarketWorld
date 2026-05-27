@@ -1965,7 +1965,12 @@ async function verDetalleFactura(facturaId) {
     const fecha = new Date(fechaRaw).toLocaleDateString('es-CO');
     const estado = factura.estado || 'Pagada';
     const metodoPago = factura.metodo_pago || factura.metodoPago || '-';
-    const vendedor = factura.seller?.name || factura.vendedor || 'Sistema';
+    const sellerSource = factura.vendedor || factura.seller || factura.user || 'Sistema';
+    const vendedor = typeof sellerSource === 'string'
+        ? sellerSource
+        : (sellerSource && typeof sellerSource === 'object'
+            ? (sellerSource.name || sellerSource.username || sellerSource.nombre || sellerSource.razon_social || sellerSource.email || 'Sistema')
+            : String(sellerSource || 'Sistema'));
     const clienteNombre = factura.customer?.nombre || factura.clienteNombre || (factura.customer_id ? `Cliente #${factura.customer_id}` : 'Venta General');
     const clienteDocumento = factura.customer?.documento || factura.clienteDocumento || '-';
     const subtotal = parseFloat(factura.subtotal || 0) || 0;

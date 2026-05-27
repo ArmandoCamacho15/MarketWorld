@@ -310,7 +310,16 @@
         var customerDocument = inv.cliente_documento || inv.customer_document || inv.customer && inv.customer.documento || '';
         var date = inv.fechaCreacion || inv.fecha || inv.created_at || inv.date || null;
         var status = inv.estado || inv.status || 'Pagada';
-        var seller = inv.vendedor || inv.seller || (inv.user && (inv.user.name || inv.user.username)) || (getCurrentUser() && getCurrentUser().name) || '';
+        var seller = '';
+        var sellerSource = inv.vendedor || inv.seller || (inv.user && (inv.user.name || inv.user.username)) || (getCurrentUser() && getCurrentUser().name) || '';
+
+        if (typeof sellerSource === 'string') {
+            seller = sellerSource;
+        } else if (sellerSource && typeof sellerSource === 'object') {
+            seller = sellerSource.name || sellerSource.username || sellerSource.nombre || sellerSource.razon_social || sellerSource.email || '';
+        } else if (sellerSource) {
+            seller = String(sellerSource);
+        }
 
         // Items: normalizar
         var rawItems = Array.isArray(inv.items) ? inv.items : (Array.isArray(inv.lines) ? inv.lines : (Array.isArray(inv.invoice_items) ? inv.invoice_items : []));

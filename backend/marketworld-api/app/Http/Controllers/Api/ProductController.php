@@ -157,12 +157,6 @@ class ProductController extends Controller
         if ($request->has('precio') && !$request->has('precio_venta')) {
             $request->merge(['precio_venta' => $request->precio]);
         }
-        if ($request->has('costo') && !$request->has('precio_compra')) {
-            $request->merge(['precio_compra' => $request->costo]);
-        }
-        if ($request->has('stockActual') && !$request->has('stock')) {
-            $request->merge(['stock' => $request->stockActual]);
-        }
         if ($request->has('stockMinimo') && !$request->has('stock_minimo')) {
             $request->merge(['stock_minimo' => $request->stockMinimo]);
         }
@@ -172,9 +166,7 @@ class ProductController extends Controller
             'nombre'        => 'sometimes|required|string|max:200',
             'descripcion'   => 'nullable|string',
             'categoria'     => 'nullable|string|max:100',
-            'precio_compra' => 'nullable|numeric|min:0',
             'precio_venta'  => 'sometimes|required|numeric|min:0',
-            'stock'         => 'nullable|integer|min:0',
             'stock_minimo'  => 'nullable|integer|min:0',
             'iva'           => 'nullable|numeric|min:0',
             'unidad'        => 'nullable|string|max:50',

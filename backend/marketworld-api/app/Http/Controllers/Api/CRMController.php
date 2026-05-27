@@ -25,8 +25,8 @@ class CRMController extends Controller
 
         $query = Customer::withCount('invoices')
             ->withSum(['invoices' => function ($q) {
-                // Solo sumar facturas confirmadas para el valor real del cliente
-                $q->where('estado', 'confirmada');
+                // Solo sumar facturas Pagadas (o confirmadas) para el valor real del cliente
+                $q->whereIn('estado', ['Pagada', 'confirmada']);
             }], 'total');
 
         if ($request->filled('estado')) {

@@ -192,7 +192,7 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function destroy(User $user): JsonResponse
+    public function destroy(Request $request, User $user): JsonResponse
     {
         $user->estado = 'Inactivo';
         $user->save();

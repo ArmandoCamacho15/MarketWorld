@@ -226,6 +226,11 @@
             return 'Pagada';
         }
 
+        const estadoPago = String(purchase.estadoPago || purchase.estado_pago || '').trim().toLowerCase();
+        if (estadoPago === 'pagada') return 'Pagada';
+        if (estadoPago === 'parcial') return 'Parcial';
+        if (estadoPago === 'pendiente') return 'Pendiente';
+
         return estado;
     }
 
@@ -446,7 +451,7 @@
 
     function mapEstadoFiltroToApi(value) {
         if (!value || value === 'Todos') return '';
-        if (value === 'Pagado') return '';
+        if (value === 'Pagado' || value === 'Pagada') return 'pagada';
         if (value === 'Recibido') return 'Recibida';
         if (value === 'Cancelado') return 'Cancelada';
         return value;
@@ -942,8 +947,21 @@
                 per_page: purchaseHistoryState.perPage,
             };
 
-            const estadoApi = mapEstadoFiltroToApi(estadoSeleccionado);
-            if (estadoApi) requestFilters.estado = estadoApi;
+            if (estadoSeleccionado && estadoSeleccionado !== 'Todos') {
+                if (estadoSeleccionado === 'Pagado' || estadoSeleccionado === 'Pagada') {
+                    requestFilters.estado_pago = 'pagada';
+                } else if (estadoSeleccionado === 'Parcial') {
+                    requestFilters.estado_pago = 'parcial';
+                } else if (estadoSeleccionado === 'Pendiente') {
+                    requestFilters.estado = 'Pendiente';
+                } else if (estadoSeleccionado === 'Recibido') {
+                    requestFilters.estado = 'Recibida';
+                } else if (estadoSeleccionado === 'Cancelado') {
+                    requestFilters.estado = 'Cancelada';
+                } else {
+                    requestFilters.estado = estadoSeleccionado;
+                }
+            }
 
             if (proveedorFiltro && proveedorFiltro.value) {
                 requestFilters.supplier_id = proveedorFiltro.value;
@@ -951,6 +969,14 @@
 
             if (searchTerm) {
                 requestFilters.search = searchTerm;
+            }
+
+            if (fechaInicioFiltro && fechaInicioFiltro.value) {
+                requestFilters.fecha_inicio = fechaInicioFiltro.value;
+            }
+
+            if (fechaFinFiltro && fechaFinFiltro.value) {
+                requestFilters.fecha_fin = fechaFinFiltro.value;
             }
 
             const response = await MarketWorld.api.purchases.getAll(requestFilters);
@@ -970,48 +996,6 @@
             purchaseHistoryState.total = parsed.meta.total;
 
             let purchases = normalizedPurchases.slice();
-
-            if (estadoSeleccionado === 'Pagado') {
-                purchases = purchases.filter(function(purchase) {
-                    return getPurchaseDisplayState(purchase) === 'Pagada';
-                });
-            } else if (estadoSeleccionado && estadoSeleccionado !== 'Todos') {
-                purchases = purchases.filter(function(purchase) {
-                    return getPurchaseDisplayState(purchase) === estadoSeleccionado || purchase.estado === estadoSeleccionado;
-                });
-            }
-
-            if (searchTerm) {
-                purchases = purchases.filter(function(purchase) {
-                    const searchable = [
-                        purchase.numeroOrden,
-                        purchase.proveedorNombre,
-                        purchase.proveedorNit,
-                        purchase.observaciones,
-                        purchase.estado,
-                        purchase.estadoPago,
-                        String(purchase.id),
-                    ].join(' ').toLowerCase();
-
-                    return searchable.includes(searchTerm);
-                });
-            }
-
-            if (fechaInicioFiltro && fechaInicioFiltro.value) {
-                const inicio = new Date(fechaInicioFiltro.value + 'T00:00:00');
-                purchases = purchases.filter(function(purchase) {
-                    const fecha = new Date(purchase.fechaCreacion || purchase.fecha || purchase.created_at || 0);
-                    return !isNaN(fecha.getTime()) && fecha >= inicio;
-                });
-            }
-
-            if (fechaFinFiltro && fechaFinFiltro.value) {
-                const fin = new Date(fechaFinFiltro.value + 'T23:59:59');
-                purchases = purchases.filter(function(purchase) {
-                    const fecha = new Date(purchase.fechaCreacion || purchase.fecha || purchase.created_at || 0);
-                    return !isNaN(fecha.getTime()) && fecha <= fin;
-                });
-            }
 
             setSafeHtml(tbody, '');
 
