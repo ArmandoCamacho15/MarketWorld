@@ -577,6 +577,14 @@
             var query = buildQueryParams(params);
             return apiFetch('/reports/financiero' + (query ? '?' + query : ''));
         },
+        cxp: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/cxp' + (query ? '?' + query : ''));
+        },
+        clientes: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/reports/clientes' + (query ? '?' + query : ''));
+        },
         taxSummary: function (params) {
             var query = buildQueryParams(params);
             return apiFetch('/reports/tax-summary' + (query ? '?' + query : ''));

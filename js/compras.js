@@ -82,16 +82,7 @@
             ? apiPurchase.payments
             : (Array.isArray(apiPurchase.pagos) ? apiPurchase.pagos : []);
 
-        const seenPayments = new Set();
-        const apiPayments = rawPayments.filter(function(payment) {
-            const paymentId = payment.id || payment.payment_id || null;
-            const key = paymentId
-                ? `id:${paymentId}`
-                : `m:${payment.monto || payment.amount || ''}|f:${payment.fecha_pago || payment.fechaPago || ''}|r:${payment.referencia_transaccion || payment.referencia || ''}`;
-            if (seenPayments.has(key)) return false;
-            seenPayments.add(key);
-            return true;
-        });
+        const apiPayments = rawPayments.slice();
 
         const paidTotal = parseFloat(
             apiPurchase.paid_total !== undefined
@@ -176,7 +167,6 @@
 
     function collectPurchasePayments(purchases) {
         const payments = [];
-        const seen = new Set();
 
         (Array.isArray(purchases) ? purchases : []).forEach(function(purchase) {
             const paymentList = Array.isArray(purchase.payments)
@@ -184,14 +174,6 @@
                 : (Array.isArray(purchase.pagos) ? purchase.pagos : []);
 
             paymentList.forEach(function(payment) {
-                const paymentId = payment.id || payment.payment_id || null;
-                const paymentKey = paymentId
-                    ? `id:${paymentId}`
-                    : `p:${purchase.id}|${payment.monto || payment.amount || ''}|${payment.fecha_pago || payment.fechaPago || ''}|${payment.referencia_transaccion || payment.referencia || ''}`;
-
-                if (seen.has(paymentKey)) return;
-                seen.add(paymentKey);
-
                 payments.push(mapApiPaymentToCompras(Object.assign({}, payment, {
                     purchase_id: purchase.id,
                     purchase: purchase,
@@ -202,17 +184,6 @@
         });
 
         return payments;
-    }
-
-    function mergePurchasesById(baseList, nextList) {
-        const map = new Map();
-        (Array.isArray(baseList) ? baseList : []).forEach(function(item) {
-            if (item && item.id !== undefined) map.set(item.id, item);
-        });
-        (Array.isArray(nextList) ? nextList : []).forEach(function(item) {
-            if (item && item.id !== undefined) map.set(item.id, item);
-        });
-        return Array.from(map.values());
     }
 
     function getPurchaseDisplayState(purchase) {
@@ -1626,10 +1597,9 @@
                 const parsed = normalizeApiListResponse(response, { current_page: 1, per_page: 200 });
                 if (parsed.success) {
                     const mapped = parsed.items.map(mapApiPurchaseToCompras);
-                    const merged = mergePurchasesById(getPurchaseCatalogPurchases(), mapped);
-                    setPurchaseCatalogPurchases(merged);
-                    setPurchaseCatalogPayments(collectPurchasePayments(merged));
-                    compras = merged.filter(function(item) {
+                    setPurchaseCatalogPurchases(mapped);
+                    setPurchaseCatalogPayments(collectPurchasePayments(mapped));
+                    compras = mapped.filter(function(item) {
                         return parseInt(item.proveedorId || item.supplier_id || 0, 10) === parseInt(proveedorId, 10);
                     });
                 }

@@ -235,6 +235,11 @@
             currency.value = (data.currency || 'COP').toUpperCase();
         }
 
+        var cppDecimals = document.getElementById('companyCppDecimals');
+        if (cppDecimals) {
+            cppDecimals.value = typeof data.cpp_decimals === 'number' ? data.cpp_decimals : 4;
+        }
+
         var preview = document.getElementById('companyLogoPreview');
         if (preview) {
             preview.src = companySettingsLogoUrl || 'https://via.placeholder.com/200x100?text=Logo+Empresa';

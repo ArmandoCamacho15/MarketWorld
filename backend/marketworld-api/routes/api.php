@@ -56,6 +56,8 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/ventas', [ReportController::class, 'ventas']);
             Route::get('reports/inventario', [ReportController::class, 'inventario']);
             Route::get('reports/financiero', [ReportController::class, 'financiero']);
+            Route::get('reports/cxp', [ReportController::class, 'cxp']);
+            Route::get('reports/clientes', [ReportController::class, 'clientes']);
             // Ajustes de costo (registro y auditoría) - Solo Administrador
             Route::post('products/{id}/adjust-cost', [CostAdjustmentController::class, 'store']);
             Route::get('cost-adjustments', [CostAdjustmentController::class, 'index']);

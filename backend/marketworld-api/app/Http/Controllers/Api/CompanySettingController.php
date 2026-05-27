@@ -33,6 +33,7 @@ class CompanySettingController extends Controller
             'email' => 'required|email|max:120',
             'website' => 'nullable|url|max:190',
             'currency' => 'required|string|max:10',
+            'cpp_decimals' => 'required|integer|min:0|max:6',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
@@ -47,6 +48,7 @@ class CompanySettingController extends Controller
             'email' => $validated['email'],
             'website' => $validated['website'] ?? null,
             'currency' => $validated['currency'],
+            'cpp_decimals' => $validated['cpp_decimals'],
         ]);
 
         if ($request->hasFile('logo')) {
@@ -86,6 +88,7 @@ class CompanySettingController extends Controller
             'email' => 'info@marketworld.com',
             'website' => 'https://www.marketworld.com',
             'currency' => 'COP',
+            'cpp_decimals' => 4,
         ]);
     }
 
@@ -100,6 +103,7 @@ class CompanySettingController extends Controller
             'email' => $settings->email,
             'website' => $settings->website,
             'currency' => $settings->currency,
+            'cpp_decimals' => (int) ($settings->cpp_decimals ?? 4),
             'logo_url' => $settings->logo_path ? Storage::disk('public')->url($settings->logo_path) : null,
         ];
     }

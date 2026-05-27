@@ -38,7 +38,7 @@ Este proyecto fue desarrollado como parte del programa **Tecnólogo en Análisis
 | **Contabilidad** | Registro de transacciones financieras |
 | **Compras** | Control de proveedores y órdenes de compra |
 | **CRM** | Administración de clientes y seguimiento |
-| **Reportes** | Generación de informes y gráficos |
+| **Reportes** | Informes operativos reales en seis pestañas: Ventas, Inventario, Financiero, CxP, Clientes y Tributario/DIAN |
 | **Configuración** | Gestión de usuarios y permisos del sistema |
 
 ---

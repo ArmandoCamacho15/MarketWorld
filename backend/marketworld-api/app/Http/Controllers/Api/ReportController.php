@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Purchase;
 use App\Models\Product;
@@ -14,17 +15,38 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    private function periodExpression(string $column, string $agrupar): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            return match ($agrupar) {
+                'semana' => "strftime('%Y-%W', {$column})",
+                'mes' => "strftime('%Y-%m', {$column})",
+                default => "strftime('%Y-%m-%d', {$column})",
+            };
+        }
+
+        return match ($agrupar) {
+            'semana' => "DATE_FORMAT({$column}, '%Y-%u')",
+            'mes' => "DATE_FORMAT({$column}, '%Y-%m')",
+            default => "DATE_FORMAT({$column}, '%Y-%m-%d')",
+        };
+    }
+
     private function buildTaxSummaryData(string $desde, string $hasta): array
     {
+        $periodExpression = $this->periodExpression('fecha', 'mes');
+
         $periodos = Invoice::query()
-            ->selectRaw("DATE_FORMAT(fecha, '%Y-%m') as periodo")
+            ->selectRaw($periodExpression . ' as periodo')
             ->selectRaw('COUNT(*) as cantidad_facturas')
             ->selectRaw('SUM(COALESCE(subtotal, 0)) as base_gravable')
             ->selectRaw('SUM(COALESCE(impuestos, 0)) as iva_generado')
             ->selectRaw('SUM(COALESCE(total, 0)) as total_facturado')
             ->where('estado', '!=', 'Anulada')
             ->whereBetween('fecha', [$desde, $hasta])
-            ->groupByRaw("DATE_FORMAT(fecha, '%Y-%m')")
+            ->groupByRaw($periodExpression)
             ->orderBy('periodo')
             ->get()
             ->map(function ($item): array {
@@ -125,14 +147,16 @@ class ReportController extends Controller
             default => '%Y-%m-%d',
         };
 
+        $periodExpression = $this->periodExpression('fecha', $agrupar);
+
         $ventas = Invoice::query()
-            ->selectRaw("DATE_FORMAT(fecha, '{$formatoDB}') as periodo")
+            ->selectRaw($periodExpression . ' as periodo')
             ->selectRaw('COUNT(*) as cantidad_facturas')
             ->selectRaw('SUM(total) as total_ventas')
             ->selectRaw('SUM(COALESCE(impuestos, 0)) as total_impuestos')
             ->where('estado', '!=', 'Anulada')
             ->whereBetween('fecha', [$desde, $hasta])
-            ->groupByRaw("DATE_FORMAT(fecha, '{$formatoDB}')")
+            ->groupByRaw($periodExpression)
             ->orderBy('periodo')
             ->get();
 
@@ -241,6 +265,140 @@ class ReportController extends Controller
                 'periodo' => [
                     'desde' => $desde,
                     'hasta' => $hasta,
+                ],
+            ],
+            'errors' => null,
+        ]);
+    }
+
+    /**
+     * Reporte de cuentas por pagar.
+     */
+    public function cxp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'desde' => 'nullable|date|before_or_equal:hasta',
+            'hasta' => 'nullable|date',
+        ]);
+
+        $desde = $validated['desde'] ?? Carbon::now()->startOfMonth()->toDateString();
+        $hasta = $validated['hasta'] ?? Carbon::now()->toDateString();
+
+        $purchases = Purchase::query()
+            ->with(['supplier', 'payments'])
+            ->where('estado', '!=', 'Cancelada')
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        $items = $purchases->map(function (Purchase $purchase): array {
+            return [
+                'id' => $purchase->id,
+                'fecha' => Carbon::parse($purchase->fecha)->toDateString(),
+                'numero_orden' => $purchase->numero_orden,
+                'proveedor' => $purchase->supplier?->nombre ?? 'Sin proveedor',
+                'estado' => $purchase->estado,
+                'estado_pago' => $purchase->estado_pago,
+                'total' => round((float) $purchase->total, 2),
+                'pagado' => round((float) $purchase->paid_total, 2),
+                'saldo' => round((float) $purchase->saldo, 2),
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reporte de cuentas por pagar generado.',
+            'data' => [
+                'periodo' => [
+                    'desde' => $desde,
+                    'hasta' => $hasta,
+                ],
+                'items' => $items,
+                'resumen' => [
+                    'compras' => (int) $items->count(),
+                    'total' => round((float) $items->sum('total'), 2),
+                    'pagado' => round((float) $items->sum('pagado'), 2),
+                    'saldo' => round((float) $items->sum('saldo'), 2),
+                    'pendientes' => (int) $items->filter(fn ($item) => $item['saldo'] > 0)->count(),
+                ],
+            ],
+            'errors' => null,
+        ]);
+    }
+
+    /**
+     * Reporte de clientes.
+     */
+    public function clientes(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'desde' => 'nullable|date|before_or_equal:hasta',
+            'hasta' => 'nullable|date',
+            'search' => 'nullable|string|max:120',
+        ]);
+
+        $desde = $validated['desde'] ?? Carbon::now()->startOfMonth()->toDateString();
+        $hasta = $validated['hasta'] ?? Carbon::now()->toDateString();
+        $search = $validated['search'] ?? null;
+
+        $customers = Customer::query()
+            ->withCount(['invoices as facturas_periodo' => function ($query) use ($desde, $hasta) {
+                $query->where('estado', '!=', 'Anulada')
+                    ->whereBetween('fecha', [$desde, $hasta]);
+            }])
+            ->withSum(['invoices as ventas_periodo' => function ($query) use ($desde, $hasta) {
+                $query->where('estado', '!=', 'Anulada')
+                    ->whereBetween('fecha', [$desde, $hasta]);
+            }], 'total')
+            ->when($search, function ($query, $search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('nombre', 'like', '%' . $search . '%')
+                        ->orWhere('documento', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%');
+                });
+            })
+            ->orderByDesc('ventas_periodo')
+            ->orderBy('nombre')
+            ->limit(50)
+            ->get();
+
+        $items = $customers->map(function (Customer $customer): array {
+            $ventasPeriodo = (float) ($customer->ventas_periodo ?? 0);
+
+            return [
+                'id' => $customer->id,
+                'nombre' => $customer->nombre,
+                'documento' => $customer->documento,
+                'email' => $customer->email,
+                'telefono' => $customer->telefono,
+                'segmento' => $customer->segmento,
+                'estado' => $customer->estado,
+                'facturas_periodo' => (int) ($customer->facturas_periodo ?? 0),
+                'valor_periodo' => round($ventasPeriodo, 2),
+                'valor_total' => round((float) ($customer->valor_total ?? 0), 2),
+                'total_compras' => (int) ($customer->total_compras ?? 0),
+                'ticket_promedio' => (int) ($customer->facturas_periodo ?? 0) > 0
+                    ? round($ventasPeriodo / max((int) $customer->facturas_periodo, 1), 2)
+                    : 0,
+                'fecha_registro' => optional($customer->created_at)->toDateString(),
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reporte de clientes generado.',
+            'data' => [
+                'periodo' => [
+                    'desde' => $desde,
+                    'hasta' => $hasta,
+                ],
+                'items' => $items,
+                'resumen' => [
+                    'total_clientes' => (int) $items->count(),
+                    'clientes_activos' => (int) $items->where('estado', 'Activo')->count(),
+                    'ventas_periodo' => round((float) $items->sum('valor_periodo'), 2),
+                    'facturas_periodo' => (int) $items->sum('facturas_periodo'),
                 ],
             ],
             'errors' => null,

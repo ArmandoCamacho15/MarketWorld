@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('website')->nullable();
             $table->string('currency', 10)->default('COP');
+            $table->unsignedTinyInteger('cpp_decimals')->default(4);
             $table->string('logo_path')->nullable();
             $table->timestamps();
         });

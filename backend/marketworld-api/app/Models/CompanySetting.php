@@ -17,6 +17,7 @@ class CompanySetting extends Model
         'email',
         'website',
         'currency',
+        'cpp_decimals',
         'logo_path',
     ];
 }

@@ -53,8 +53,10 @@ class InventoryService
     protected function getCppDecimals(): int
     {
         try {
-            $setting = CompanySetting::first();
-            return (int) ($setting->cpp_decimals ?? 4);
+            $setting = CompanySetting::query()->latest('id')->first();
+            $decimals = (int) ($setting->cpp_decimals ?? 4);
+
+            return max(0, min($decimals, 6));
         } catch (\Throwable $e) {
             return 4;
         }
