@@ -553,9 +553,15 @@
         if (btnNewEntryHeader) btnNewEntryHeader.addEventListener('click', mostrarFormularioAsiento);
 
         // Botones de filtro en Libro Diario
-        const btnFiltrarDiario = document.querySelector('#diario .btn-primary');
+        const btnFiltrarDiario = document.getElementById('btn-filter-diario') || document.querySelector('#diario .btn-primary');
         if (btnFiltrarDiario) {
             btnFiltrarDiario.addEventListener('click', aplicarFiltrosDiario);
+        }
+
+        // Botón Exportar Libro Diario (CSV/Excel)
+        const btnExportDiario = document.getElementById('btn-export-diario');
+        if (btnExportDiario) {
+            btnExportDiario.addEventListener('click', exportLibroDiario);
         }
 
         // Botones de filtro en Libro Mayor
@@ -819,18 +825,20 @@
             getEntryItems(entry).forEach(p => {
                 const code = p.cuenta || (p.account && p.account.codigo) || '';
                 const name = p.nombre || (p.account && p.account.nombre) || '';
-                if (p.debe > 0) {
+                const debeVal = parseFloat(p.debe) || 0;
+                const haberVal = parseFloat(p.haber) || 0;
+                if (debeVal > 0) {
                     partidasHTML += `
                         <div class="row mb-1">
                             <div class="col-md-8">${MarketWorld.utils.escapeHtml(code)} ${MarketWorld.utils.escapeHtml(name)}</div>
-                            <div class="col-md-4 text-end debit">${MarketWorld.utils.formatCurrency(p.debe)}</div>
+                            <div class="col-md-4 text-end debit">${MarketWorld.utils.formatCurrency(debeVal)}</div>
                         </div>
                     `;
                 } else {
                     partidasHTML += `
                         <div class="row mb-1">
                             <div class="col-md-8 ps-4">${MarketWorld.utils.escapeHtml(code)} ${MarketWorld.utils.escapeHtml(name)}</div>
-                            <div class="col-md-4 text-end credit">${MarketWorld.utils.formatCurrency(p.haber)}</div>
+                            <div class="col-md-4 text-end credit">${MarketWorld.utils.formatCurrency(haberVal)}</div>
                         </div>
                     `;
                 }
@@ -844,7 +852,7 @@
                         <span class="ms-3 badge ${badgeClass}">${MarketWorld.utils.escapeHtml(getEntryDisplayType(entry))}</span>
                     </div>
                     <div>
-                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarAsiento(${entry.id})">
+                        <button class="btn btn-sm btn-outline-danger btn-delete-asiento" data-id="${entry.id}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -853,6 +861,14 @@
             `;
 
             container.appendChild(div);
+        });
+
+        // Attach delete listeners (no inline JS to satisfy CSP)
+        container.querySelectorAll('.btn-delete-asiento').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                if (id) eliminarAsiento(id);
+            });
         });
 
         // También actualizar el libro diario
@@ -949,8 +965,8 @@
 
         const rows = entries.map(entry => {
             const partidas = getEntryItems(entry);
-            const subDebe = partidas.reduce((sum, p) => sum + (p.debe || 0), 0);
-            const subHaber = partidas.reduce((sum, p) => sum + (p.haber || 0), 0);
+            const subDebe = partidas.reduce((sum, p) => sum + (parseFloat(p.debe) || 0), 0);
+            const subHaber = partidas.reduce((sum, p) => sum + (parseFloat(p.haber) || 0), 0);
             totalDebe += subDebe;
             totalHaber += subHaber;
 
@@ -963,7 +979,7 @@
                     <td class="debit">${MarketWorld.utils.formatCurrency(subDebe)}</td>
                     <td class="credit">${MarketWorld.utils.formatCurrency(subHaber)}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="verDetalleAsiento(${entry.id})">
+                        <button class="btn btn-sm btn-outline-primary btn-view-asiento" data-id="${entry.id}">
                             <i class="bi bi-eye"></i>
                         </button>
                     </td>
@@ -985,21 +1001,62 @@
                 </tr>
             `;
         }
+
+        // Attach view buttons listeners (avoid inline onclick due to CSP)
+        document.querySelectorAll('.btn-view-asiento').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                if (id) verDetalleAsiento(id);
+            });
+        });
     }
 
     window.verDetalleAsiento = function(id) {
         const entry = findJournalEntryById(id);
         if (!entry) return;
 
-        let partidasHTML = getEntryItems(entry).map(p => `
-            <tr>
-                <td>${(p.cuenta || (p.account && p.account.codigo) || '')} - ${(p.nombre || (p.account && p.account.nombre) || '')}</td>
-                <td class="debit">${p.debe > 0 ? MarketWorld.utils.formatCurrency(p.debe) : ''}</td>
-                <td class="credit">${p.haber > 0 ? MarketWorld.utils.formatCurrency(p.haber) : ''}</td>
-            </tr>
-        `).join('');
+        const modalEl = document.getElementById('asientoModal');
+        const modalTitle = modalEl?.querySelector('.modal-title');
+        const modalBody = modalEl?.querySelector('.modal-body');
 
-        alert(`Asiento: ${getEntryDisplayNumber(entry)}\nFecha: ${entry.fecha}\nDescripción: ${entry.glosa || entry.descripcion || ''}`);
+        if (modalTitle) modalTitle.textContent = `${getEntryDisplayNumber(entry)} - ${MarketWorld.utils.formatDate(entry.fecha)}`;
+
+        const partidasHTML = getEntryItems(entry).map(p => {
+            const code = (p.cuenta || (p.account && p.account.codigo) || '');
+            const name = (p.nombre || (p.account && p.account.nombre) || '');
+            const debe = parseFloat(p.debe) || 0;
+            const haber = parseFloat(p.haber) || 0;
+            return `
+                <tr>
+                    <td>${MarketWorld.utils.escapeHtml(code)} - ${MarketWorld.utils.escapeHtml(name)}</td>
+                    <td class="debit">${debe > 0 ? MarketWorld.utils.formatCurrency(debe) : ''}</td>
+                    <td class="credit">${haber > 0 ? MarketWorld.utils.formatCurrency(haber) : ''}</td>
+                </tr>
+            `;
+        }).join('');
+
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <p><strong>Descripción:</strong> ${MarketWorld.utils.escapeHtml(entry.glosa || entry.descripcion || '')}</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Cuenta</th><th>Debe</th><th>Haber</th></tr></thead>
+                        <tbody>
+                            ${partidasHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Mostrar modal Bootstrap
+        try {
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+        } catch (e) {
+            // Fallback a alert
+            alert(`Asiento: ${getEntryDisplayNumber(entry)}\nFecha: ${entry.fecha}\nDescripción: ${entry.glosa || entry.descripcion || ''}`);
+        }
     };
 
     function aplicarFiltrosDiario() {
@@ -1076,6 +1133,49 @@
         if (balanceLabel) {
             balanceLabel.textContent = MarketWorld.utils.formatCurrency(Math.abs(saldo));
             balanceLabel.className = `fs-4 ${saldo >= 0 ? 'debit' : 'credit'}`;
+        }
+    }
+
+    async function exportLibroDiario() {
+        const startDate = document.getElementById('diario-start')?.value;
+        const endDate = document.getElementById('diario-end')?.value;
+        const tipo = document.getElementById('diario-type')?.value || 'Todos';
+
+        const params = new URLSearchParams();
+        if (startDate) params.append('fecha_desde', startDate);
+        if (endDate) params.append('fecha_hasta', endDate);
+        if (tipo) params.append('tipo', tipo);
+
+        const base = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.API_URL) ? APP_CONFIG.API_URL : '';
+        const url = `${base}/journal-entries/export-xlsx?${params.toString()}`;
+
+        try {
+            const resp = await fetch(url, { credentials: 'include' });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const blob = await resp.blob();
+
+            const disposition = resp.headers.get('content-disposition') || '';
+            const match = disposition.match(/filename=\"?([^\";]+)\"?/);
+            const filename = match ? match[1] : `libro_diario_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(link.href);
+
+            if (MarketWorld && MarketWorld.utils && MarketWorld.utils.showNotification) {
+                MarketWorld.utils.showNotification('Descarga del Libro Diario iniciada', 'success');
+            }
+        } catch (err) {
+            console.error('[Contabilidad] Error exportando Libro Diario:', err);
+            if (MarketWorld && MarketWorld.utils && MarketWorld.utils.showNotification) {
+                MarketWorld.utils.showNotification('No se pudo descargar el Libro Diario', 'danger');
+            } else {
+                alert('No se pudo descargar el Libro Diario');
+            }
         }
     }
 

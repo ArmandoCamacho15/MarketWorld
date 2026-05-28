@@ -391,10 +391,25 @@ class CRMController extends Controller
             'notas' => 'nullable|string',
         ]);
 
-        $actividad = Activity::create([
-            ...$validated,
-            'user_id' => $request->user()->id,
-        ]);
+        $actividad = null;
+
+        \DB::transaction(function () use ($validated, $request, &$actividad) {
+            $actividad = Activity::create([
+                ...$validated,
+                'user_id' => $request->user()->id,
+            ]);
+
+            // Si la actividad pertenece a una campaña, actualizar contadores
+            if (!empty($validated['campaign_id'])) {
+                $campana = Campaign::find($validated['campaign_id']);
+                if ($campana) {
+                    $campana->increment('contactados');
+                    if (!empty($validated['estado']) && $validated['estado'] === 'Completada') {
+                        $campana->increment('respuestas');
+                    }
+                }
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -411,6 +426,8 @@ class CRMController extends Controller
     {
         $actividad = Activity::findOrFail($id);
 
+        $originalEstado = $actividad->estado;
+
         $validated = $request->validate([
             'titulo' => 'nullable|string|max:150',
             'descripcion' => 'nullable|string',
@@ -421,8 +438,25 @@ class CRMController extends Controller
             'notas' => 'nullable|string',
             'opportunity_id' => 'nullable|exists:opportunities,id',
         ]);
+        \DB::transaction(function () use ($actividad, $validated, $originalEstado) {
+            $actividad->update($validated);
 
-        $actividad->update($validated);
+            $nuevoEstado = $validated['estado'] ?? $actividad->estado;
+
+            // Ajustar contadores de campaña si aplica
+            $campaignId = $validated['campaign_id'] ?? $actividad->campaign_id;
+            if ($campaignId) {
+                $campana = Campaign::find($campaignId);
+                if ($campana) {
+                    if ($originalEstado !== 'Completada' && $nuevoEstado === 'Completada') {
+                        $campana->increment('respuestas');
+                    }
+                    if ($originalEstado === 'Completada' && $nuevoEstado !== 'Completada') {
+                        if ($campana->respuestas > 0) $campana->decrement('respuestas');
+                    }
+                }
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -438,7 +472,18 @@ class CRMController extends Controller
     public function eliminarActividad($id): JsonResponse
     {
         $actividad = Activity::findOrFail($id);
-        $actividad->delete();
+
+        \DB::transaction(function () use ($actividad) {
+            if ($actividad->campaign_id) {
+                $campana = Campaign::find($actividad->campaign_id);
+                if ($campana) {
+                    if ($campana->contactados > 0) $campana->decrement('contactados');
+                    if ($actividad->estado === 'Completada' && $campana->respuestas > 0) $campana->decrement('respuestas');
+                }
+            }
+
+            $actividad->delete();
+        });
 
         return response()->json([
             'success' => true,

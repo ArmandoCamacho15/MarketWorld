@@ -9,6 +9,7 @@ use App\Models\JournalItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class JournalEntryController extends Controller
 {
@@ -220,6 +221,175 @@ class JournalEntryController extends Controller
             'message' => 'Asiento eliminado correctamente',
             'data'    => null,
             'errors'  => null,
+        ]);
+    }
+
+    /**
+     * Exporta el Libro Diario como CSV (compatible con Excel).
+     * Acepta filtros opcionales: fecha_desde, fecha_hasta, tipo (Manual|Automático|Todos).
+     */
+    public function export(Request $request)
+    {
+        $query = JournalEntry::with(['items.account', 'user']);
+
+        if ($request->filled('fecha_desde')) {
+            $query->where('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->where('fecha', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('tipo') && $request->tipo !== 'Todos') {
+            if ($request->tipo === 'Manual') {
+                $query->where(function ($q) {
+                    $q->whereNull('referencia_tipo')
+                      ->orWhere('referencia_tipo', 'Manual');
+                });
+            } elseif ($request->tipo === 'Automático') {
+                $query->whereNotNull('referencia_tipo')
+                      ->where('referencia_tipo', '!=', 'Manual');
+            }
+        }
+
+        $entries = $query->orderBy('fecha', 'asc')->orderBy('id', 'asc')->get();
+
+        $filename = 'libro_diario_' . date('Ymd') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($entries) {
+            $out = fopen('php://output', 'w');
+            // BOM para evitar problemas de codificación en Excel
+            fprintf($out, "%s", chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            // Cabecera
+            fputcsv($out, ['Asiento', 'Fecha', 'Glosa', 'Referencia Tipo', 'Referencia ID', 'Usuario', 'Cuenta Codigo', 'Cuenta Nombre', 'Debe', 'Haber']);
+
+            foreach ($entries as $entry) {
+                $numero = $entry->numero ?? ('AS-' . str_pad($entry->id, 5, '0', STR_PAD_LEFT));
+                $usuario = $entry->user?->name ?? '';
+
+                foreach ($entry->items as $item) {
+                    $codigo = $item->account?->codigo ?? '';
+                    $nombre = $item->account?->nombre ?? '';
+
+                    fputcsv($out, [
+                        $numero,
+                        $entry->fecha,
+                        $entry->glosa ?? '',
+                        $entry->referencia_tipo ?? '',
+                        $entry->referencia_id ?? '',
+                        $usuario,
+                        $codigo,
+                        $nombre,
+                        number_format((float) ($item->debe ?? 0), 2, '.', ''),
+                        number_format((float) ($item->haber ?? 0), 2, '.', ''),
+                    ]);
+                }
+            }
+
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    /**
+     * Exporta el Libro Diario como .xlsx usando PhpSpreadsheet.
+     */
+    public function exportXlsx(Request $request)
+    {
+        if (!class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'PhpSpreadsheet no está instalado. Ejecuta composer require phpoffice/phpspreadsheet',
+                'data' => null,
+                'errors' => null,
+            ], 501);
+        }
+
+        $query = JournalEntry::with(['items.account', 'user']);
+
+        if ($request->filled('fecha_desde')) {
+            $query->where('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->where('fecha', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('tipo') && $request->tipo !== 'Todos') {
+            if ($request->tipo === 'Manual') {
+                $query->where(function ($q) {
+                    $q->whereNull('referencia_tipo')
+                      ->orWhere('referencia_tipo', 'Manual');
+                });
+            } elseif ($request->tipo === 'Automático') {
+                $query->whereNotNull('referencia_tipo')
+                      ->where('referencia_tipo', '!=', 'Manual');
+            }
+        }
+
+        $entries = $query->orderBy('fecha', 'asc')->orderBy('id', 'asc')->get();
+
+        // Build spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Libro Diario');
+
+        $headers = ['Asiento', 'Fecha', 'Glosa', 'Referencia Tipo', 'Referencia ID', 'Usuario', 'Cuenta Codigo', 'Cuenta Nombre', 'Debe', 'Haber'];
+        $col = 1;
+        foreach ($headers as $h) {
+            $cell = Coordinate::stringFromColumnIndex($col) . '1';
+            $sheet->setCellValue($cell, $h);
+            $col++;
+        }
+
+        $row = 2;
+        foreach ($entries as $entry) {
+            $numero = $entry->numero ?? ('AS-' . str_pad($entry->id, 5, '0', STR_PAD_LEFT));
+            $usuario = $entry->user?->name ?? '';
+
+            foreach ($entry->items as $item) {
+                $codigo = $item->account?->codigo ?? '';
+                $nombre = $item->account?->nombre ?? '';
+
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(1) . $row, $numero);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(2) . $row, $entry->fecha);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(3) . $row, $entry->glosa ?? '');
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(4) . $row, $entry->referencia_tipo ?? '');
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(5) . $row, $entry->referencia_id ?? '');
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(6) . $row, $usuario);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(7) . $row, $codigo);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(8) . $row, $nombre);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(9) . $row, (float) ($item->debe ?? 0));
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex(10) . $row, (float) ($item->haber ?? 0));
+
+                $row++;
+            }
+        }
+
+        // Autosize columns
+        foreach (range('A', 'J') as $colLetter) {
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        $filename = 'libro_diario_' . date('Ymd') . '.xlsx';
+
+        // Stream the XLSX
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
 }

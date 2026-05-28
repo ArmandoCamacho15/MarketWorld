@@ -164,7 +164,16 @@ Route::prefix('v1')->group(function () {
         // === Contabilidad ===
         Route::middleware('role:Administrador')->group(function () {
             Route::apiResource('accounts', AccountController::class);
+            // Export libro diario (CSV compatible con Excel)
+            Route::get('journal-entries/export', [JournalEntryController::class, 'export']);
+            // Export libro diario como XLSX nativo
+            Route::get('journal-entries/export-xlsx', [JournalEntryController::class, 'exportXlsx']);
             Route::apiResource('journal-entries', JournalEntryController::class);
         });
+
     });
+
+    // Rutas de depuración (temporal) — NO proteger con auth para aislar errores
+    Route::get('debug/journal-entries/export-xlsx-noauth', [JournalEntryController::class, 'exportXlsx']);
+
 });
