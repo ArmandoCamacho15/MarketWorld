@@ -2,7 +2,7 @@
 (function() {
     'use strict';
 
-    let salesChart, categoriesChart, incomeExpenseChart;
+    let salesChart, inventoryChart, cxpChart;
 
     document.addEventListener('DOMContentLoaded', async () => {
         // Inicializar
@@ -25,6 +25,32 @@
             btnImprimirFactura.addEventListener('click', imprimirFactura);
         }
     });
+
+    function getSelectedDateRange() {
+        const dateInputs = document.querySelectorAll('.date-filter input[type="date"]');
+        const today = new Date();
+        const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const defaultEnd = today.toISOString().split('T')[0];
+
+        const startDate = dateInputs[0] && dateInputs[0].value ? dateInputs[0].value : defaultStart;
+        const endDate = dateInputs[1] && dateInputs[1].value ? dateInputs[1].value : defaultEnd;
+
+        return {
+            desde: startDate,
+            hasta: endDate,
+        };
+    }
+
+    function setDefaultDateRange() {
+        const dateInputs = document.querySelectorAll('.date-filter input[type="date"]');
+        if (!dateInputs[0] || !dateInputs[1]) return;
+
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        dateInputs[0].value = startOfMonth.toISOString().split('T')[0];
+        dateInputs[1].value = today.toISOString().split('T')[0];
+    }
 
     function setSafeHtml(element, html) {
         if (!element) return;
@@ -102,9 +128,11 @@
                 return;
             }
 
+            const dateRange = getSelectedDateRange();
+
             // Usar adaptador si está disponible
             try {
-                const result = await MarketWorld.api.dashboard.getStats();
+                const result = await MarketWorld.api.dashboard.getStats(dateRange);
                 if (result && result.success) {
                     updateDashboardUI(result.data);
                     return;
@@ -155,8 +183,28 @@
             salesChart.update();
         }
 
+        if (data.inventory_history && inventoryChart) {
+            const inventoryLabels = data.inventory_history.map(item => item.label);
+            const inventoryValues = data.inventory_history.map(item => item.unidades);
+
+            inventoryChart.data.labels = inventoryLabels;
+            inventoryChart.data.datasets[0].data = inventoryValues;
+            inventoryChart.update();
+        }
+
+        if (data.cxp_history && cxpChart) {
+            const cxpLabels = data.cxp_history.map(item => item.label);
+            const cxpValues = data.cxp_history.map(item => item.saldo);
+
+            cxpChart.data.labels = cxpLabels;
+            cxpChart.data.datasets[0].data = cxpValues;
+            cxpChart.update();
+        }
+
         // Actualizar Tabla de Transacciones Recientes
-        if (data.recent_sales) {
+        if (data.recent_transactions) {
+            renderRecentTransactions(data.recent_transactions);
+        } else if (data.recent_sales) {
             renderRecentTransactions(data.recent_sales);
         }
 
@@ -246,10 +294,10 @@
             salesChart = new Chart(salesCtx, {
                 type: 'line',
                 data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                    labels: [],
                     datasets: [{
-                        label: 'Ventas 2025',
-                        data: [85450, 92300, 78900, 105200, 118500, 125450],
+                        label: 'Ventas',
+                        data: [],
                         borderColor: '#0d6ef0',
                         backgroundColor: 'rgba(13, 110, 240, 0.1)',
                         tension: 0.4,
@@ -283,23 +331,57 @@
             });
         }
 
-        // ======= GRÁFICO DE CATEGORÍAS MÁS VENDIDAS =======
-        const categoriesCtx = document.getElementById('categoriesChart');
-        if (categoriesCtx) {
-            categoriesChart = new Chart(categoriesCtx, {
+        const inventoryCtx = document.getElementById('inventoryChart');
+        if (inventoryCtx) {
+            inventoryChart = new Chart(inventoryCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Electrónicos', 'Alimentos', 'Oficina', 'Hogar'],
+                    labels: ['Entradas', 'Salidas', 'Ajustes'],
                     datasets: [{
-                        data: [45, 25, 20, 10],
-                        backgroundColor: ['#0d6ef0', '#2ecc71', '#f39c12', '#e74c3c']
+                        data: [0, 0, 0],
+                        backgroundColor: ['#0d6ef0', '#2ecc71', '#f39c12']
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.label}: ${context.parsed}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const cxpCtx = document.getElementById('cxpChart');
+        if (cxpCtx) {
+            cxpChart = new Chart(cxpCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pagada', 'Parcial', 'Pendiente'],
+                    datasets: [{
+                        label: 'Saldo CxP',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#198754', '#f39c12', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => `$${Number(value).toLocaleString('es-CO')}`
+                            }
+                        }
                     }
                 }
             });
@@ -310,7 +392,10 @@
 
     // ======= FILTROS DE FECHA INTERACTIVOS =======
     function initDateFilters() {
+        setDefaultDateRange();
+
         const quickButtons = document.querySelectorAll('.quick-date-btn');
+        const dateInputs = document.querySelectorAll('.date-filter input[type="date"]');
         
         quickButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -323,6 +408,12 @@
                 
                 console.log(`📅 Aplicando filtro: ${period}`);
                 applyDateFilter(period);
+            });
+        });
+
+        dateInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                fetchDashboardStats();
             });
         });
     }
@@ -435,43 +526,47 @@
         const transactions = Array.isArray(optionalData) ? optionalData : [];
 
         if (transactions.length === 0) {
-            setSafeHtml(tbody, '<tr><td colspan="4" class="text-center text-muted">No hay transacciones recientes</td></tr>');
+            setSafeHtml(tbody, '<tr><td colspan="5" class="text-center text-muted">No hay transacciones recientes</td></tr>');
             return;
         }
 
         setSafeHtml(tbody, transactions.map(function(inv) {
-            const estado = String(inv.estado || 'Pagada');
+            const estado = String(inv.estado || inv.estado_pago || 'Pagada');
             const total = parseFloat(inv.total || 0).toLocaleString('es-CO');
-            const cliente = inv.cliente_nombre || (inv.customer ? inv.customer.nombre : 'Consumidor Final');
+            const contraparte = inv.counterparty_name || inv.cliente_nombre || inv.proveedor_nombre || (inv.customer ? inv.customer.nombre : 'Consumidor Final');
+            const tipo = String(inv.document_label || inv.document_type || 'Documento');
+            const numero = inv.document_number || inv.numero_factura || inv.numero_orden || ('#00' + inv.id);
             const fecha = inv.fecha ? new Date(inv.fecha).toLocaleDateString('es-CO') : 'Hoy';
             let badgeClass = 'bg-success';
             if (estado.toLowerCase() === 'pendiente') badgeClass = 'bg-warning text-dark';
             if (estado.toLowerCase() === 'anulada') badgeClass = 'bg-danger';
-            // Agregar atributo data-invoice-id para identificar la factura
-            const displayNumber = inv.numero_factura || ('#00' + inv.id);
-            return '<tr class="recent-invoice-row" data-invoice-id="' + (inv.id || '') + '">' +
+            const isInvoice = String(inv.document_type || 'invoice') === 'invoice';
+            const rowId = inv.id || '';
+            return '<tr class="recent-invoice-row" data-document-type="' + String(inv.document_type || 'invoice') + '" data-document-id="' + rowId + '">' +
+                '<td><span class="badge bg-secondary text-uppercase">' + tipo + '</span></td>' +
                 '<td>' +
-                    '<div class="fw-bold invoice-link" role="button" tabindex="0">' + displayNumber + '</div>' +
+                    '<div class="fw-bold document-link" role="button" tabindex="0">' + numero + '</div>' +
                     '<small class="text-muted">' + fecha + '</small>' +
                 '</td>' +
-                '<td>' + cliente + '</td>' +
+                '<td>' + contraparte + '</td>' +
                 '<td class="fw-bold text-primary">$' + total + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + estado + '</span></td>' +
             '</tr>';
         }).join(''));
 
-        // Añadir manejadores para abrir modal de factura al hacer click
         Array.from(tbody.querySelectorAll('.recent-invoice-row')).forEach(function(row) {
             row.addEventListener('click', function(e) {
-                const id = row.getAttribute('data-invoice-id');
-                if (id) openInvoiceModal(id);
+                const id = row.getAttribute('data-document-id');
+                const type = row.getAttribute('data-document-type');
+                if (type === 'invoice' && id) openInvoiceModal(id);
             });
-            row.querySelectorAll('.invoice-link').forEach(function(link) {
+            row.querySelectorAll('.document-link').forEach(function(link) {
                 link.addEventListener('keydown', function(ev) {
                     if (ev.key === 'Enter' || ev.key === ' ') {
                         ev.preventDefault();
-                        const id = row.getAttribute('data-invoice-id');
-                        if (id) openInvoiceModal(id);
+                        const id = row.getAttribute('data-document-id');
+                        const type = row.getAttribute('data-document-type');
+                        if (type === 'invoice' && id) openInvoiceModal(id);
                     }
                 });
             });

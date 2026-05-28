@@ -551,8 +551,9 @@
     }
 
     var DashboardAPI = {
-        getStats: function () {
-            return apiFetch('/dashboard/stats');
+        getStats: function (params) {
+            var query = buildQueryParams(params);
+            return apiFetch('/dashboard/stats' + (query ? '?' + query : ''));
         }
     };
 

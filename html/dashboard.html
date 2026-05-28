@@ -177,6 +177,18 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col">
+                        <div class="kpi-card purchases" role="region" aria-live="polite">
+                            <div class="kpi-icon">
+                                <i class="bi bi-bag-check"></i>
+                            </div>
+                            <div class="kpi-value" id="kpiPurchases">$0</div>
+                            <div class="kpi-label">Compras del Mes</div>
+                            <div class="kpi-trend" id="kpiTrendPurchases">
+                                <i class="bi bi-receipt me-1"></i> Rango activo
+                            </div>
+                        </div>
+                    </div>
                     <div class="col col--wide">
                         <div class="kpi-card inventory-combined" id="kpiInventoryCombined" role="region" aria-live="polite">
                             <div class="d-flex align-items-center justify-content-between gap-3">
@@ -212,9 +224,20 @@
                     </div>
                     <div class="col-md-4">
                         <div class="content-container">
-                            <h4 class="section-title">Categorías Más Vendidas</h4>
+                            <h4 class="section-title">Inventario por Movimientos</h4>
                             <div class="chart-container">
-                                <canvas id="categoriesChart"></canvas>
+                                <canvas id="inventoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="content-container">
+                            <h4 class="section-title">CxP por Estado de Pago</h4>
+                            <div class="chart-container" style="min-height: 260px;">
+                                <canvas id="cxpChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -229,20 +252,23 @@
                             <table class="table transaction-table">
                                 <thead>
                                     <tr>
+                                        <th>Tipo</th>
                                         <th>Factura</th>
-                                        <th>Cliente</th>
+                                        <th>Tercero</th>
                                         <th>Monto</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
+                                        <td><span class="badge bg-secondary text-uppercase">Factura</span></td>
                                         <td>FAC-2025-00128</td>
                                         <td>Juan Pérez</td>
                                         <td>$1,513.48</td>
                                         <td><span class="badge badge-success">Pagada</span></td>
                                     </tr>
                                     <tr>
+                                        <td><span class="badge bg-secondary text-uppercase">Compra</span></td>
                                         <td>FAC-2025-00127</td>
                                         <td>María Gómez</td>
                                         <td>$2,250.00</td>
