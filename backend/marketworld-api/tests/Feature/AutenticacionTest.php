@@ -87,7 +87,7 @@ class AutenticacionTest extends TestCase
 
         // En las pruebas, actingAs persiste. Para probar que el logout funcionó,
         // tendríamos que hacer una petición sin el actingAs previo, pero en Laravel
-        // esto es complejo en un mismo método de prueba. 
+        // esto es complejo en un mismo método de prueba.
         // Verificamos al menos que el logout respondió correctamente.
     }
 }

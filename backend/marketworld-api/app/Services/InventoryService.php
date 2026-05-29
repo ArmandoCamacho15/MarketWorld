@@ -22,8 +22,8 @@ class InventoryService
      */
     public function calcularCostoPromedioPonderado(float $stockActual, float $costoActual, float $cantidadEntrante, float $precioUnitarioNuevo, int $decimals = 4): float
     {
-        if ($cantidadEntrante < 0) {
-            throw new InvalidArgumentException("La cantidad entrante no puede ser negativa.");
+        if ($cantidadEntrante <= 0) {
+            throw new InvalidArgumentException("La cantidad entrante debe ser mayor a cero.");
         }
 
         if ($stockActual <= 0) {

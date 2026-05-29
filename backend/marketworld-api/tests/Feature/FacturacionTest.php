@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Account;
+use App\Models\InventoryMovement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -30,10 +31,10 @@ class FacturacionTest extends TestCase
     {
         $usuario  = User::factory()->create();
         $usuario->assignRole('Administrador');
-        
+
         $cliente  = Customer::factory()->create(['estado' => 'Activo']);
         $producto = Product::factory()->create([
-            'stock' => 10, 
+            'stock' => 10,
             'precio_venta' => 50000,
             'precio_compra' => 30000
         ]);
@@ -54,7 +55,7 @@ class FacturacionTest extends TestCase
 
         // Verificar que el stock bajó exactamente en la cantidad facturada
         $this->assertEquals($stockAntes - 3, $producto->fresh()->stock);
-        
+
         // Verificar que se creó el asiento contable
         $this->assertDatabaseHas('journal_entries', [
             'referencia_tipo' => 'Invoice',
@@ -95,5 +96,57 @@ class FacturacionTest extends TestCase
             'metodo_pago'    => 'Contado',
             'items' => [['product_id' => $producto->id, 'cantidad' => 1]],
         ])->assertStatus(422);
+    }
+
+    #[Test]
+    public function anular_factura_restituye_stock_y_crea_movimiento_de_entrada(): void
+    {
+        $usuario  = User::factory()->create();
+        $usuario->assignRole('Administrador');
+
+        $cliente  = Customer::factory()->create(['estado' => 'Activo']);
+        $producto = Product::factory()->create([
+            'stock' => 10,
+            'precio_venta' => 50000,
+            'precio_compra' => 30000,
+        ]);
+
+        $respuesta = $this->actingAs($usuario)->postJson('/api/v1/invoices', [
+            'numero_factura' => 'FAC-004',
+            'customer_id'    => $cliente->id,
+            'fecha'          => now()->format('Y-m-d'),
+            'metodo_pago'    => 'Contado',
+            'items' => [
+                ['product_id' => $producto->id, 'cantidad' => 3],
+            ],
+        ]);
+
+        $respuesta->assertStatus(201);
+
+        $invoiceId = $respuesta->json('data.id');
+        $stockAntesDeAnular = $producto->fresh()->stock;
+
+        $anulacion = $this->actingAs($usuario)->putJson('/api/v1/invoices/' . $invoiceId, [
+            'estado' => 'Anulada',
+            'motivo_anulacion' => 'Cliente devolvió la compra por error de pedido',
+        ]);
+
+        $anulacion->assertStatus(200)
+            ->assertJsonPath('data.estado', 'Anulada');
+
+        $productoActualizado = $producto->fresh();
+
+        $this->assertEquals(10, $productoActualizado->stock);
+        $this->assertEquals('30000.00', (string) $productoActualizado->precio_compra);
+
+        $this->assertEquals(1, InventoryMovement::query()->where('product_id', $producto->id)->where('tipo', 'Entrada')->count());
+
+        $this->assertDatabaseHas('inventory_movements', [
+            'product_id' => $producto->id,
+            'tipo' => 'Entrada',
+            'cantidad' => 3,
+            'stock_anterior' => $stockAntesDeAnular,
+            'stock_nuevo' => 10,
+        ]);
     }
 }

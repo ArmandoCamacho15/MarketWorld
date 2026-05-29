@@ -55,10 +55,10 @@ class ComprasTest extends TestCase
         $respuesta->assertStatus(201);
 
         $productoActualizado = $producto->fresh();
-        
+
         // Stock debe ser 20 (10 iniciales + 10 nuevos)
         $this->assertEquals(20, $productoActualizado->stock);
-        
+
         // Nuevo costo promedio: (10 * 1000 + 10 * 2000) / 20 = 1500
         $this->assertEquals(1500, (float) $productoActualizado->precio_compra);
 

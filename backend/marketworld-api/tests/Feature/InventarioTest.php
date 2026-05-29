@@ -44,7 +44,7 @@ class InventarioTest extends TestCase
     public function se_pueden_listar_productos_con_stock_bajo(): void
     {
         $usuario = User::factory()->create();
-        
+
         // Producto con stock bajo
         Product::factory()->create(['stock' => 2, 'stock_minimo' => 5, 'estado' => 'Activo']);
         // Producto con stock normal
@@ -60,9 +60,9 @@ class InventarioTest extends TestCase
     public function la_valorizacion_del_inventario_es_correcta(): void
     {
         $usuario = User::factory()->create();
-        
+
         Product::factory()->create([
-            'precio_compra' => 100, 
+            'precio_compra' => 100,
             'stock' => 10,
             'estado' => 'Activo'
         ]);

@@ -103,7 +103,9 @@ Route::prefix('v1')->group(function () {
         Route::get('products/valuation', [ProductController::class, 'valuation']);
         Route::apiResource('products', ProductController::class);
         Route::apiResource('categories', CategoryController::class);
-        Route::apiResource('inventory-movements', InventoryMovementController::class)->only(['index', 'store']);
+        Route::apiResource('inventory-movements', InventoryMovementController::class)
+            ->only(['index', 'store'])
+            ->middleware('role:Administrador|Bodeguero');
 
         // === CRM ===
         Route::prefix('crm')->group(function () {
