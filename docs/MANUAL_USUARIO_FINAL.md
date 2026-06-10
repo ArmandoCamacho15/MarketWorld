@@ -28,7 +28,7 @@ Este manual le guiará paso a paso en el uso de **MarketWorld ERP**, el sistema 
 ### ¿Cómo ingresar al sistema?
 
 1. Abra su navegador de internet (Google Chrome, Firefox o Edge).
-2. Escriba en la barra de dirección la URL del sistema: `http://[DIRECCIÓN DEL SISTEMA]/html/Login.html`
+2. Escriba en la barra de dirección la URL del sistema (por ejemplo: `https://marketworld-erp.vercel.app/html/Login.html` o la que haya configurado en Vercel).
 3. Verá la pantalla de inicio de sesión con dos campos: **Correo electrónico** y **Contraseña**.
 4. Ingrese su correo electrónico institucional en el campo correspondiente.
 5. Ingrese su contraseña. Por seguridad, los caracteres no se muestran en pantalla.
@@ -107,19 +107,19 @@ El módulo de **Inventario** le permite administrar todos los productos que su e
 
 | Campo | Descripción | Ejemplo |
 |-------|-------------|---------|
-| **SKU** | Código único del producto. No puede repetirse. | `PROD-001` |
+| **Código** | Código único del producto. No puede repetirse. | `PROD-001` |
 | **Nombre** | Nombre descriptivo del producto. | `Camiseta Polo Azul Talla M` |
+| **Descripción** | Descripción detallada del producto. | `Camiseta polo de algodón 100% orgánico, cuello camisero, botones frontales, manga corta, color azul, talla M.` |
 | **Categoría** | A qué grupo pertenece el producto. | `Ropa` |
 | **Precio de compra** | Cuánto le costó a usted el producto. | `$25.000` |
 | **Precio de venta** | A cuánto lo vende al cliente. | `$45.000` |
 | **Stock inicial** | Cuántas unidades tiene disponibles ahora. | `50` |
 | **Stock mínimo** | Cuándo quiere recibir una alerta de stock bajo. | `10` |
-| **IVA** | Porcentaje de impuesto. Por defecto: 19%. | `19` |
 | **Estado** | Si el producto está disponible para venta. | `Activo` |
 
 3. Haga clic en **"Guardar"**. El producto aparecerá en la lista.
 
-> **¿Qué es el SKU?** Es el código que identifica de forma única a cada producto en el sistema. Puede ser un código de barras, una referencia interna, etc.
+> **¿Qué es el Código?** Es el código que identifica de forma única a cada producto en el sistema. Puede ser un código de barras, una referencia interna, etc.
 
 ### 3.2 Cómo buscar un producto
 
@@ -176,7 +176,7 @@ El módulo de **Facturación** le permite registrar todas las ventas a sus clien
 5. **Seleccione el método de pago:** Efectivo, Tarjeta o Transferencia.
 6. Si aplica, ingrese un **descuento** en el campo correspondiente.
 7. Revise el **total** en la parte inferior del formulario.
-8. Haga clic en **"Guardar Factura"**.
+8. Haga clic en **"Generar Factura"**.
 
 ![Detalle de factura](../img/Facturacion_Detalle_Factura.png)
 
@@ -418,11 +418,10 @@ El módulo de **Reportes** le permite generar informes detallados para la toma d
 |-------|-------------|
 | **Nombre y Apellido** | Nombre completo del empleado |
 | **Correo electrónico** | Será su usuario de acceso |
-| **Teléfono** | Número de contacto |
 | **Contraseña** | Contraseña inicial (el usuario debe cambiarla al ingresar) |
 | **Rol** | Administrador, Bodeguero o Usuario |
 
-3. Haga clic en **"Crear Usuario"**.
+3. Haga clic en **"Guardar Usuario"**.
 
 El nuevo usuario recibirá sus credenciales y podrá acceder al sistema inmediatamente.
 
@@ -527,7 +526,7 @@ Esta tarea es responsabilidad del administrador del sistema. Se recomienda reali
 
 | Término | Definición |
 |---------|------------|
-| **SKU** | Stock Keeping Unit. Código único que identifica a cada producto en el inventario. |
+| **Código** | Código único que identifica a cada producto en el inventario. |
 | **IVA** | Impuesto al Valor Agregado. En Colombia la tarifa general es del 19%. |
 | **Stock** | Cantidad de unidades disponibles de un producto. |
 | **Stock mínimo** | Nivel de inventario por debajo del cual se genera una alerta de reabastecimiento. |

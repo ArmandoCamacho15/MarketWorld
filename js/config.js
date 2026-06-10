@@ -13,7 +13,7 @@ const APP_CONFIG = {
     API_URL: (typeof document !== 'undefined' && document.body && document.body.dataset.apiUrl) 
         || (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)
             ? (window.location.protocol + '//' + window.location.hostname + ':8000/api/v1')
-            : 'http://127.0.0.1:8000/api/v1'),
+            : 'https://marketworld-api-k8bvf.ondigitalocean.app/api/v1'),
     MODO_DEBUG: (typeof document !== 'undefined' && document.body && document.body.dataset.debug === 'true'),
     AUTH_TOKEN_KEY: 'marketworld_auth_token',
     AUTH_USER_KEY: 'marketworld_auth_user'

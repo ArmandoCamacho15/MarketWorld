@@ -752,83 +752,36 @@ Password: (valor de ADMIN_DEFAULT_PASSWORD en .env)
 
 ## 8. Instrucciones de despliegue en producción
 
-### 8.1 Preparación del servidor (VPS / Hosting compartido cPanel)
+El sistema se despliega utilizando una arquitectura en la nube (PaaS) para garantizar escalabilidad y evitar configuraciones manuales de servidores. Se hace uso de **DigitalOcean App Platform** para el backend y **Vercel** para el frontend.
 
-```bash
-# Requisitos mínimos del servidor:
-# - PHP 8.2+ con extensiones: pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json
-# - MySQL 8.0
-# - Composer 2.x instalado globalmente
-# - Acceso SSH
+### 8.1 Despliegue del Backend (DigitalOcean App Platform)
 
-# 1. Clonar el repositorio en el servidor
-git clone https://github.com/ArmandoCamacho15/MarketWorld.git /var/www/marketworld
+1. En DigitalOcean, crear una nueva "App" conectada al repositorio de GitHub.
+2. Seleccionar la rama `main` y especificar el directorio fuente: `backend/marketworld-api`.
+3. Agregar una base de datos administrada (Dev Database o superior).
+4. Configurar las variables de entorno críticas en el panel:
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_KEY=base64:...`
+   - `FRONTEND_URL=https://[DOMINIO_VERCEL].vercel.app`
+   - `SANCTUM_STATEFUL_DOMAINS=[DOMINIO_VERCEL].vercel.app` (sin `https://`)
+   - `SESSION_SECURE_COOKIE=true`
+5. Configurar el comando "Pre-Deploy" para ejecutar las migraciones: `php artisan migrate --force --seed`
+6. El buildpack detectará automáticamente Laravel a través del archivo `Procfile` y el `composer.json`, y realizará el despliegue de la API y la conexión a MySQL.
 
-# 2. Instalar dependencias de producción (sin paquetes de desarrollo)
-cd /var/www/marketworld/backend/marketworld-api
-composer install --optimize-autoloader --no-dev
+### 8.2 Despliegue del Frontend (Vercel)
 
-# 3. Configurar .env de producción
-cp .env.example .env
-nano .env
-```
+1. En el código local, actualizar el archivo `js/config.js` para apuntar a la URL generada por DigitalOcean:
+   ```javascript
+   const APP_CONFIG = {
+       API_URL: 'https://marketworld-api-[hash].ondigitalocean.app/api/v1',
+   };
+   ```
+2. Subir los cambios a GitHub.
+3. En Vercel, importar el repositorio. Como es Vanilla JS, dejar el framework preset en "Other" y el directorio raíz por defecto.
+4. Vercel generará una URL pública con certificado SSL automático (ej. `marketworld-erp.vercel.app`).
+5. Asegurarse de que esta URL esté correctamente configurada en las variables `FRONTEND_URL` y `SANCTUM_STATEFUL_DOMAINS` de DigitalOcean para que CORS y las cookies funcionen.
 
-**Variables de entorno críticas para producción:**
-```ini
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://tu-dominio.com
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_DATABASE=marketworld_produccion
-DB_USERNAME=usuario_db_produccion
-DB_PASSWORD=contraseña_segura_aqui
-
-SANCTUM_STATEFUL_DOMAINS=tu-dominio.com
-CORS_ALLOWED_ORIGINS=https://tu-dominio.com
-CORS_SUPPORTS_CREDENTIALS=true
-
-SESSION_DRIVER=database
-SESSION_SECURE_COOKIE=true
-SESSION_SAME_SITE=lax
-SESSION_LIFETIME=120
-
-BCRYPT_ROUNDS=12
-LOG_LEVEL=warning
-```
-
-```bash
-# 4. Generar clave de producción
-php artisan key:generate --force
-
-# 5. Ejecutar migraciones en producción
-php artisan migrate --force
-
-# 6. Ejecutar seeders
-php artisan db:seed --force
-
-# 7. Optimizar la aplicación para producción
-php artisan config:cache    # Cachea config/
-php artisan route:cache     # Cachea rutas
-php artisan view:cache      # Cachea vistas Blade
-php artisan event:cache     # Cachea listeners
-
-# 8. Establecer permisos correctos
-chmod -R 775 storage
-chmod -R 775 bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-
-# 9. Configurar el DocumentRoot del servidor web (Apache/Nginx)
-# Apuntar al directorio: /var/www/marketworld/backend/marketworld-api/public
-
-# 10. (Opcional) Iniciar el worker de colas si se usan jobs
-php artisan queue:work --daemon --tries=3 &
-
-# 11. Verificar el estado de la aplicación
-curl https://tu-dominio.com/api/health
-# Respuesta esperada: {"success":true,"status":"OK","version":"v1","app":"MarketWorld"}
-```
 
 ### 8.2 Configuración de Nginx (referencia)
 
