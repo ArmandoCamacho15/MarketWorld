@@ -67,12 +67,14 @@ class AuthController extends Controller
     }
 
     /**
-     * Iniciar sesión con Sanctum usando sesión por cookie HttpOnly.
+     * Iniciar sesión con Sanctum usando Bearer Token (token-based, cross-domain).
+     * Genera un Personal Access Token que el cliente almacena y envía
+     * en cada petición como: Authorization: Bearer {token}
      */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string|min:6',
         ]);
 
@@ -80,23 +82,26 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Credenciales inválidas',
-                'data' => null,
-                'errors' => null,
+                'data'    => null,
+                'errors'  => null,
             ], 401);
         }
 
-        // Regenerar sesión evita fixation cuando el request trae store de sesión.
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        }
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        AuditLogger::record($request, 'user_login', 'Inicio de sesión exitoso.', [
+        // Revocar tokens anteriores del mismo dispositivo para evitar acumulación.
+        $user->tokens()->where('name', 'auth_token')->delete();
+
+        // Crear un nuevo Personal Access Token de Sanctum.
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        AuditLogger::record($request, 'user_login', 'Inicio de sesión exitoso (token).', [
             'entity_type' => 'user',
-            'entity_id' => $user->id,
-            'metadata' => [
+            'entity_id'   => $user->id,
+            'metadata'    => [
                 'email' => $user->email,
-                'rol' => $user->getRoleNames()->first() ?? 'Sin Rol',
+                'rol'   => $user->getRoleNames()->first() ?? 'Sin Rol',
             ],
         ]);
 
@@ -104,6 +109,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Inicio de sesión exitoso',
             'data'    => [
+                'token' => $token,
                 'user'  => [
                     'id'    => $user->id,
                     'name'  => $user->name,
@@ -137,29 +143,25 @@ class AuthController extends Controller
     }
 
     /**
-     * Cerrar sesión invalidando sesión y token Sanctum actual si existe.
+     * Cerrar sesión revocando el Bearer Token actual de Sanctum.
+     * El cliente debe eliminar el token de su almacenamiento local.
      */
     public function logout(Request $request): JsonResponse
     {
-        $currentUserId = $request->user() ? $request->user()->id : null;
+        $user          = $request->user();
+        $currentUserId = $user?->id;
 
-        $accessToken = $request->user() ? $request->user()->currentAccessToken() : null;
+        // Revocar únicamente el token con el que llegó esta petición.
+        $accessToken = $user?->currentAccessToken();
         if ($accessToken && method_exists($accessToken, 'delete')) {
             $accessToken->delete();
         }
 
-        Auth::guard('web')->logout();
-
-        if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-
-        AuditLogger::record($request, 'user_logout', 'Sesión cerrada correctamente.', [
+        AuditLogger::record($request, 'user_logout', 'Token revocado. Sesión cerrada.', [
             'entity_type' => 'user',
-            'entity_id' => $currentUserId,
-            'metadata' => [
-                'email' => $request->user()?->email,
+            'entity_id'   => $currentUserId,
+            'metadata'    => [
+                'email' => $user?->email,
             ],
         ]);
 

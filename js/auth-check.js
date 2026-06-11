@@ -4,20 +4,12 @@
     'use strict';
 
     var AUTH_TOKEN_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_TOKEN_KEY : 'marketworld_auth_token');
-    var AUTH_USER_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY : 'marketworld_auth_user');
-
-    function getStoredUser() {
-        var raw = localStorage.getItem(AUTH_USER_KEY);
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw);
-        } catch (error) {
-            return null;
-        }
-    }
+    var AUTH_USER_KEY  = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY  : 'marketworld_auth_user');
 
     function clearSession() {
-        // La sesión se limpia en el backend; el frontend ya no persiste estado de auth.
+        // Eliminar el token y datos del usuario del almacenamiento local.
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
     }
 
     function redirectToLogin() {
@@ -37,6 +29,14 @@
     }
 
     function checkSession() {
+        // Shortcircuit inmediato: si no hay token en localStorage no tiene caso
+        // llamar al backend, ya sería rechazado con 401 de todas formas.
+        var token = localStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) {
+            redirectToLogin();
+            return Promise.resolve(false);
+        }
+
         if (typeof MarketWorld === 'undefined' || !MarketWorld.api || !MarketWorld.api.auth) {
             redirectToLogin();
             return Promise.resolve(false);

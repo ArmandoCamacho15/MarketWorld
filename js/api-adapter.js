@@ -16,12 +16,13 @@
     // -------------------------------------------------------
     var BASE_URL = global.MARKETWORLD_API_BASE_URL || (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.API_URL : 'http://127.0.0.1:8000/api/v1');
     var API_ROOT = BASE_URL.replace('/api/v1', '');
-    var CSRF_URL = API_ROOT + '/sanctum/csrf-cookie';
     var AUTH_TOKEN_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_TOKEN_KEY : 'marketworld_auth_token');
     var AUTH_USER_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY : 'marketworld_auth_user');
 
-    // Credenciales obligatorias para cookies de sesión Sanctum entre dominios (Vercel ↔ API).
-    var FETCH_CREDENTIALS = 'include';
+    // Token-based auth: ya no se necesitan cookies de sesión cross-site.
+    // credentials: 'omit' evita que el navegador adjunte cookies de terceros
+    // que Chrome bloquearía en contexto cross-site (Vercel ↔ DigitalOcean).
+    var FETCH_CREDENTIALS = 'omit';
     var FETCH_MODE = 'cors';
 
     // Cabeceras comunes para JSON
@@ -40,59 +41,42 @@
         });
     }
 
-    function setSessionState(user) {
-        // La sesión ahora se maneja exclusivamente por cookies HttpOnly.
-        // No guardamos tokens ni datos sensibles en el navegador para prevenir XSS.
+    // --- Gestión del token de autenticación en localStorage ---
+
+    function getAuthToken() {
+        return localStorage.getItem(AUTH_TOKEN_KEY) || null;
+    }
+
+    function setSessionState(user, token) {
+        // Persistir el Bearer Token en localStorage para todas las peticiones.
+        if (token) {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+        }
+        // Guardar datos básicos del usuario (no sensibles) para mostrarse en la UI.
+        if (user) {
+            try {
+                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+            } catch (e) { /* quota exceeded: ignorar */ }
+        }
     }
 
     function clearSessionState() {
-        // Limpieza de estado local si fuera necesario, pero ya no persistimos la sesión en el navegador.
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
     }
 
     function buildHeaders(customHeaders) {
-        return Object.assign({}, JSON_HEADERS, customHeaders || {});
+        var headers = Object.assign({}, JSON_HEADERS, customHeaders || {});
+        // Inyectar el Bearer Token en cada petición automáticamente.
+        var token = getAuthToken();
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+        return headers;
     }
 
     function isFormData(value) {
         return typeof FormData !== 'undefined' && value instanceof FormData;
-    }
-
-    function getCookieValue(name) {
-        var prefix = name + '=';
-        var parts = document.cookie ? document.cookie.split(';') : [];
-
-        for (var i = 0; i < parts.length; i++) {
-            var cookie = parts[i].trim();
-            if (cookie.indexOf(prefix) === 0) {
-                return cookie.substring(prefix.length);
-            }
-        }
-
-        return null;
-    }
-
-    function attachXsrfHeader(config) {
-        var method = (config.method || 'GET').toUpperCase();
-        var needsCsrf = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
-
-        if (!needsCsrf) {
-            return config;
-        }
-
-        var xsrfCookie = getCookieValue('XSRF-TOKEN');
-        if (!xsrfCookie) {
-            return config;
-        }
-
-        var decodedToken = xsrfCookie;
-        try {
-            decodedToken = decodeURIComponent(xsrfCookie);
-        } catch (e) {
-            decodedToken = xsrfCookie;
-        }
-
-        config.headers['X-XSRF-TOKEN'] = decodedToken;
-        return config;
     }
 
     function parseResponseBody(res) {
@@ -198,13 +182,12 @@
         }
 
         var config = buildFetchConfig(requestOptions, headers);
-        config = attachXsrfHeader(config);
 
         return fetch(url, config)
             .then(function (res) {
-                // Si la sesión caducó, limpiar estado local y regresar al login.
+                // Si el token es inválido o expiró, limpiar y redirigir al login.
                 if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/me')) {
-                    console.warn('Sesión expirada. Redirigiendo al login...');
+                    console.warn('Token inválido o expirado. Redirigiendo al login...');
                     clearSessionState();
                     window.location.href = APP_CONFIG.toHtmlPage('Login.html');
                     return;
@@ -223,21 +206,6 @@
                 });
                 }
             );
-    }
-
-    function initCsrfCookie() {
-        return fetch(CSRF_URL, buildFetchConfig({
-            method: 'GET',
-        }, {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        }));
-    }
-
-    function ensureCsrfCookie() {
-        return initCsrfCookie().catch(function (error) {
-            console.warn('[MarketWorld API] No se pudo inicializar cookie CSRF:', error);
-        });
     }
 
     // -------------------------------------------------------
@@ -516,39 +484,43 @@
         },
 
         login: function (email, password) {
-            return ensureCsrfCookie()
-                .then(function () {
-                    return apiFetch('/auth/login', {
-                        method: 'POST',
-                        body: JSON.stringify({ email: email, password: password }),
-                    });
-                })
-                .then(function (res) {
-                    if (res && res.success && res.data) {
-                        var user = res.data.user || res.data;
-                        setSessionState(user || null);
-                    }
-                    return res;
-                });
+            // Login no necesita token previo; es la petición que lo genera.
+            // No usamos ensureCsrfCookie porque el endpoint es público y
+            // token-based auth no requiere CSRF.
+            return apiFetch('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email: email, password: password }),
+            })
+            .then(function (res) {
+                if (res && res.success && res.data) {
+                    var token = res.data.token || null;
+                    var user  = res.data.user  || res.data;
+                    // Guardar token y usuario en localStorage.
+                    setSessionState(user, token);
+                }
+                return res;
+            });
         },
 
         me: function () {
-            return ensureCsrfCookie()
-                .then(function () {
-                    return apiFetch('/auth/me');
-                })
+            // Con token Bearer, /auth/me solo necesita el header Authorization.
+            // No requiere precalentamiento CSRF.
+            return apiFetch('/auth/me')
                 .then(function (res) {
                     if (res && res.success && res.data) {
-                        setSessionState(res.data);
+                        // Refrescar datos del usuario en localStorage (sin tocar el token).
+                        setSessionState(res.data, null);
                     }
                     return res;
                 });
         },
 
         logout: function () {
-            return ensureCsrfCookie()
-                .then(function () {
-                    return apiFetch('/auth/logout', { method: 'POST' });
+            // Enviar la petición de logout al backend para revocar el token en BD.
+            return apiFetch('/auth/logout', { method: 'POST' })
+                .catch(function (err) {
+                    // Incluso si el backend falla, limpiar el token local.
+                    console.warn('[MarketWorld API] Logout backend error:', err);
                 })
                 .finally(function () {
                     clearSessionState();
@@ -557,8 +529,8 @@
         },
 
         getToken: function () {
-            // Deprecado: el token ahora viaja en cookies HttpOnly
-            return null;
+            // Devuelve el token guardado en localStorage.
+            return getAuthToken();
         },
     };
 
@@ -870,14 +842,13 @@
         companySettings: CompanySettingsAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
-        initCsrfCookie: initCsrfCookie,
-        ensureCsrfCookie: ensureCsrfCookie,
         normalizeListResponse: normalizeListResponse,
         BASE_URL: BASE_URL,
     };
 
-    // Precargar cookie CSRF al iniciar para que auth/me y demás rutas envíen sesión.
-    ensureCsrfCookie();
+    // Con token Bearer ya no es necesario precalentar la cookie CSRF al cargar.
+    // CSRF solo es relevante para el flujo de sesión por cookie (SPA stateful).
+    // Se mantiene ensureCsrfCookie disponible en la API por si se necesita en el futuro.
 
     // Indicar en consola si el backend responde al cargar la página
     checkBackend().then(function (online) {
