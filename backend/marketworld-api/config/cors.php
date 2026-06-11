@@ -17,7 +17,10 @@ return [
      */
     'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost'))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        // Permite todas las URLs de preview de Vercel (cambian con cada deploy)
+        '#^https://[a-z0-9\-]+\.vercel\.app$#',
+    ],
 
     /*
      * Cabeceras que puede enviar el frontend
