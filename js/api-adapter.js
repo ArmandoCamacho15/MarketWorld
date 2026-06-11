@@ -20,12 +20,25 @@
     var AUTH_TOKEN_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_TOKEN_KEY : 'marketworld_auth_token');
     var AUTH_USER_KEY = (typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.AUTH_USER_KEY : 'marketworld_auth_user');
 
+    // Credenciales obligatorias para cookies de sesión Sanctum entre dominios (Vercel ↔ API).
+    var FETCH_CREDENTIALS = 'include';
+    var FETCH_MODE = 'cors';
+
     // Cabeceras comunes para JSON
     var JSON_HEADERS = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
     };
+
+    function buildFetchConfig(requestOptions, headers) {
+        var options = requestOptions || {};
+        return Object.assign({}, options, {
+            headers: headers,
+            mode: FETCH_MODE,
+            credentials: FETCH_CREDENTIALS,
+        });
+    }
 
     function setSessionState(user) {
         // La sesión ahora se maneja exclusivamente por cookies HttpOnly.
@@ -184,10 +197,7 @@
             headers = buildHeaders(headers);
         }
 
-        var config = Object.assign({}, requestOptions, {
-            headers: headers,
-            credentials: 'include',
-        });
+        var config = buildFetchConfig(requestOptions, headers);
         config = attachXsrfHeader(config);
 
         return fetch(url, config)
@@ -216,13 +226,17 @@
     }
 
     function initCsrfCookie() {
-        return fetch(CSRF_URL, {
+        return fetch(CSRF_URL, buildFetchConfig({
             method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+        }, {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        }));
+    }
+
+    function ensureCsrfCookie() {
+        return initCsrfCookie().catch(function (error) {
+            console.warn('[MarketWorld API] No se pudo inicializar cookie CSRF:', error);
         });
     }
 
@@ -492,14 +506,17 @@
     var AuthAPI = {
 
         register: function (data) {
-            return apiFetch('/auth/register', {
-                method: 'POST',
-                body: JSON.stringify(data),
-            });
+            return ensureCsrfCookie()
+                .then(function () {
+                    return apiFetch('/auth/register', {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                    });
+                });
         },
 
         login: function (email, password) {
-            return initCsrfCookie()
+            return ensureCsrfCookie()
                 .then(function () {
                     return apiFetch('/auth/login', {
                         method: 'POST',
@@ -516,16 +533,23 @@
         },
 
         me: function () {
-            return apiFetch('/auth/me').then(function (res) {
-                if (res && res.success && res.data) {
-                    setSessionState(res.data);
-                }
-                return res;
-            });
+            return ensureCsrfCookie()
+                .then(function () {
+                    return apiFetch('/auth/me');
+                })
+                .then(function (res) {
+                    if (res && res.success && res.data) {
+                        setSessionState(res.data);
+                    }
+                    return res;
+                });
         },
 
         logout: function () {
-            return apiFetch('/auth/logout', { method: 'POST' })
+            return ensureCsrfCookie()
+                .then(function () {
+                    return apiFetch('/auth/logout', { method: 'POST' });
+                })
                 .finally(function () {
                     clearSessionState();
                     window.location.href = APP_CONFIG.toHtmlPage('Login.html');
@@ -542,10 +566,9 @@
     // Verificar si el backend está disponible
     // -------------------------------------------------------
     function checkBackend() {
-        return fetch(BASE_URL.replace('/v1', '') + '/health', {
-            credentials: 'include',
-            headers: { 'Accept': 'application/json' },
-        })
+        return fetch(BASE_URL.replace('/v1', '') + '/health', buildFetchConfig({}, {
+            'Accept': 'application/json',
+        }))
             .then(function (res) { return res.ok; })
             .catch(function () { return false; });
     }
@@ -847,9 +870,14 @@
         companySettings: CompanySettingsAPI,
         auth:      AuthAPI,
         checkBackend: checkBackend,
+        initCsrfCookie: initCsrfCookie,
+        ensureCsrfCookie: ensureCsrfCookie,
         normalizeListResponse: normalizeListResponse,
         BASE_URL: BASE_URL,
     };
+
+    // Precargar cookie CSRF al iniciar para que auth/me y demás rutas envíen sesión.
+    ensureCsrfCookie();
 
     // Indicar en consola si el backend responde al cargar la página
     checkBackend().then(function (online) {
