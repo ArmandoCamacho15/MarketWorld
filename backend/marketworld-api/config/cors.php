@@ -32,6 +32,7 @@ return [
     // Cachear preflight por 1 hora para reducir latencia de OPTIONS.
     'max_age' => 3600,
 
-    // Requerido para sesión por cookies con Sanctum cuando corresponda.
-    'supports_credentials' => env('CORS_SUPPORTS_CREDENTIALS', false),
+    // Requerido para sesión por cookies con Sanctum (SPA cross-site).
+    // true es obligatorio cuando el frontend y la API están en dominios distintos.
+    'supports_credentials' => env('CORS_SUPPORTS_CREDENTIALS', true),
 ];
