@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MarketWorld - CRM Gestión de Clientes</title>
-    
+
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self'; 
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; 
                    script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com; 
                    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; 
                    font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; 
                    img-src 'self' data: https://ui-avatars.com https://*.gravatar.com; 
-                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443;">
+                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443 https://marketworld-api-k8bvf.ondigitalocean.app https://cdn.jsdelivr.net;">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-          integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
+        integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
     <!-- Hoja de estilos módulo CRM -->
     <link rel="stylesheet" href="../css/crm.css">
     <link rel="stylesheet" href="../css/notifications.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Barra de navegación lateral -->
@@ -34,34 +36,44 @@
             <ul class="nav flex-column mt-4">
                 <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
                 <li class="nav-item">
-                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span
+                            class="nav-text">Inicio</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span
+                            class="nav-text">Dashboard</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span
+                            class="nav-text">Inventario</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span
+                            class="nav-text">Facturación</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span
+                            class="nav-text">Contabilidad</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span
+                            class="nav-text">Compras</span></a>
                 </li>
                 <li class="nav-item active">
-                    <a class="nav-link active" href="crm.html" aria-current="page"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                    <a class="nav-link active" href="crm.html" aria-current="page"><i class="bi bi-people"></i> <span
+                            class="nav-text">CRM</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span
+                            class="nav-text">Reportes</span></a>
                 </li>
                 <li class="nav-item mt-4">
-                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span
+                            class="nav-text">Configuración</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Cerrar Sesión</span></a>
+                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span
+                            class="nav-text">Cerrar Sesión</span></a>
                 </li>
             </ul>
         </div>
@@ -72,21 +84,27 @@
             <div class="top-bar">
                 <div class="search-bar">
                     <i class="bi bi-search"></i>
-                    <input type="text" class="form-control" id="crmSearchInput" placeholder="Buscar clientes, oportunidades...">
+                    <input type="text" class="form-control" id="crmSearchInput"
+                        placeholder="Buscar clientes, oportunidades...">
                 </div>
                 <div class="user-info">
                     <div class="notification-container position-relative me-3">
-                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                        <button class="btn btn-link position-relative" id="notificationBell"
+                            aria-label="Notificaciones">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                id="notificationBadge" style="display: none;">0</span>
                         </button>
                         <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
                             <div id="notificationsList"></div>
                         </div>
                     </div>
                     <div class="dropdown">
-                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name=Ejecutivo+CRM&background=0d6ef0&color=fff" alt="User">
+                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Ejecutivo+CRM&background=0d6ef0&color=fff"
+                                alt="User">
                             <div class="ms-2 text-start">
                                 <div class="fw-bold text-dark" id="userName">Ejecutivo CRM</div>
                                 <div class="small text-muted" id="userRole">Gestión de Clientes</div>
@@ -94,10 +112,15 @@
                             <i class="bi bi-chevron-down ms-2 text-muted"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-gear me-2"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i
+                                        class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
                         </ul>
                     </div>
                 </div>
@@ -144,7 +167,8 @@
                     <a class="nav-link" data-bs-toggle="tab" href="#oportunidades">Oportunidades</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#actividades" data-bs-target="#actividades">Actividades</a>
+                    <a class="nav-link" data-bs-toggle="tab" href="#actividades"
+                        data-bs-target="#actividades">Actividades</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="tab" href="#segmentos">Segmentos</a>
@@ -164,7 +188,7 @@
                             <i class="bi bi-plus-circle me-2"></i> Nuevo Cliente
                         </button>
                     </div>
-                    
+
                     <!-- Filtros para búsqueda de clientes por tipo, ciudad y segmento -->
                     <div class="filter-bar mb-4">
                         <div class="row g-3">
@@ -204,18 +228,19 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row" id="clientsList">
                         <!-- Las tarjetas de clientes se cargarán dinámicamente desde la API -->
                     </div>
-                    
+
                     <!-- Ficha completa del cliente seleccionado -->
                     <div class="content-container mt-4">
                         <h4 class="section-title">Ficha Completa del Cliente</h4>
                         <div class="row g-3 align-items-end mb-4">
                             <div class="col-md-8">
                                 <label class="form-label">Buscar cliente para cargar la ficha</label>
-                                <input type="text" class="form-control" id="clienteSearchInput" placeholder="Escribe nombre, documento o email">
+                                <input type="text" class="form-control" id="clienteSearchInput"
+                                    placeholder="Escribe nombre, documento o email">
                             </div>
                             <div class="col-md-4">
                                 <button class="btn btn-primary w-100" id="clienteSearchBtn">
@@ -231,7 +256,8 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Nombre Completo / Razón Social</label>
-                                            <input type="text" class="form-control" id="clienteNombre" placeholder="Selecciona un cliente">
+                                            <input type="text" class="form-control" id="clienteNombre"
+                                                placeholder="Selecciona un cliente">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Tipo de Documento</label>
@@ -244,25 +270,29 @@
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Número de Documento</label>
-                                            <input type="text" class="form-control" id="clienteDocumento" placeholder="Selecciona un cliente">
+                                            <input type="text" class="form-control" id="clienteDocumento"
+                                                placeholder="Selecciona un cliente">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="clienteEmail" placeholder="Selecciona un cliente">
+                                            <input type="email" class="form-control" id="clienteEmail"
+                                                placeholder="Selecciona un cliente">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Teléfono</label>
-                                            <input type="text" class="form-control" id="clienteTelefono" placeholder="Selecciona un cliente">
+                                            <input type="text" class="form-control" id="clienteTelefono"
+                                                placeholder="Selecciona un cliente">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Dirección</label>
-                                            <input type="text" class="form-control" id="clienteDireccion" placeholder="Selecciona un cliente">
+                                            <input type="text" class="form-control" id="clienteDireccion"
+                                                placeholder="Selecciona un cliente">
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Historial de compras del cliente -->
                                 <div class="mb-4">
                                     <h5>Historial de Compras</h5>
@@ -316,7 +346,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-4">
                                 <!-- Información adicional y notas del cliente -->
                                 <div class="card mb-4">
@@ -331,12 +361,13 @@
                                                 <option value="Empresa">Empresa</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Límite de Crédito</label>
-                                            <input type="text" class="form-control" id="clienteLimiteCredito" placeholder="Selecciona un cliente">
+                                            <input type="text" class="form-control" id="clienteLimiteCredito"
+                                                placeholder="Selecciona un cliente">
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Segmento</label>
                                             <select class="form-select" id="clienteSegmento">
@@ -346,7 +377,7 @@
                                                 <option value="Corporativo">Corporativo</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Asignado a</label>
                                             <select class="form-select" id="clienteEjecutivo">
@@ -357,14 +388,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="card">
                                     <div class="card-header bg-light">
                                         <h5 class="mb-0">Notas y Comentarios</h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-3">
-                                            <textarea class="form-control" id="clienteNotas" rows="4" placeholder="Agregar notas sobre el cliente..."></textarea>
+                                            <textarea class="form-control" id="clienteNotas" rows="4"
+                                                placeholder="Agregar notas sobre el cliente..."></textarea>
                                         </div>
                                         <button class="btn btn-sm btn-primary" id="btnGuardarNotas">
                                             <i class="bi bi-save me-1"></i> Guardar Notas
@@ -390,7 +422,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Indicadores de embudo de ventas por etapa -->
                     <div class="row mb-4">
                         <div class="col-md-3">
@@ -422,7 +454,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Tabla de oportunidades comerciales -->
                     <div class="content-container">
                         <div class="table-responsive">
@@ -445,7 +477,7 @@
                             </table>
                         </div>
                     </div>
-                    
+
                     <!-- Seguimiento detallado de la oportunidad seleccionada -->
                     <div class="content-container mt-4">
                         <h4 class="section-title">Seguimiento de Oportunidad</h4>
@@ -477,24 +509,26 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="mb-4">
                                             <h6>Descripción</h6>
-                                            <p id="oppDetailDescription" class="mb-2 text-muted">Selecciona una oportunidad para ver su descripción.</p>
+                                            <p id="oppDetailDescription" class="mb-2 text-muted">Selecciona una
+                                                oportunidad para ver su descripción.</p>
                                             <h6 class="mt-3">Notas</h6>
                                             <p id="oppDetailNotes" class="mb-0 text-muted">Sin notas registradas.</p>
                                         </div>
-                                        
+
                                         <div class="mb-4">
                                             <h6>Actividades</h6>
                                             <ul class="activity-timeline" id="oppActivitiesList">
-                                                <li class="activity-item text-muted">Selecciona una oportunidad para ver sus actividades.</li>
+                                                <li class="activity-item text-muted">Selecciona una oportunidad para ver
+                                                    sus actividades.</li>
                                             </ul>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-4">
                                 <!-- Información adicional y recordatorios automáticos -->
                                 <div class="card mb-4">
@@ -513,28 +547,32 @@
                                                 <option value="perdido">Perdido</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Probabilidad de Cierre</label>
-                                            <input type="range" class="form-range" id="oppProbabilidadInput" min="0" max="100" value="80">
+                                            <input type="range" class="form-range" id="oppProbabilidadInput" min="0"
+                                                max="100" value="80">
                                             <div class="text-center fw-bold" id="oppProbabilidadValue">80%</div>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Valor Estimado</label>
-                                            <input type="text" class="form-control" id="oppValorEstimado" value="$25,000,000">
+                                            <input type="text" class="form-control" id="oppValorEstimado"
+                                                value="$25,000,000">
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Fecha Cierre Esperada</label>
-                                            <input type="date" class="form-control" id="oppFechaCierre" value="2025-06-30">
+                                            <input type="date" class="form-control" id="oppFechaCierre"
+                                                value="2025-06-30">
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label">Notas de Seguimiento</label>
-                                            <textarea class="form-control" id="oppNotas" rows="4" placeholder="Agrega notas sobre esta oportunidad..."></textarea>
+                                            <textarea class="form-control" id="oppNotas" rows="4"
+                                                placeholder="Agrega notas sobre esta oportunidad..."></textarea>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Asignado a</label>
                                             <select class="form-select" id="oppAsignado" disabled>
@@ -543,7 +581,7 @@
                                                 <option>Ana Rodríguez</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div class="d-grid">
                                             <button class="btn btn-success">
                                                 <i class="bi bi-save me-2"></i> Guardar Cambios
@@ -551,14 +589,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="card">
                                     <div class="card-header bg-light">
                                         <h5 class="mb-0">Recordatorios Automáticos</h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="reminderWhatsapp" checked>
+                                            <input class="form-check-input" type="checkbox" id="reminderWhatsapp"
+                                                checked>
                                             <label class="form-check-label" for="reminderWhatsapp">
                                                 Enviar recordatorio por WhatsApp
                                             </label>
@@ -569,7 +608,7 @@
                                                 Enviar recordatorio por Email
                                             </label>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label">Fecha y Hora de Envío</label>
                                             <input type="datetime-local" class="form-control" id="reminderDateTime">
@@ -577,9 +616,10 @@
 
                                         <div class="mb-3">
                                             <label class="form-label">Mensaje Personalizado</label>
-                                            <textarea class="form-control" id="reminderMessage" rows="3" placeholder="Escribe el mensaje del recordatorio..."></textarea>
+                                            <textarea class="form-control" id="reminderMessage" rows="3"
+                                                placeholder="Escribe el mensaje del recordatorio..."></textarea>
                                         </div>
-                                        
+
                                         <div class="d-grid">
                                             <button class="btn btn-primary" id="btnProgramarRecordatorios">
                                                 <i class="bi bi-bell me-2"></i> Programar Recordatorios
@@ -591,7 +631,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Pestaña: Actividades -->
                 <div class="tab-pane fade" id="actividades">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -632,7 +672,7 @@
                             <i class="bi bi-plus-circle me-2"></i> Nuevo Segmento
                         </button>
                     </div>
-                    
+
                     <!-- Tarjetas con información de segmentos existentes -->
                     <div class="row">
                         <div class="col-md-4">
@@ -660,7 +700,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <div class="card mb-4">
                                 <div class="card-header bg-light">
@@ -685,7 +725,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <div class="card mb-4">
                                 <div class="card-header bg-light">
@@ -711,7 +751,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Formulario para crear nuevo segmento -->
                     <div class="content-container">
                         <h4 class="section-title">Crear Nuevo Segmento</h4>
@@ -719,9 +759,10 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Nombre del Segmento</label>
-                                    <input type="text" class="form-control" id="segmentNombre" placeholder="Ej: Clientes Corporativos">
+                                    <input type="text" class="form-control" id="segmentNombre"
+                                        placeholder="Ej: Clientes Corporativos">
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Criterios de Segmentación</label>
                                     <div class="border p-3 rounded">
@@ -744,7 +785,8 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" class="form-control" placeholder="Valor" data-criterio-value>
+                                                <input type="text" class="form-control" placeholder="Valor"
+                                                    data-criterio-value>
                                             </div>
                                         </div>
                                         <button class="btn btn-sm btn-outline-primary" id="btnAgregarCriterio">
@@ -753,13 +795,14 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="segmentDescripcion" rows="4" placeholder="Descripción del segmento..."></textarea>
+                                    <textarea class="form-control" id="segmentDescripcion" rows="4"
+                                        placeholder="Descripción del segmento..."></textarea>
                                 </div>
-                                
+
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <div class="fw-bold">Clientes que cumplen: 0</div>
@@ -783,7 +826,7 @@
                             <i class="bi bi-plus-circle me-2"></i> Nueva Campaña
                         </button>
                     </div>
-                    
+
                     <!-- Tabla con campañas activas y finalizadas -->
                     <div class="content-container">
                         <div class="table-responsive">
@@ -812,7 +855,9 @@
                                         <td>85/120</td>
                                         <td>
                                             <div class="progress" style="height: 10px;">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 32%;" aria-valuenow="32" aria-valuemin="0" aria-valuemax="100"></div>
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                    style="width: 32%;" aria-valuenow="32" aria-valuemin="0"
+                                                    aria-valuemax="100"></div>
                                             </div>
                                             <div class="small text-center">32%</div>
                                         </td>
@@ -835,7 +880,8 @@
                                         <td>0/75</td>
                                         <td>
                                             <div class="progress" style="height: 10px;">
-                                                <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                                <div class="progress-bar" role="progressbar" style="width: 0%;"
+                                                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                             </div>
                                             <div class="small text-center">0%</div>
                                         </td>
@@ -850,7 +896,8 @@
                                     </tr>
                                     <tr>
                                         <td>Descuento Aniversario</td>
-                                        <td><span class="badge bg-success">Email</span> <span class="badge bg-info">WhatsApp</span></td>
+                                        <td><span class="badge bg-success">Email</span> <span
+                                                class="badge bg-info">WhatsApp</span></td>
                                         <td>Todos los clientes</td>
                                         <td><span class="badge bg-secondary">Finalizada</span></td>
                                         <td>01/05/2025</td>
@@ -858,7 +905,9 @@
                                         <td>210/245</td>
                                         <td>
                                             <div class="progress" style="height: 10px;">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 28%;" aria-valuenow="28" aria-valuemin="0" aria-valuemax="100"></div>
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                    style="width: 28%;" aria-valuenow="28" aria-valuemin="0"
+                                                    aria-valuemax="100"></div>
                                             </div>
                                             <div class="small text-center">28%</div>
                                         </td>
@@ -875,7 +924,7 @@
                             </table>
                         </div>
                     </div>
-                    
+
                     <!-- Formulario para crear nueva campaña -->
                     <div class="content-container mt-4">
                         <h4 class="section-title">Crear Nueva Campaña</h4>
@@ -883,9 +932,10 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Nombre de la Campaña</label>
-                                    <input type="text" class="form-control" id="campaignNombre" placeholder="Ej: Oferta de Verano 2025">
+                                    <input type="text" class="form-control" id="campaignNombre"
+                                        placeholder="Ej: Oferta de Verano 2025">
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Canal de Comunicación</label>
                                     <div>
@@ -903,38 +953,42 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Segmento Objetivo</label>
                                     <select class="form-select" id="campaignSegmento">
                                         <option value="">Selecciona un segmento...</option>
                                     </select>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Fechas</label>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input type="date" class="form-control" id="campaignFechaInicio" placeholder="Fecha Inicio">
+                                            <input type="date" class="form-control" id="campaignFechaInicio"
+                                                placeholder="Fecha Inicio">
                                         </div>
                                         <div class="col-md-6">
-                                            <input type="date" class="form-control" id="campaignFechaFin" placeholder="Fecha Fin">
+                                            <input type="date" class="form-control" id="campaignFechaFin"
+                                                placeholder="Fecha Fin">
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Asunto/Mensaje Principal</label>
-                                    <input type="text" class="form-control" id="campaignAsunto" placeholder="Ej: ¡Ofertas Especiales de Verano!">
+                                    <input type="text" class="form-control" id="campaignAsunto"
+                                        placeholder="Ej: ¡Ofertas Especiales de Verano!">
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Contenido del Mensaje</label>
-                                    <textarea class="form-control" id="campaignContenido" rows="6" placeholder="Escriba el contenido de su campaña..."></textarea>
+                                    <textarea class="form-control" id="campaignContenido" rows="6"
+                                        placeholder="Escriba el contenido de su campaña..."></textarea>
                                 </div>
-                                
+
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <div class="fw-bold">Clientes a contactar: 85</div>
@@ -954,7 +1008,8 @@
 
     <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
     <!-- Scripts del sistema -->
     <script src="../js/utils.js"></script>
     <script src="../js/config.js"></script>
@@ -965,4 +1020,5 @@
     <script src="../js/sidebar-toggle.js"></script>
     <script src="../js/crm.js"></script>
 </body>
+
 </html>

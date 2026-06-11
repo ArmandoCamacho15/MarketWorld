@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MarketWorld - Sistema de Facturación Completo</title>
-    
+
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self'; 
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; 
                    script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com; 
                    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; 
                    font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; 
                    img-src 'self' data: https://ui-avatars.com https://*.gravatar.com; 
-                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443;">
+                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443 https://marketworld-api-k8bvf.ondigitalocean.app https://cdn.jsdelivr.net;">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-          integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
+        integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
     <!-- Hoja de estilos módulo facturación -->
     <link rel="stylesheet" href="../css/facturacion.css">
     <link rel="stylesheet" href="../css/notifications.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Barra de navegación lateral -->
@@ -34,34 +36,44 @@
             <ul class="nav flex-column mt-4">
                 <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
                 <li class="nav-item">
-                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span
+                            class="nav-text">Inicio</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span
+                            class="nav-text">Dashboard</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span
+                            class="nav-text">Inventario</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="facturacion.html" aria-current="page"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                    <a class="nav-link active" href="facturacion.html" aria-current="page"><i class="bi bi-receipt"></i>
+                        <span class="nav-text">Facturación</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                    <a class="nav-link" href="contabilidad.html"><i class="bi bi-cash-coin"></i> <span
+                            class="nav-text">Contabilidad</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span
+                            class="nav-text">Compras</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span
+                            class="nav-text">CRM</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span
+                            class="nav-text">Reportes</span></a>
                 </li>
                 <li class="nav-item mt-4">
-                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span
+                            class="nav-text">Configuración</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Cerrar Sesión</span></a>
+                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span
+                            class="nav-text">Cerrar Sesión</span></a>
                 </li>
             </ul>
         </div>
@@ -76,17 +88,22 @@
                 </div>
                 <div class="user-info">
                     <div class="notification-container position-relative me-3">
-                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                        <button class="btn btn-link position-relative" id="notificationBell"
+                            aria-label="Notificaciones">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                id="notificationBadge" style="display: none;">0</span>
                         </button>
                         <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
                             <div id="notificationsList"></div>
                         </div>
                     </div>
                     <div class="dropdown">
-                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff" alt="User">
+                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6ef0&color=fff"
+                                alt="User">
                             <div class="ms-2 text-start">
                                 <div class="fw-bold text-dark" id="userName">Admin User</div>
                                 <div class="small text-muted" id="userRole">Administrador</div>
@@ -94,10 +111,15 @@
                             <i class="bi bi-chevron-down ms-2 text-muted"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-gear me-2"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i
+                                        class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
                         </ul>
                     </div>
                 </div>
@@ -130,7 +152,7 @@
                                     <strong>Facturación Rápida</strong>
                                     <small class="d-block">Ventas en mostrador</small>
                                 </label>
-                                
+
                                 <input type="radio" class="btn-check" name="modoFacturacion" id="modoCompleto">
                                 <label class="btn btn-outline-primary" for="modoCompleto">
                                     <i class="bi bi-file-earmark-text me-2"></i>
@@ -154,23 +176,31 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-8">
-                                                    <label for="buscarProducto" class="form-label fw-semibold">Código o Nombre del Producto</label>
+                                                    <label for="buscarProducto" class="form-label fw-semibold">Código o
+                                                        Nombre del Producto</label>
                                                     <div style="position: relative;">
-                                                        <input type="text" class="form-control form-control-lg" id="buscarProducto" placeholder="Ej: PROD-001 o Laptop" autocomplete="off">
-                                                        <div id="suggestions" class="suggestions-container" style="display: none;"></div>
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="buscarProducto" placeholder="Ej: PROD-001 o Laptop"
+                                                            autocomplete="off">
+                                                        <div id="suggestions" class="suggestions-container"
+                                                            style="display: none;"></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-2">
-                                                    <label for="cantidadProducto" class="form-label fw-semibold">Cantidad</label>
-                                                    <input type="number" class="form-control form-control-lg" id="cantidadProducto" value="1" min="1">
+                                                    <label for="cantidadProducto"
+                                                        class="form-label fw-semibold">Cantidad</label>
+                                                    <input type="number" class="form-control form-control-lg"
+                                                        id="cantidadProducto" value="1" min="1">
                                                 </div>
                                                 <div class="col-md-2 d-flex align-items-end">
-                                                    <button class="btn btn-outline-primary btn-lg w-100 shadow-sm" id="btnBuscarProducto" type="button">
+                                                    <button class="btn btn-outline-primary btn-lg w-100 shadow-sm"
+                                                        id="btnBuscarProducto" type="button">
                                                         <i class="bi bi-search me-1"></i> Buscar
                                                     </button>
                                                 </div>
                                                 <div class="col-md-2 d-flex align-items-end">
-                                                    <button class="btn btn-primary btn-lg w-100 shadow-sm" id="btnAgregarProducto" type="button">
+                                                    <button class="btn btn-primary btn-lg w-100 shadow-sm"
+                                                        id="btnAgregarProducto" type="button">
                                                         <i class="bi bi-plus-circle me-1"></i> Agregar
                                                     </button>
                                                 </div>
@@ -180,7 +210,8 @@
 
                                     <!-- PRODUCTOS DESTACADOS -->
                                     <div class="card mb-4 featured-card">
-                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <div
+                                            class="card-header bg-light d-flex justify-content-between align-items-center">
                                             <h5 class="mb-0">
                                                 <i class="bi bi-fire text-danger me-2"></i>Productos Destacados
                                             </h5>
@@ -204,39 +235,54 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="clienteNombreCompleto" class="form-label fw-semibold">Nombre Completo / Razón Social</label>
-                                                    <input type="text" class="form-control" id="clienteNombreCompleto" placeholder="Nombre del cliente">
+                                                    <label for="clienteNombreCompleto"
+                                                        class="form-label fw-semibold">Nombre Completo / Razón
+                                                        Social</label>
+                                                    <input type="text" class="form-control" id="clienteNombreCompleto"
+                                                        placeholder="Nombre del cliente">
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="clienteDocumentoCompleto" class="form-label fw-semibold">Documento (CC/NIT)</label>
-                                                    <input type="text" class="form-control" id="clienteDocumentoCompleto" placeholder="Número de documento">
+                                                    <label for="clienteDocumentoCompleto"
+                                                        class="form-label fw-semibold">Documento (CC/NIT)</label>
+                                                    <input type="text" class="form-control"
+                                                        id="clienteDocumentoCompleto" placeholder="Número de documento">
                                                 </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-8 mb-3">
-                                                    <label for="clienteDireccion" class="form-label fw-semibold">Dirección</label>
-                                                    <input type="text" class="form-control" id="clienteDireccion" placeholder="Dirección completa">
+                                                    <label for="clienteDireccion"
+                                                        class="form-label fw-semibold">Dirección</label>
+                                                    <input type="text" class="form-control" id="clienteDireccion"
+                                                        placeholder="Dirección completa">
                                                 </div>
                                                 <div class="col-md-4 mb-3">
-                                                    <label for="clienteTelefono" class="form-label fw-semibold">Teléfono</label>
-                                                    <input type="tel" class="form-control" id="clienteTelefono" placeholder="Teléfono">
+                                                    <label for="clienteTelefono"
+                                                        class="form-label fw-semibold">Teléfono</label>
+                                                    <input type="tel" class="form-control" id="clienteTelefono"
+                                                        placeholder="Teléfono">
                                                 </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="clienteEmail" class="form-label fw-semibold">Email</label>
-                                                    <input type="email" class="form-control" id="clienteEmail" placeholder="correo@ejemplo.com">
+                                                    <label for="clienteEmail"
+                                                        class="form-label fw-semibold">Email</label>
+                                                    <input type="email" class="form-control" id="clienteEmail"
+                                                        placeholder="correo@ejemplo.com">
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="clienteCiudad" class="form-label fw-semibold">Ciudad</label>
-                                                    <input type="text" class="form-control" id="clienteCiudad" placeholder="Ciudad">
+                                                    <label for="clienteCiudad"
+                                                        class="form-label fw-semibold">Ciudad</label>
+                                                    <input type="text" class="form-control" id="clienteCiudad"
+                                                        placeholder="Ciudad">
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-end mt-2">
-                                                <button class="btn btn-primary" id="btnGuardarClienteCompleto" type="button">
+                                                <button class="btn btn-primary" id="btnGuardarClienteCompleto"
+                                                    type="button">
                                                     <i class="bi bi-save me-1"></i> Guardar cliente
                                                 </button>
-                                                <button class="btn btn-outline-danger ms-2" id="btnLimpiarClienteCompleto" type="button">Limpiar</button>
+                                                <button class="btn btn-outline-danger ms-2"
+                                                    id="btnLimpiarClienteCompleto" type="button">Limpiar</button>
                                             </div>
                                         </div>
                                     </div>
@@ -245,22 +291,35 @@
 
                                     <!-- PRODUCTOS DESTACADOS (Modo Completo) -->
                                     <div class="card mb-4 featured-card">
-                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <div
+                                            class="card-header bg-light d-flex justify-content-between align-items-center">
                                             <h5 class="mb-0">
                                                 <i class="bi bi-fire text-danger me-2"></i>Productos Destacados
                                             </h5>
                                             <span class="badge bg-danger">Top Ventas</span>
                                         </div>
                                         <!-- Barra de búsqueda prominente (modo Completo): permanece fuera del contenedor dinámico -->
-                                        <div class="p-3" style="border: 1px solid rgba(13,110,253,0.12); box-shadow: 0 6px 18px rgba(13,110,253,0.04); border-radius: 0.5rem; margin: 0.75rem 1rem;">
+                                        <div class="p-3"
+                                            style="border: 1px solid rgba(13,110,253,0.12); box-shadow: 0 6px 18px rgba(13,110,253,0.04); border-radius: 0.5rem; margin: 0.75rem 1rem;">
                                             <div style="position: relative; width:100%;">
                                                 <div class="input-group" style="align-items: center;">
-                                                    <input type="text" id="buscarProductoCompleto" class="form-control form-control-lg" placeholder="Busca un producto por código o nombre..." autocomplete="off">
-                                                    <button class="btn btn-primary btn-lg shadow-sm" id="btnBuscarProductoCompleto" type="button"><i class="bi bi-search"></i> Buscar</button>
-                                                    <input type="number" id="cantidadProductoCompleto" class="form-control" value="1" min="1" style="width:100px">
-                                                    <button class="btn btn-success btn-lg shadow-sm" id="btnAgregarProductoCompleto" type="button" style="border-radius: 0.375rem !important;"><i class="bi bi-plus-circle"></i> Agregar</button>
+                                                    <input type="text" id="buscarProductoCompleto"
+                                                        class="form-control form-control-lg"
+                                                        placeholder="Busca un producto por código o nombre..."
+                                                        autocomplete="off">
+                                                    <button class="btn btn-primary btn-lg shadow-sm"
+                                                        id="btnBuscarProductoCompleto" type="button"><i
+                                                            class="bi bi-search"></i> Buscar</button>
+                                                    <input type="number" id="cantidadProductoCompleto"
+                                                        class="form-control" value="1" min="1" style="width:100px">
+                                                    <button class="btn btn-success btn-lg shadow-sm"
+                                                        id="btnAgregarProductoCompleto" type="button"
+                                                        style="border-radius: 0.375rem !important;"><i
+                                                            class="bi bi-plus-circle"></i> Agregar</button>
                                                 </div>
-                                                <div id="suggestionsCompleto" class="suggestions-container" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:1050;"></div>
+                                                <div id="suggestionsCompleto" class="suggestions-container"
+                                                    style="display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:1050;">
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="card-body" id="productosDisponiblesCompleto">
@@ -295,7 +354,8 @@
                                                 <tbody>
                                                     <tr>
                                                         <td colspan="6" class="text-center py-5 text-muted">
-                                                            <i class="bi bi-cart-x display-4 d-block mb-3 text-secondary"></i>
+                                                            <i
+                                                                class="bi bi-cart-x display-4 d-block mb-3 text-secondary"></i>
                                                             <p class="fw-semibold">No hay productos en el carrito</p>
                                                             <small>Busca y agrega productos para comenzar</small>
                                                         </td>
@@ -318,29 +378,48 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-2">
-                                            <label for="clienteNombre" class="form-label fw-semibold small">Nombre Completo</label>
+                                            <label for="clienteNombre" class="form-label fw-semibold small">Nombre
+                                                Completo</label>
                                             <div style="position:relative">
-                                                <input type="text" class="form-control" id="clienteNombre" placeholder="Nombre del cliente" autocomplete="off">
-                                                <div id="suggestionsCliente" class="suggestions-container" style="display:none; position:absolute; left:0; right:0; z-index:1050;"></div>
+                                                <input type="text" class="form-control" id="clienteNombre"
+                                                    placeholder="Nombre del cliente" autocomplete="off">
+                                                <div id="suggestionsCliente" class="suggestions-container"
+                                                    style="display:none; position:absolute; left:0; right:0; z-index:1050;">
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="mb-2">
-                                            <label for="clienteDocumento" class="form-label fw-semibold small">Documento</label>
+                                            <label for="clienteDocumento"
+                                                class="form-label fw-semibold small">Documento</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="clienteDocumento" placeholder="CC o NIT" autocomplete="off">
-                                                <button class="btn btn-outline-secondary" type="button" id="btnBuscarClienteRapido" title="Buscar cliente"><i class="bi bi-search"></i></button>
+                                                <input type="text" class="form-control" id="clienteDocumento"
+                                                    placeholder="CC o NIT" autocomplete="off">
+                                                <button class="btn btn-outline-secondary" type="button"
+                                                    id="btnBuscarClienteRapido" title="Buscar cliente"><i
+                                                        class="bi bi-search"></i></button>
                                             </div>
-                                            <div id="clienteQuickNote" class="mt-1"><small class="text-danger"><strong>ATENCIÓN:</strong> Si el cliente no aparece, usa <strong>Factura Completa</strong> para crearlo.</small></div>
+                                            <div id="clienteQuickNote" class="mt-1"><small
+                                                    class="text-danger"><strong>ATENCIÓN:</strong> Si el cliente no
+                                                    aparece, usa <strong>Factura Completa</strong> para crearlo.</small>
+                                            </div>
                                         </div>
                                         <!-- Acciones rápidas: Buscar / Crear cliente (visible) -->
-                                        <div class="mb-2 d-flex align-items-center justify-content-between" id="clienteQuickActions" style="gap:8px;">
-                                            <div id="clienteSelectedBadge" class="text-truncate" style="flex:1; min-width:0;"> 
+                                        <div class="mb-2 d-flex align-items-center justify-content-between"
+                                            id="clienteQuickActions" style="gap:8px;">
+                                            <div id="clienteSelectedBadge" class="text-truncate"
+                                                style="flex:1; min-width:0;">
                                                 <small class="text-muted">Ningún cliente seleccionado</small>
                                             </div>
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-primary" type="button" id="btnAbrirBusquedaCliente"><i class="bi bi-search me-1"></i> Buscar</button>
-                                                <button class="btn btn-sm btn-outline-danger" type="button" id="btnLimpiarCliente"><i class="bi bi-x-circle me-1"></i> Limpiar</button>
-                                                <button class="btn btn-sm btn-success" type="button" id="btnCrearClienteRapido"><i class="bi bi-plus-circle me-1"></i> Crear</button>
+                                                <button class="btn btn-sm btn-outline-primary" type="button"
+                                                    id="btnAbrirBusquedaCliente"><i class="bi bi-search me-1"></i>
+                                                    Buscar</button>
+                                                <button class="btn btn-sm btn-outline-danger" type="button"
+                                                    id="btnLimpiarCliente"><i class="bi bi-x-circle me-1"></i>
+                                                    Limpiar</button>
+                                                <button class="btn btn-sm btn-success" type="button"
+                                                    id="btnCrearClienteRapido"><i class="bi bi-plus-circle me-1"></i>
+                                                    Crear</button>
                                             </div>
                                         </div>
                                     </div>
@@ -391,7 +470,8 @@
                                             <label for="descuentoInput" class="mb-0 small">Descuento:</label>
                                             <div class="input-group input-group-sm" style="max-width: 120px;">
                                                 <span class="input-group-text">%</span>
-                                                <input type="number" class="form-control" id="descuentoInput" value="0" min="0" max="100">
+                                                <input type="number" class="form-control" id="descuentoInput" value="0"
+                                                    min="0" max="100">
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2 summary-item">
@@ -455,7 +535,8 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label for="filtroCliente" class="form-label">Cliente</label>
-                                        <input type="text" class="form-control" id="filtroCliente" placeholder="Nombre o documento">
+                                        <input type="text" class="form-control" id="filtroCliente"
+                                            placeholder="Nombre o documento">
                                     </div>
                                     <div class="col-md-1 d-flex align-items-end">
                                         <button class="btn btn-primary w-100" id="btnFiltrarHistorial">
@@ -558,7 +639,8 @@
 
     <!-- Bootstrap JS para funcionalidad de componentes interactivos -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
     <!-- Scripts del sistema -->
     <script src="../js/lib/purify.min.js"></script>
     <script src="../js/utils.js"></script>
@@ -570,4 +652,5 @@
     <script src="../js/sidebar-toggle.js"></script>
     <script src="../js/facturacion.js"></script>
 </body>
+
 </html>

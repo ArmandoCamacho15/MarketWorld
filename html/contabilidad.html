@@ -1,32 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MarketWorld - Contabilidad</title>
-    
+
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self'; 
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; 
                    script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com; 
                    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; 
                    font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; 
                    img-src 'self' data: https://ui-avatars.com https://*.gravatar.com; 
-                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443;">
+                   connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://127.0.0.1:8443 https://localhost:8443 https://marketworld-api-k8bvf.ondigitalocean.app https://cdn.jsdelivr.net;">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-          integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
+        integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"
-            integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+        integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ"
+        crossorigin="anonymous"></script>
     <!-- Hoja de estilos módulo contabilidad -->
     <link rel="stylesheet" href="../css/contabilidad.css">
     <link rel="stylesheet" href="../css/notifications.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Barra de navegación lateral -->
@@ -37,34 +40,44 @@
             <ul class="nav flex-column mt-4">
                 <!-- Elementos de navegación, cada uno representa un módulo del sistema -->
                 <li class="nav-item">
-                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span></a>
+                    <a class="nav-link" href="inicio.html"><i class="bi bi-house-door"></i> <span
+                            class="nav-text">Inicio</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+                    <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> <span
+                            class="nav-text">Dashboard</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span class="nav-text">Inventario</span></a>
+                    <a class="nav-link" href="inventario.html"><i class="bi bi-box-seam"></i> <span
+                            class="nav-text">Inventario</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span class="nav-text">Facturación</span></a>
+                    <a class="nav-link" href="facturacion.html"><i class="bi bi-receipt"></i> <span
+                            class="nav-text">Facturación</span></a>
                 </li>
                 <li class="nav-item active">
-                    <a class="nav-link active" href="contabilidad.html" aria-current="page"><i class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
+                    <a class="nav-link active" href="contabilidad.html" aria-current="page"><i
+                            class="bi bi-cash-coin"></i> <span class="nav-text">Contabilidad</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span class="nav-text">Compras</span></a>
+                    <a class="nav-link" href="compras.html"><i class="bi bi-cart"></i> <span
+                            class="nav-text">Compras</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span class="nav-text">CRM</span></a>
+                    <a class="nav-link" href="crm.html"><i class="bi bi-people"></i> <span
+                            class="nav-text">CRM</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+                    <a class="nav-link" href="reporte.html"><i class="bi bi-bar-chart"></i> <span
+                            class="nav-text">Reportes</span></a>
                 </li>
                 <li class="nav-item mt-4">
-                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span class="nav-text">Configuración</span></a>
+                    <a class="nav-link" href="configuracion.html"><i class="bi bi-gear"></i> <span
+                            class="nav-text">Configuración</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Cerrar Sesión</span></a>
+                    <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> <span
+                            class="nav-text">Cerrar Sesión</span></a>
                 </li>
             </ul>
         </div>
@@ -79,17 +92,22 @@
                 </div>
                 <div class="user-info">
                     <div class="notification-container position-relative me-3">
-                        <button class="btn btn-link position-relative" id="notificationBell" aria-label="Notificaciones">
+                        <button class="btn btn-link position-relative" id="notificationBell"
+                            aria-label="Notificaciones">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                id="notificationBadge" style="display: none;">0</span>
                         </button>
                         <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
                             <div id="notificationsList"></div>
                         </div>
                     </div>
                     <div class="dropdown">
-                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name=Usuario&background=3498db&color=fff" alt="Usuario autenticado">
+                        <button class="btn btn-link text-decoration-none d-flex align-items-center p-0" type="button"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Usuario&background=3498db&color=fff"
+                                alt="Usuario autenticado">
                             <div class="ms-2 text-start">
                                 <div class="fw-bold text-dark" id="userName">Usuario autenticado</div>
                                 <div class="small text-muted" id="userRole">Rol cargado desde sesión</div>
@@ -97,10 +115,15 @@
                             <i class="bi bi-chevron-down ms-2 text-muted"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
-                            <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-person-circle me-2"></i>Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="configuracion.html"><i
+                                        class="bi bi-gear me-2"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtnTop"><i
+                                        class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
                         </ul>
                     </div>
                 </div>
@@ -171,7 +194,8 @@
                                 <h4 class="section-title">Plan Contable</h4>
                                 <!-- Buscador de cuentas contables -->
                                 <div class="input-group mb-4">
-                                    <input type="text" class="form-control" id="searchAccount" placeholder="Buscar cuenta...">
+                                    <input type="text" class="form-control" id="searchAccount"
+                                        placeholder="Buscar cuenta...">
                                     <button class="btn btn-outline-primary">
                                         <i class="bi bi-search"></i>
                                     </button>
@@ -188,16 +212,19 @@
                         <div class="col-md-8">
                             <div class="content-container">
                                 <h4 class="section-title">Detalle de Cuenta</h4>
-                                <p class="text-muted small mb-3">Las cuentas persistidas actualmente manejan código, nombre, tipo y estado.</p>
+                                <p class="text-muted small mb-3">Las cuentas persistidas actualmente manejan código,
+                                    nombre, tipo y estado.</p>
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Código de Cuenta</label>
-                                            <input id="account-code" type="text" class="form-control" placeholder="Código de Cuenta">
+                                            <input id="account-code" type="text" class="form-control"
+                                                placeholder="Código de Cuenta">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Nombre de Cuenta</label>
-                                            <input id="account-name" type="text" class="form-control" placeholder="Nombre de Cuenta">
+                                            <input id="account-name" type="text" class="form-control"
+                                                placeholder="Nombre de Cuenta">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -213,7 +240,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                    <!-- Botones para cancelar o guardar cambios en la cuenta -->
+                                <!-- Botones para cancelar o guardar cambios en la cuenta -->
                                 <div class="d-flex justify-content-end">
                                     <button id="btn-cancel-account" class="btn btn-outline-secondary me-2">
                                         <i class="bi bi-x-circle me-2"></i> Cancelar
@@ -239,7 +266,8 @@
                                         </thead>
                                         <tbody id="account-movements-body">
                                             <tr>
-                                                <td colspan="5" class="text-center text-muted">Selecciona una cuenta para ver sus movimientos sincronizados</td>
+                                                <td colspan="5" class="text-center text-muted">Selecciona una cuenta
+                                                    para ver sus movimientos sincronizados</td>
                                             </tr>
                                         </tbody>
                                         <tfoot id="account-movements-foot"></tfoot>
@@ -278,7 +306,8 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Descripción</label>
-                                        <textarea id="entry-desc" class="form-control" rows="2" placeholder="Descripción del asiento"></textarea>
+                                        <textarea id="entry-desc" class="form-control" rows="2"
+                                            placeholder="Descripción del asiento"></textarea>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Tipo</label>
@@ -297,7 +326,8 @@
                                             <select class="form-select account-select">
                                                 <option value="">Cargando cuentas...</option>
                                             </select>
-                                            <input type="number" class="form-control amount-input" placeholder="Monto" style="max-width: 120px;" min="0" step="0.01">
+                                            <input type="number" class="form-control amount-input" placeholder="Monto"
+                                                style="max-width: 120px;" min="0" step="0.01">
                                             <select class="form-select type-select" style="max-width: 120px;">
                                                 <option value="debe">Debe</option>
                                                 <option value="haber">Haber</option>
@@ -318,7 +348,8 @@
                                     <!-- Botón para registrar el asiento contable -->
                                     <div class="d-grid">
                                         <button id="btn-register-entry" class="btn btn-primary" disabled>
-                                            <i class="bi bi-check-circle me-2"></i> Registrar Asiento (La suma debe ser 0)
+                                            <i class="bi bi-check-circle me-2"></i> Registrar Asiento (La suma debe ser
+                                            0)
                                         </button>
                                     </div>
                                 </div>
@@ -391,7 +422,8 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted">No hay asientos sincronizados para el rango seleccionado</td>
+                                                <td colspan="7" class="text-center text-muted">No hay asientos
+                                                    sincronizados para el rango seleccionado</td>
                                             </tr>
                                         </tbody>
                                         <tfoot></tfoot>
@@ -428,7 +460,8 @@
                                         <div class="d-flex justify-content-between">
                                             <div>
                                                 <h5 id="mayor-account-title">Sin cuenta seleccionada</h5>
-                                                <div class="text-muted" id="mayor-account-type">Selecciona una cuenta para ver su saldo</div>
+                                                <div class="text-muted" id="mayor-account-type">Selecciona una cuenta
+                                                    para ver su saldo</div>
                                             </div>
                                             <div class="text-end">
                                                 <div class="fw-bold">Saldo Actual:</div>
@@ -451,7 +484,8 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td colspan="6" class="text-center text-muted">Selecciona una cuenta para ver sus movimientos sincronizados</td>
+                                                <td colspan="6" class="text-center text-muted">Selecciona una cuenta
+                                                    para ver sus movimientos sincronizados</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -463,11 +497,13 @@
                                     <span class="badge bg-warning text-dark mb-3">No productivo</span>
                                     <h5>Conciliación Bancaria</h5>
                                     <p class="mb-3">
-                                        Esta sección no está habilitada como flujo de producción porque el backend no expone un endpoint de conciliación bancaria.
+                                        Esta sección no está habilitada como flujo de producción porque el backend no
+                                        expone un endpoint de conciliación bancaria.
                                         Se mantiene visible solo como aviso operativo.
                                     </p>
                                     <div class="alert alert-secondary mb-0">
-                                        Para activarla de forma real se necesita persistencia backend, reglas de conciliación y registro de ajustes.
+                                        Para activarla de forma real se necesita persistencia backend, reglas de
+                                        conciliación y registro de ajustes.
                                     </div>
                                 </div>
                             </div>
@@ -481,7 +517,8 @@
                         <div class="col-md-6">
                             <div class="content-container">
                                 <h4 class="section-title">Balance General</h4>
-                                <p class="text-muted small mb-3">Calculado con cuentas y asientos sincronizados desde backend.</p>
+                                <p class="text-muted small mb-3">Calculado con cuentas y asientos sincronizados desde
+                                    backend.</p>
                                 <!-- Gráfico de balance general -->
                                 <div class="chart-container">
                                     <canvas id="balanceChart"></canvas>
@@ -510,7 +547,8 @@
                         <div class="col-md-6">
                             <div class="content-container">
                                 <h4 class="section-title">Resultados del Periodo</h4>
-                                <p class="text-muted small mb-3">Derivado de ingresos y gastos reales del libro mayor.</p>
+                                <p class="text-muted small mb-3">Derivado de ingresos y gastos reales del libro mayor.
+                                </p>
                                 <!-- Gráfico de estado de resultados -->
                                 <div class="chart-container">
                                     <canvas id="incomeChart"></canvas>
@@ -541,7 +579,8 @@
                         <div class="col-md-7">
                             <div class="content-container">
                                 <h4 class="section-title">Resumen Tributario</h4>
-                                <p class="text-muted small mb-3">Calculado desde facturas reales y configuración fiscal de la empresa.</p>
+                                <p class="text-muted small mb-3">Calculado desde facturas reales y configuración fiscal
+                                    de la empresa.</p>
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
                                         <div class="kpi-card h-100 mb-0">
@@ -591,7 +630,8 @@
                                         </thead>
                                         <tbody id="tax-period-table-body">
                                             <tr>
-                                                <td colspan="5" class="text-center text-muted">Cargando resumen tributario...</td>
+                                                <td colspan="5" class="text-center text-muted">Cargando resumen
+                                                    tributario...</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -602,10 +642,12 @@
                             <div class="content-container module-status-card">
                                 <h4 class="section-title">Presentación DIAN</h4>
                                 <p class="mb-3">
-                                    La generación del resumen fiscal ya es real; la transmisión directa a DIAN sigue sin integración de envío electrónico.
+                                    La generación del resumen fiscal ya es real; la transmisión directa a DIAN sigue sin
+                                    integración de envío electrónico.
                                 </p>
                                 <div class="alert alert-warning mb-4">
-                                    La transmisión electrónica a DIAN sigue sin conector certificado; lo disponible aquí es el borrador descargable.
+                                    La transmisión electrónica a DIAN sigue sin conector certificado; lo disponible aquí
+                                    es el borrador descargable.
                                 </div>
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-primary" id="btn-refresh-tax-summary">
@@ -645,7 +687,8 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
     <!-- Scripts del sistema -->
     <script src="../js/utils.js"></script>
     <script src="../js/config.js"></script>
@@ -656,4 +699,5 @@
     <script src="../js/sidebar-toggle.js"></script>
     <script src="../js/contabilidad.js"></script>
 </body>
+
 </html>
