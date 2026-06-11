@@ -330,7 +330,7 @@
             item.style.cursor = 'pointer';
             item.addEventListener('click', function(e) {
                 if (!e.target.closest('.notification-actions')) {
-                    window.location.href = notif.enlace;
+                    window.location.href = APP_CONFIG.toHtmlPage(notif.enlace);
                 }
             });
         }

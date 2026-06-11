@@ -16,5 +16,19 @@ const APP_CONFIG = {
             : 'https://marketworld-api-k8bvf.ondigitalocean.app/api/v1'),
     MODO_DEBUG: (typeof document !== 'undefined' && document.body && document.body.dataset.debug === 'true'),
     AUTH_TOKEN_KEY: 'marketworld_auth_token',
-    AUTH_USER_KEY: 'marketworld_auth_user'
+    AUTH_USER_KEY: 'marketworld_auth_user',
+    HTML_BASE: '/html/',
+
+    /**
+     * Resuelve rutas de páginas HTML bajo /html/ para compatibilidad con Vercel.
+     * @param {string} url - Ruta relativa o absoluta de una página .html
+     * @returns {string}
+     */
+    toHtmlPage: function(url) {
+        if (!url) return this.HTML_BASE + 'inicio.html';
+        if (/^(https?:\/\/|mailto:|tel:|#)/i.test(url)) return url;
+        if (url.indexOf(this.HTML_BASE) === 0) return url;
+        var path = url.replace(/^\.\//, '').replace(/^\//, '');
+        return this.HTML_BASE + path;
+    }
 };

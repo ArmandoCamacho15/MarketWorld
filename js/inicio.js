@@ -382,7 +382,7 @@
 
     function createSearchResultItem(result, index) {
         const item = document.createElement('a');
-        item.href = result.url;
+        item.href = normalizeNavigationUrl(result.url);
         item.className = 'search-result-item';
         item.setAttribute('role', 'option');
         item.setAttribute('tabindex', '0');
@@ -406,7 +406,7 @@
         item.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                window.location.href = result.url;
+                window.location.href = normalizeNavigationUrl(result.url);
             }
         });
         
@@ -584,10 +584,7 @@
     }
 
     function normalizeNavigationUrl(url) {
-        if (!url) return './inicio.html';
-        if (/^https?:\/\//i.test(url)) return url;
-        if (url.startsWith('./') || url.startsWith('../') || url.startsWith('#')) return url;
-        return `./${url.replace(/^\//, '')}`;
+        return APP_CONFIG.toHtmlPage(url);
     }
 
     /* SISTEMA DE NOTIFICACIONES PERSONALIZADO - DESHABILITADO

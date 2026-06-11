@@ -21,7 +21,7 @@
     }
 
     function redirectToLogin() {
-        window.location.href = 'Login.html';
+        window.location.href = APP_CONFIG.toHtmlPage('Login.html');
     }
 
     function loadUserInfo(user) {

@@ -196,7 +196,7 @@
                 if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/me')) {
                     console.warn('Sesión expirada. Redirigiendo al login...');
                     clearSessionState();
-                    window.location.href = 'Login.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('Login.html');
                     return;
                 }
 
@@ -528,7 +528,7 @@
             return apiFetch('/auth/logout', { method: 'POST' })
                 .finally(function () {
                     clearSessionState();
-                    window.location.href = 'Login.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('Login.html');
                 });
         },
 

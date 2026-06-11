@@ -3,6 +3,50 @@
         {
             "source": "/",
             "destination": "/html/Login.html"
+        },
+        {
+            "source": "/Login.html",
+            "destination": "/html/Login.html"
+        },
+        {
+            "source": "/nuevo_usuario.html",
+            "destination": "/html/nuevo_usuario.html"
+        },
+        {
+            "source": "/inicio.html",
+            "destination": "/html/inicio.html"
+        },
+        {
+            "source": "/dashboard.html",
+            "destination": "/html/dashboard.html"
+        },
+        {
+            "source": "/inventario.html",
+            "destination": "/html/inventario.html"
+        },
+        {
+            "source": "/facturacion.html",
+            "destination": "/html/facturacion.html"
+        },
+        {
+            "source": "/contabilidad.html",
+            "destination": "/html/contabilidad.html"
+        },
+        {
+            "source": "/compras.html",
+            "destination": "/html/compras.html"
+        },
+        {
+            "source": "/crm.html",
+            "destination": "/html/crm.html"
+        },
+        {
+            "source": "/reporte.html",
+            "destination": "/html/reporte.html"
+        },
+        {
+            "source": "/configuracion.html",
+            "destination": "/html/configuracion.html"
         }
     ]
 }

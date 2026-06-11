@@ -36,7 +36,7 @@
             .then(function(body) {
                 if (body && body.success) {
                     // Si el servidor confirma la sesión (vía cookie), redirigimos.
-                    window.location.href = 'inicio.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('inicio.html');
                 }
             })
             .catch(function() {
@@ -106,7 +106,7 @@
                         showNotification('¡Bienvenido ' + (user.name || user.nombre || '') + '!', 'success');
                     
                     setTimeout(function() {
-                        window.location.href = 'inicio.html';
+                        window.location.href = APP_CONFIG.toHtmlPage('inicio.html');
                     }, 500);
                 }
             })
@@ -207,7 +207,7 @@
         
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = 'nuevo_usuario.html';
+            window.location.href = APP_CONFIG.toHtmlPage('nuevo_usuario.html');
         });
     }
 

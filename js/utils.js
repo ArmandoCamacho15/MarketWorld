@@ -249,10 +249,10 @@
         // Delegar cierre de sesión al adaptador de API para limpiar cookies en el servidor
         if (typeof MarketWorld !== 'undefined' && MarketWorld.api && MarketWorld.api.auth) {
             MarketWorld.api.auth.logout().finally(function() {
-                window.location.href = 'Login.html';
+                window.location.href = APP_CONFIG.toHtmlPage('Login.html');
             });
         } else {
-            window.location.href = 'Login.html';
+            window.location.href = APP_CONFIG.toHtmlPage('Login.html');
         }
     }
 

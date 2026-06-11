@@ -93,7 +93,7 @@
                 if (result && result.success) {
                     MarketWorld.utils.showModal('¡Registro Exitoso!', 'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.', 'success');
                     setTimeout(function() {
-                        window.location.href = 'Login.html';
+                        window.location.href = APP_CONFIG.toHtmlPage('Login.html');
                     }, 1500);
                 } else {
                     setLoadingState(btnRegister, false);

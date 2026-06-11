@@ -483,13 +483,13 @@
                 
                 // ======= REDIRIGIR SEGÚN EL KPI =======
                 if (label.includes('Ventas')) {
-                    window.location.href = './facturacion.html?tab=history';
+                    window.location.href = APP_CONFIG.toHtmlPage('facturacion.html?tab=history');
                 } else if (label.includes('Compras')) {
-                    window.location.href = './compras.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('compras.html');
                 } else if (label.includes('Clientes')) {
-                    window.location.href = './crm.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('crm.html');
                 } else if (label.includes('Inventario') || label.includes('Productos en Stock')) {
-                    window.location.href = './inventario.html';
+                    window.location.href = APP_CONFIG.toHtmlPage('inventario.html');
                 }
             });
         });
