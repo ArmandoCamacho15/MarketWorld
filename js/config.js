@@ -21,14 +21,21 @@ const APP_CONFIG = {
 
     /**
      * Resuelve rutas de páginas HTML bajo /html/ para compatibilidad con Vercel.
-     * @param {string} url - Ruta relativa o absoluta de una página .html
-     * @returns {string}
+     * Siempre devuelve la ruta física real con el prefijo '/html/' para evitar
+     * 404 en Vercel al redirigir directamente a la ubicación del archivo.
+     * @param {string} url - Nombre de archivo o ruta de una página .html
+     * @returns {string} Ruta absoluta con prefijo '/html/' (ej: '/html/inicio.html')
      */
     toHtmlPage: function(url) {
-        if (!url) return this.HTML_BASE + 'inicio.html';
+        // URLs absolutas o anclas: devolver tal cual, sin modificar
+        if (!url) return '/html/inicio.html';
         if (/^(https?:\/\/|mailto:|tel:|#)/i.test(url)) return url;
-        if (url.indexOf(this.HTML_BASE) === 0) return url;
-        var path = url.replace(/^\.\//, '').replace(/^\//, '');
-        return this.HTML_BASE + path;
+        // Normalizar: quitar './' o '/' inicial, luego quitar '/html/' si ya lo tiene
+        var path = url
+            .replace(/^\.\//, '')
+            .replace(/^\//, '')
+            .replace(/^html\//, '');
+        // Forzar siempre la ruta física real con '/html/' explícito
+        return '/html/' + path;
     }
 };
