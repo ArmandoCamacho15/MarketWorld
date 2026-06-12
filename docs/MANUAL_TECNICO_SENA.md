@@ -25,7 +25,7 @@
 - **Administración:** gestión de usuarios, roles, permisos, configuración de empresa y auditoría.
 - **Dashboard:** indicadores clave de rendimiento (KPI) en tiempo real con gráficas históricas.
 
-El sistema está construido sobre una arquitectura **SPA/API desacoplada**: el backend expone una API REST documentada y el frontend consume dichos servicios mediante JavaScript Vanilla, sin dependencia de frameworks SPA como React o Vue.
+El sistema está construido sobre una arquitectura **desacoplada (Headless)**: el backend expone una API REST documentada y el frontend consume dichos servicios mediante JavaScript Vanilla, sin dependencia de frameworks SPA como React o Vue. El Frontend está desplegado en Vercel (`https://marketworld-erp.vercel.app`) y el Backend/API junto con la Base de Datos MySQL (Managed Database) están desplegados en DigitalOcean App Platform, consumiendo la API base: `https://marketworld-api-k8bvf.ondigitalocean.app/api/v1`.
 
 ---
 
@@ -43,7 +43,7 @@ El sistema está construido sobre una arquitectura **SPA/API desacoplada**: el b
 │  │  Módulos: Login · Dashboard · Inventario · Facturación       │ │
 │  │           Compras · CRM · Contabilidad · Reportes · Config.  │ │
 │  └────────────────────────┬─────────────────────────────────────┘ │
-│                           │ HTTPS + Cookie HttpOnly (Sanctum)     │
+│                           │ HTTPS + Bearer Token (Authorization Header) │
 └───────────────────────────┼───────────────────────────────────────┘
                             │
 ┌───────────────────────────▼───────────────────────────────────────┐
@@ -80,7 +80,7 @@ El sistema está construido sobre una arquitectura **SPA/API desacoplada**: el b
 | Lenguaje servidor | PHP | ^8.2 | Requerido por `composer.json`. Soporte de tipos nativos, match expressions y atributos PHP 8.x mejoran la legibilidad. |
 | Base de datos | MySQL | 8.0 | RDBMS relacional maduro, soporte nativo en hosting colombiano, compatibilidad total con Eloquent y migraciones Laravel. |
 | Frontend | Vanilla JS + Bootstrap 5 | Bootstrap 5.3 | Sin dependencia de framework SPA; mayor control del DOM, tiempo de carga reducido, mantenibilidad por aprendices ADSO. |
-| Autenticación | Laravel Sanctum | * (última estable) | Modo SPA con cookie HttpOnly + CSRF (`statefulApi()`). Sin token en `localStorage`, mitigando ataques XSS. |
+| Autenticación | Laravel Sanctum | * (última estable) | Configurado en modo Token Authentication (Stateless). El backend emite tokens de acceso seguros que eliminan la necesidad de cookies cross-domain y evitan bloqueos de políticas de terceros en navegadores modernos. |
 | Control de roles | Spatie Laravel Permission | * (última estable) | Gestión granular de roles (`Administrador`, `Bodeguero`, `Usuario`) integrada al modelo `User` vía trait `HasRoles`. |
 | Exportación Excel | PhpSpreadsheet | ^5.7 | Generación nativa de archivos `.xlsx` para el libro diario contable, sin dependencias externas de terceros. |
 | Calidad de código | PHPStan + PHP_CodeSniffer | ^2.2 / ^4.0 | Análisis estático y verificación de estándares PSR-12 en modo dev. |
@@ -186,14 +186,14 @@ El sistema cuenta con **8 módulos principales**, cada uno respaldado por contro
 
 ### Módulo 1 — Autenticación (`AuthController`)
 
-**Propósito:** Gestiona el registro, inicio y cierre de sesión de usuarios. Usa Laravel Sanctum en modo SPA con cookie HttpOnly; no expone tokens en `localStorage`.
+**Propósito:** Gestiona el registro, inicio y cierre de sesión de usuarios. Emite Bearer Tokens mediante Laravel Sanctum, los cuales se almacenan en el localStorage del cliente para autenticar de forma persistente y sin estado (Stateless) cada petición HTTP.
 
 **Endpoints API:**
 
 | Método | Ruta | Descripción | Auth requerida |
 |--------|------|-------------|----------------|
 | `POST` | `/api/v1/auth/register` | Registrar nuevo usuario (rol fijo: `Usuario`) | No |
-| `POST` | `/api/v1/auth/login` | Iniciar sesión · devuelve cookie de sesión | No |
+| `POST` | `/api/v1/auth/login` | Iniciar sesión · devuelve el token de acceso JSON (Bearer Token). | No |
 | `POST` | `/api/v1/auth/logout` | Cerrar sesión e invalidar sesión/token | Sí |
 | `GET`  | `/api/v1/auth/me` | Obtener perfil del usuario autenticado | Sí |
 | `GET`  | `/api/health` | Estado de la API | No |
@@ -573,17 +573,16 @@ A continuación se presenta el esquema entidad-relación completo del sistema, c
 
 ## 6. Seguridad implementada
 
-### 6.1 Autenticación — Laravel Sanctum (modo SPA)
+### 6.1 Autenticación — Laravel Sanctum (Bearer Tokens)
 
-El sistema utiliza **Laravel Sanctum en modo SPA** con sesión por cookie HttpOnly. Este mecanismo fue seleccionado deliberadamente sobre el uso de tokens en `localStorage`, para mitigar ataques de tipo **XSS** (Cross-Site Scripting).
+El sistema migró a **Bearer Tokens con Laravel Sanctum**. El token se guarda en el `localStorage` y se envía por cabeceras (`Authorization: Bearer <token>`). Se eliminó la validación CSRF del lado del cliente (`api-adapter.js`) porque el sistema ahora es completamente "Stateless".
 
 **Flujo de autenticación:**
 
-1. El frontend solicita el token CSRF: `GET /sanctum/csrf-cookie`.
-2. Laravel devuelve la cookie `XSRF-TOKEN` (legible por JS para adjuntar como header `X-XSRF-TOKEN`).
-3. El frontend envía `POST /api/v1/auth/login` con las credenciales.
-4. Laravel valida, regenera la sesión (previene Session Fixation) y establece la cookie `laravel_session` HttpOnly.
-5. Todas las peticiones subsiguientes incluyen automáticamente ambas cookies. El servidor valida la sesión y el token CSRF en cada request.
+1. El frontend envía `POST /api/v1/auth/login` con las credenciales.
+2. Laravel valida y devuelve un token de acceso.
+3. El frontend almacena el token en el `localStorage`.
+4. Todas las peticiones subsiguientes incluyen el token en la cabecera `Authorization: Bearer <token>`. El servidor valida el token en cada request.
 
 **Configuración en `bootstrap/app.php`:**
 ```php
@@ -783,7 +782,9 @@ El sistema se despliega utilizando una arquitectura en la nube (PaaS) para garan
 5. Asegurarse de que esta URL esté correctamente configurada en las variables `FRONTEND_URL` y `SANCTUM_STATEFUL_DOMAINS` de DigitalOcean para que CORS y las cookies funcionen.
 
 
-### 8.2 Configuración de Nginx (referencia)
+### 8.2 Configuración del Servidor Web (Nginx/Apache)
+
+*Nota: En producción, el despliegue es automatizado por DigitalOcean App Platform, por lo que la configuración de red y proxy inverso es administrada directamente por la infraestructura en la nube.*
 
 ```nginx
 server {
@@ -849,9 +850,9 @@ El archivo `.env.example` en `backend/marketworld-api/` contiene la plantilla co
 |----------|-------|------------|-------------|
 | `APP_ENV` | `local` | `production` | Entorno de ejecución |
 | `APP_DEBUG` | `true` | `false` | Mostrar errores detallados |
-| `DB_DATABASE` | `marketworld_sena` | Nombre real de BD | Base de datos MySQL |
-| `SANCTUM_STATEFUL_DOMAINS` | `localhost:5500` | `tu-dominio.com` | Dominios autorizados para SPA |
-| `CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:5500` | `https://tu-dominio.com` | Orígenes CORS permitidos |
+| `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Valores locales (ej. `marketworld_sena`) | Credenciales encriptadas del clúster de DigitalOcean | En producción apuntan a las credenciales encriptadas del clúster de DigitalOcean. |
+| `SANCTUM_STATEFUL_DOMAINS` | `localhost:5500` | **ELIMINADO** | Se retiró el dominio de Vercel de esta variable para que el middleware de Sanctum trate al frontend como un cliente API externo sin estado, previniendo errores 419 (TokenMismatchException). |
+| `CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:5500` | `https://marketworld-erp.vercel.app` | Orígenes CORS permitidos |
 | `SESSION_SECURE_COOKIE` | `false` | `true` | Solo HTTPS en producción |
 | `BCRYPT_ROUNDS` | `12` | `12` | Rondas de hashing Bcrypt |
 | `LOG_LEVEL` | `debug` | `warning` | Nivel de logging |

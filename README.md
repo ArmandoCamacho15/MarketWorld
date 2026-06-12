@@ -6,9 +6,24 @@ Sistema de Gestión Empresarial (ERP) desarrollado como proyecto académico del 
 
 ## Descripción
 
-MarketWorld es una aplicación web que permite gestionar las operaciones de un negocio de manera integral. Incluye módulos para inventario, facturación, contabilidad, compras, gestión de clientes (CRM) y generación de reportes.
+MarketWorld es un Sistema de Planificación de Recursos Empresariales (ERP) que permite gestionar las operaciones de un negocio de manera integral. Incluye módulos para inventario, facturación, contabilidad, compras, gestión de clientes (CRM) y generación de reportes.
 
-Este proyecto fue desarrollado como parte del programa **Tecnólogo en Análisis y Desarrollo de Software** del Servicio Nacional de Aprendizaje (SENA).
+### Arquitectura (Desacoplada / Headless)
+
+El sistema funciona bajo una **arquitectura desacoplada (Headless)**:
+- **Frontend:** Desplegado en Vercel (`https://marketworld-erp.vercel.app`)
+- **Backend/API:** Desplegado en DigitalOcean App Platform (`https://marketworld-api-k8bvf.ondigitalocean.app/api/v1`)
+- **Base de Datos:** Clúster gestionado de MySQL 8.0 en DigitalOcean.
+
+### Seguridad y Autenticación
+
+El sistema implementa una autenticación estrictamente **"Stateless" (Sin estado)**. Se utilizan **Bearer Tokens** provistos por Laravel Sanctum. 
+
+- El token JSON de acceso se almacena localmente en el navegador (`localStorage`).
+- El token se inyecta dinámicamente en las cabeceras HTTP de autorización (`Authorization: Bearer <token>`) a través del adaptador del API en cada petición.
+- **Importante:** Se ha eliminado cualquier uso de cookies de sesión cross-domain, modos SPA con estado y flujos de inicialización de cookies CSRF en el cliente.
+
+Este proyecto fue desarrollado como parte del programa **Tecnólogo en Análisis y Desarrollo de Software (ADSO)** del Servicio Nacional de Aprendizaje (SENA).
 
 ---
 
@@ -68,6 +83,9 @@ Este proyecto utiliza las siguientes tecnologías:
 - **Chart.js** - Visualización de datos con gráficos
 - **FullCalendar 5.11** - Calendario interactivo
 - **MySQL** - Sistema de gestión de base de datos
+- **PHP 8.x** - Lenguaje de programación del lado del servidor
+- **Laravel 11.x** - Framework PHP para el desarrollo de la API RESTful
+- **Laravel Sanctum** - Sistema ligero de autenticación para APIs (Bearer Tokens)
 
 ---
 
@@ -97,12 +115,27 @@ Este proyecto utiliza las siguientes tecnologías:
 ### Paso 1: Configurar el Backend (Laravel)
 1. Entra a la carpeta del api: `cd backend/marketworld-api`
 2. Instala dependencias: `composer install`
-3. Configura el entorno: `cp .env.example .env` (y configura tu DB en el .env)
+3. Configura el entorno local copiando `.env.example`: `cp .env.example .env`.
+   
+   **Guía de Configuración de Entorno (.env) para Producción:**
+   ```env
+   # Base de Datos (Apunta a las credenciales encriptadas del clúster de DigitalOcean)
+   DB_HOST=your-digitalocean-db-host
+   DB_DATABASE=your_database
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   
+   # Configuración CORS y Autenticación Stateless
+   CORS_ALLOWED_ORIGINS=https://marketworld-erp.vercel.app
+   # SANCTUM_STATEFUL_DOMAINS: ¡ELIMINADO! 
+   # Se retiró el dominio de Vercel de esta variable para que el middleware de Sanctum 
+   # trate al frontend como un cliente API externo sin estado, previniendo errores 419 (TokenMismatchException).
+   ```
 4. Genera la clave: `php artisan key:generate`
 5. Ejecuta migraciones y datos iniciales: `php artisan migrate --seed`
-6. **Inicia el servidor API:**
+6. **Inicia el servidor API (Entorno Local):**
    - En CMD: `php artisan serve --port=8000`
-   - En PowerShell: `php artisan serve --port=8000` (El comando `&&` solo funciona en CMD; en PowerShell usa `;` o ejecuta los comandos uno por uno).
+   - En PowerShell: `php artisan serve --port=8000`
 
 ### Paso 2: Ejecutar el Frontend
 Tienes dos opciones para ver la aplicación:
@@ -197,7 +230,8 @@ MarketWorld/
 
  docs/                             # Documentación
     BASE_DE_DATOS.md
-    MANUAL_USUARIO.md
+    MANUAL_TECNICO_SENA.md
+    MANUAL_USUARIO_FINAL.md
 
  .editorconfig
  .gitignore
@@ -248,13 +282,13 @@ Las contribuciones son bienvenidas. Por favor, lee [CONTRIBUTING.md](CONTRIBUTIN
 
 ---
 
-## Autor
+## Autores
 
-**Armando Camacho**
-
-- Programa: Tecnólogo en Análisis y Desarrollo de Software
+**Armando Camacho Araque & Jhonatan Zuleta**
+- Programa: Tecnólogo en Análisis y Desarrollo de Software (ADSO)
+- Ficha: 3070470
 - Institución: Servicio Nacional de Aprendizaje (SENA)
-- Año: 2025
+- Año: 2026
 
 ---
 

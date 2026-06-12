@@ -28,7 +28,7 @@ Este manual le guiará paso a paso en el uso de **MarketWorld ERP**, el sistema 
 ### ¿Cómo ingresar al sistema?
 
 1. Abra su navegador de internet (Google Chrome, Firefox o Edge).
-2. Escriba en la barra de dirección la URL del sistema (por ejemplo: `https://marketworld-erp.vercel.app/html/Login.html` o la que haya configurado en Vercel).
+2. Escriba en la barra de dirección la URL exacta de producción: `https://marketworld-erp.vercel.app/html/Login.html`.
 3. Verá la pantalla de inicio de sesión con dos campos: **Correo electrónico** y **Contraseña**.
 4. Ingrese su correo electrónico institucional en el campo correspondiente.
 5. Ingrese su contraseña. Por seguridad, los caracteres no se muestran en pantalla.
