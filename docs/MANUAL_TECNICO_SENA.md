@@ -4,8 +4,8 @@
 |---|---|
 | **Versión** | 1.0.0 |
 | **Fecha** | 30 de mayo de 2026 |
-| **Aprendiz** | Armando Camacho Araque |
-| **Programa de formación** | Tecnólogo en Análisis y Desarrollo de Sistemas de Información (ADSO) |
+| **Aprendices** | Armando Camacho Araque & Jhonatan Zuleta |
+| **Programa de formación** | Tecnólogo en Análisis y Desarrollo de Software (ADSO) |
 | **Centro de formación SENA** | EL CENTRO DE LA CONSTRUCCION - REGIONAL VALLE |
 | **Instructor** | STIVEN SILVA ASCUNTAR |
 | **Ficha** | 3070470 |
@@ -49,7 +49,7 @@ El sistema está construido sobre una arquitectura **desacoplada (Headless)**: e
 ┌───────────────────────────▼───────────────────────────────────────┐
 │                     SERVIDOR (Backend)                            │
 │  ┌───────────────────────────────────────────────────────────┐    │
-│  │  Laravel 12 / PHP 8.2+                                    │    │
+│  │  Laravel 11.x / PHP 8.2+                                  │    │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐  │    │
 │  │  │   Routes    │  │ Controllers │  │    Services       │  │    │
 │  │  │  api.php    │→ │  Api/*.php  │→ │  AuditLogger      │  │    │
@@ -76,7 +76,7 @@ El sistema está construido sobre una arquitectura **desacoplada (Headless)**: e
 
 | Capa | Tecnología | Versión | Justificación técnica |
 |------|-----------|---------|----------------------|
-| Backend Framework | Laravel | ^12.0 (compatible con ecosistema L11) | Framework PHP empresarial con ORM Eloquent, sistema de rutas declarativo, middleware y sistema de migraciones robusto. Licencia MIT. |
+| Backend Framework | Laravel | 11.x | Framework PHP empresarial con ORM Eloquent, sistema de rutas declarativo, middleware y sistema de migraciones robusto. Licencia MIT. |
 | Lenguaje servidor | PHP | ^8.2 | Requerido por `composer.json`. Soporte de tipos nativos, match expressions y atributos PHP 8.x mejoran la legibilidad. |
 | Base de datos | MySQL | 8.0 | RDBMS relacional maduro, soporte nativo en hosting colombiano, compatibilidad total con Eloquent y migraciones Laravel. |
 | Frontend | Vanilla JS + Bootstrap 5 | Bootstrap 5.3 | Sin dependencia de framework SPA; mayor control del DOM, tiempo de carga reducido, mantenibilidad por aprendices ADSO. |
@@ -110,11 +110,11 @@ MarketWorld/                         ← Raíz del proyecto monorepo
 │       │   └── Providers/           ← Service providers de Laravel
 │       │
 │       ├── bootstrap/
-│       │   └── app.php              ← Punto de entrada L12: middleware, rutas y excepciones
+│       │   └── app.php              ← Punto de entrada L11: middleware, rutas y excepciones
 │       │
 │       ├── config/
 │       │   ├── cors.php             ← Política CORS configurable por .env
-│       │   ├── sanctum.php          ← Dominios stateful para SPA
+│       │   ├── sanctum.php          ← Configuración de tokens API
 │       │   └── permission.php       ← Configuración de Spatie Permission
 │       │
 │       ├── database/
@@ -174,7 +174,7 @@ MarketWorld/                         ← Raíz del proyecto monorepo
 | `app/Services/` | Capa de servicios para lógica reutilizable: `AuditLogger` registra trazabilidad de acciones, `InventoryService` encapsula operaciones complejas de stock. |
 | `app/Http/Middleware/` | `RoleMiddleware.php` implementa el guard de autorización de roles; se registra como alias `role` en `bootstrap/app.php`. |
 | `database/migrations/` | 41 migraciones cronológicas que definen el esquema completo de la base de datos. Permiten reproducir el entorno en cualquier servidor con un único comando. |
-| `bootstrap/app.php` | Archivo central de configuración de la aplicación en Laravel 12 (reemplaza al `Kernel.php` de versiones anteriores). Registra middleware, rutas y manejadores de excepciones globales. |
+| `bootstrap/app.php` | Archivo central de configuración de la aplicación en Laravel 11. Registra middleware, rutas y manejadores de excepciones globales. |
 
 ---
 
@@ -390,9 +390,6 @@ El sistema cuenta con **8 módulos principales**, cada uno respaldado por contro
 | `GET/POST/PUT/DELETE` | `admin/roles` | Gestión de roles |
 | `GET` | `admin/permissions` | Listado de permisos disponibles |
 | `GET` | `admin/audit-logs` | Consulta de bitácora de auditoría |
-| `GET` | `admin/sessions` | Sesiones activas en el sistema |
-| `DELETE` | `admin/sessions/{id}` | Revocar sesión específica |
-| `POST` | `admin/sessions/revoke-others` | Revocar todas las sesiones excepto la actual |
 
 **Endpoints de Configuración de Empresa:**
 
@@ -537,7 +534,7 @@ A continuación se presenta el esquema entidad-relación completo del sistema, c
 | # | Tabla | Descripción |
 |---|-------|-------------|
 | 1 | `users` | Usuarios del sistema |
-| 2 | `sessions` | Sesiones activas (Sanctum SPA) |
+| 2 | `sessions` | (Tabla no utilizada en API Stateless) |
 | 3 | `personal_access_tokens` | Tokens API (Sanctum) |
 | 4 | `roles` | Roles (Administrador, Bodeguero, Usuario) |
 | 5 | `permissions` | Permisos granulares (Spatie) |
@@ -584,16 +581,8 @@ El sistema migró a **Bearer Tokens con Laravel Sanctum**. El token se guarda en
 3. El frontend almacena el token en el `localStorage`.
 4. Todas las peticiones subsiguientes incluyen el token en la cabecera `Authorization: Bearer <token>`. El servidor valida el token en cada request.
 
-**Configuración en `bootstrap/app.php`:**
-```php
-$middleware->statefulApi();
-// Habilita Sanctum como guard de sesión para el middleware 'auth:sanctum'
-```
-
-**Dominios autorizados (`SANCTUM_STATEFUL_DOMAINS` en `.env`):**
-```
-localhost,127.0.0.1,localhost:5500,127.0.0.1:5500,localhost:5173,127.0.0.1:5173
-```
+**Configuración de middleware:**
+La aplicación opera estrictamente como una API REST. No se utiliza `$middleware->statefulApi()` ya que no hay persistencia basada en cookies de sesión. Todo request se autentica comprobando el token enviado en la cabecera `Authorization`.
 
 ### 6.2 Autorización — Control de Roles (Spatie Laravel Permission)
 
@@ -664,12 +653,11 @@ Las contraseñas se almacenan con **Bcrypt** a través del cast `'password' => '
 
 El servicio `AuditLogger` registra en la tabla `audit_logs` todas las acciones críticas (login, logout, registro, creación/modificación de recursos). Almacena: `user_id`, `action`, `entity_type`, `entity_id`, `description`, `metadata` (JSON), `ip_address` y `user_agent`.
 
-### 6.7 Gestión de sesiones
+### 6.7 Gestión de acceso y tokens
 
-- Las sesiones se almacenan en base de datos (`SESSION_DRIVER=database`) en lugar de archivos, facilitando la revocación remota.
-- El endpoint `POST /api/v1/admin/sessions/revoke-others` permite invalidar todas las sesiones excepto la actual.
-- Al hacer logout, se invalida la sesión, se regenera el token CSRF y se elimina el access token de Sanctum si existe.
-- `SESSION_SECURE_COOKIE=true` en producción garantiza que la cookie solo se envíe por HTTPS.
+- Al operar de forma *Stateless*, el sistema no mantiene sesiones activas en el servidor.
+- El endpoint de logout invalida el access token actual en la base de datos (tabla `personal_access_tokens`), obligando al cliente a obtener uno nuevo en el siguiente login.
+- No se manejan tokens CSRF ni cookies de sesión tradicionales en ningún flujo.
 
 ### 6.8 Manejo de errores seguro
 
@@ -689,7 +677,7 @@ Las páginas HTML incluyen Content Security Policy (CSP) para limitar orígenes 
 |----------|----------------|-------------|
 | PHP | 8.2 | `php --version` |
 | Composer | 2.x | `composer --version` |
-| Node.js | 18.x | `node --version` |
+| Node.js | 18.x | Única y exclusivamente como herramienta de entorno local para la gestión de dependencias (NPM) y la compilación/optimización del frontend (Vite/Bootstrap 5). No hace parte del runtime del backend. |
 | MySQL | 8.0 | `mysql --version` |
 | Git | 2.x | `git --version` |
 
@@ -727,8 +715,8 @@ php artisan migrate
 # 9. Ejecutar los seeders (crea roles, usuario admin inicial y cuentas contables)
 php artisan db:seed
 
-# 10. Configurar los dominios de Sanctum en .env
-# SANCTUM_STATEFUL_DOMAINS=localhost,127.0.0.1,localhost:5500
+# 10. Configurar los orígenes en .env
+# SANCTUM_STATEFUL_DOMAINS= (Dejar en blanco para forzar Stateless)
 # CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1:5500
 # CORS_SUPPORTS_CREDENTIALS=true
 
@@ -763,8 +751,7 @@ El sistema se despliega utilizando una arquitectura en la nube (PaaS) para garan
    - `APP_DEBUG=false`
    - `APP_KEY=base64:...`
    - `FRONTEND_URL=https://[DOMINIO_VERCEL].vercel.app`
-   - `SANCTUM_STATEFUL_DOMAINS=[DOMINIO_VERCEL].vercel.app` (sin `https://`)
-   - `SESSION_SECURE_COOKIE=true`
+   - `SANCTUM_STATEFUL_DOMAINS=` (Dejar en blanco para API pura)
 5. Configurar el comando "Pre-Deploy" para ejecutar las migraciones: `php artisan migrate --force --seed`
 6. El buildpack detectará automáticamente Laravel a través del archivo `Procfile` y el `composer.json`, y realizará el despliegue de la API y la conexión a MySQL.
 
@@ -851,9 +838,8 @@ El archivo `.env.example` en `backend/marketworld-api/` contiene la plantilla co
 | `APP_ENV` | `local` | `production` | Entorno de ejecución |
 | `APP_DEBUG` | `true` | `false` | Mostrar errores detallados |
 | `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Valores locales (ej. `marketworld_sena`) | Credenciales encriptadas del clúster de DigitalOcean | En producción apuntan a las credenciales encriptadas del clúster de DigitalOcean. |
-| `SANCTUM_STATEFUL_DOMAINS` | `localhost:5500` | **ELIMINADO** | Se retiró el dominio de Vercel de esta variable para que el middleware de Sanctum trate al frontend como un cliente API externo sin estado, previniendo errores 419 (TokenMismatchException). |
+| `SANCTUM_STATEFUL_DOMAINS` | **ELIMINADO / EN BLANCO** | **ELIMINADO / EN BLANCO** | Se deja vacía para obligar a Sanctum a tratar al frontend de Vercel como un cliente API sin estado. |
 | `CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:5500` | `https://marketworld-erp.vercel.app` | Orígenes CORS permitidos |
-| `SESSION_SECURE_COOKIE` | `false` | `true` | Solo HTTPS en producción |
 | `BCRYPT_ROUNDS` | `12` | `12` | Rondas de hashing Bcrypt |
 | `LOG_LEVEL` | `debug` | `warning` | Nivel de logging |
 

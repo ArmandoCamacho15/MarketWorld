@@ -3,7 +3,11 @@
 | Campo | Valor |
 |---|---|
 | **Versión** | 1.0.0 |
-| **Fecha** | 30 de mayo de 2026 |
+| **Fecha** | Junio de 2026 |
+| **Programa de formación** | Tecnólogo en Análisis y Desarrollo de Software (ADSO) |
+| **Ficha** | 3070470 |
+| **Autores** | Armando Camacho Araque & Jhonatan Zuleta |
+| **Instructor** | Stiven Silva Ascuntar |
 | **Dirigido a** | Usuarios finales de la plataforma (sin conocimientos técnicos) |
 | **Sistema** | MarketWorld ERP — Gestión empresarial para microempresas colombianas |
 
@@ -11,7 +15,7 @@
 
 ## Antes de comenzar
 
-Este manual le guiará paso a paso en el uso de **MarketWorld ERP**, el sistema de gestión empresarial de su organización. No necesita conocimientos en sistemas o informática para seguir estas instrucciones.
+Este manual le guiará paso a paso en el uso de **MarketWorld ERP**, el sistema de gestión empresarial de su organización. No necesita conocimientos en sistemas o informática para seguir estas instrucciones. El sistema opera bajo una Arquitectura Desacoplada (Headless), garantizando un acceso rápido, seguro y optimizado desde cualquier navegador web.
 
 **¿Qué necesita para usar el sistema?**
 
